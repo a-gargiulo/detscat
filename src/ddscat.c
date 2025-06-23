@@ -23,7 +23,7 @@ DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
     par->ncomp = 0;
     par->nplanes = 0;
 
-    enum ParseState { PARSE_INITIAL, PARSE_COMP, PARSE_PLANES };
+    enum ParseState { PARSE_INITIAL, PARSE_COMP, PARSE_PLANES};
     enum ParseState state = PARSE_INITIAL;
 
     while (fgets(line, MAX_LINE_LENGTH, par_file)) {
@@ -62,6 +62,14 @@ DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
 
                     planes_parsed = 0;
                     state = PARSE_PLANES;
+                } else if (strstr(line, "Polarization state")) {
+                    if (sscanf(line, "(%lf, %lf) (%lf, %lf) (%lf, %lf)",
+                               &par->e01.x.re, &par->e01.x.im,
+                               &par->e01.y.re, &par->e01.y.im,
+                               &par->e01.z.re, &par->e01.z.im) != 6) {
+                        status = DDSCAT_ERR_PARSING_FAILED;
+                        goto cleanup;
+                    }
                 }
                 break;
 
@@ -135,27 +143,3 @@ cleanup:
 
     return status;
 }
-
-
-// DdscatError ddscat_parse_fml_file(const char *fml_file_path, Fmat *fmat) {
-
-//     FILE *fml_file = fopen(fml_file_path, "r");
-//     if (!fml_file)  return DDSCAT_ERR_CANNOT_OPEN_FILE;
-
-//     char line[MAX_LINE_LENGTH];
-//     DdscatError status = DDSCAT_OK;
-
-
-//     while (fgets(line, MAX_LINE_LENGTH, fml_file)) {
-
-//     }
-
-
-// cleanup:
-//     fclose(fml_file);
-//     return status;
-// }
-
-
-
-

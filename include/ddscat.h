@@ -2,6 +2,7 @@
 #define DDSCAT
 
 #include <stddef.h>
+#include "mymath.h"
 
 #define MAX_LINE_LENGTH 1024
 #define MAX_NCOMP 100
@@ -22,17 +23,9 @@ typedef struct {
     size_t nplanes;
     char **comp;
     double (*planes)[PLANE_PARAMS];
+    ComplexVec3 e01;
 } Par;
 
-typedef struct {
-    double *f11r, *f11i;
-    double *f21r, *f21i;
-    double *f12r, *f12i;
-    double *f22r, *f22i;
-} Fmat;
-
 DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par);
-
-DdscatError ddscat_parse_fml_file(const char *fml_file_path, Fmat *fmat);
 
 #endif  // DDSCAT
