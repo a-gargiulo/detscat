@@ -9,7 +9,12 @@ typedef struct {
     Complex x, y, z;
 } ComplexVec3;
 
-double mymath_abs_complex(Complex *cnum);
-double mymath_norm_complex(ComplexVec3 *cvec);
+typedef struct {
+    double x, y, z;
+} Vec3;
+
+double mymath_abs_complex(const Complex *cnum);
+double mymath_norm_complex(const ComplexVec3 *cvec);
+void mymath_cross(const Vec3 *v1, const Vec3 *v2, Vec3 *cross);
 
 #endif  // MYMATH 
