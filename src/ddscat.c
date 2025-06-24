@@ -143,3 +143,6 @@ cleanup:
 
     return status;
 }
+
+DdscatError ddscat_parse_fml_file(const char *fml_file_path, Fmat *fmat) {
+}

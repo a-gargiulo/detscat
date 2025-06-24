@@ -26,6 +26,11 @@ typedef struct {
     ComplexVec3 e01;
 } Par;
 
+typedef struct {
+    Complex *f11, *f21, *f12, *f22;
+} Fmat;
+
 DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par);
+DdscatError ddscat_parse_fml_file(const char *fml_file_path, Fmat *fmat);
 
 #endif  // DDSCAT

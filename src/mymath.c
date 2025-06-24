@@ -39,6 +39,3 @@ void mymath_cross(const Vec3 *v1, const Vec3 *v2, Vec3 *cross) {
     cross->y = v1->z * v2->x - v1->x * v2->z;
     cross->z = v1->x * v2->y - v1->y * v2->x;
 }
-
-
-
