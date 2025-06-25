@@ -27,10 +27,11 @@ typedef struct {
 } Par;
 
 typedef struct {
+    size_t n;
     Complex *f11, *f21, *f12, *f22;
 } Fmat;
 
 DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par);
-DdscatError ddscat_parse_fml_file(const char *fml_file_path, Fmat *fmat);
+DdscatError ddscat_parse_fml_file(const char *fml_file_path, const Par *par, Fmat **fmat);
 
 #endif  // DDSCAT

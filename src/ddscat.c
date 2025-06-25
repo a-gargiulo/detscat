@@ -119,6 +119,7 @@ DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
                 break;
         }
     }
+    goto cleanup;
 
 cleanup:
     fclose(par_file);
@@ -144,5 +145,77 @@ cleanup:
     return status;
 }
 
-DdscatError ddscat_parse_fml_file(const char *fml_file_path, Fmat *fmat) {
+DdscatError ddscat_parse_fml_file(const char *fml_file_path, const Par *par, Fmat **fmat) {
+
+    FILE *fml_file= fopen(fml_file_path, "r");
+    if (!fml_file) return DDSCAT_ERR_CANNOT_OPEN_FILE;
+
+    char line[MAX_LINE_LENGTH];
+    DdscatError status = DDSCAT_OK;
+
+    size_t fmat_allocated = 0;
+
+    while (fgets(line, MAX_LINE_LENGTH, fml_file)) {
+        if (strstr(line, "Re")) {
+            break;
+        }
+    }
+
+    *fmat = (Fmat*)malloc(par->nplanes * sizeof(Fmat));
+    if (!*fmat) {
+        status = DDSCAT_ERR_ALLOCATION_FAILED;
+        goto cleanup;
+    }
+    for (size_t i = 0; i < par->nplanes; ++i) {
+        // TODO: Add some safety checks before casting
+        size_t n_theta = (size_t)((par->planes[i][2] - par->planes[i][1]) / par->planes[i][3]) + 1;
+
+        (*fmat)[i].n = n_theta;
+
+        (*fmat)[i].f11 = (*fmat)[i].f12 = (*fmat)[i].f21 = (*fmat)[i].f22 = NULL;
+        (*fmat)[i].f11 = (Complex*)malloc(n_theta * sizeof(Complex));
+        (*fmat)[i].f12 = (Complex*)malloc(n_theta * sizeof(Complex));
+        (*fmat)[i].f21 = (Complex*)malloc(n_theta * sizeof(Complex));
+        (*fmat)[i].f22 = (Complex*)malloc(n_theta * sizeof(Complex));
+
+        if (!(*fmat)[i].f11 || !(*fmat)[i].f12 || !(*fmat)[i].f21 || !(*fmat)[i].f22) {
+            status = DDSCAT_ERR_ALLOCATION_FAILED;
+            goto cleanup;
+        }
+
+        fmat_allocated++;
+
+        for (size_t j = 0; j < n_theta; ++j) {
+            if (!fgets(line, MAX_LINE_LENGTH, fml_file)) {
+                status = DDSCAT_ERR_PARSING_FAILED;
+                goto cleanup;
+            }
+            if (sscanf(line,  "%*lf %*lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                       &(*fmat)[i].f11[j].re, &(*fmat)[i].f11[j].im,
+                       &(*fmat)[i].f12[j].re, &(*fmat)[i].f12[j].im,
+                       &(*fmat)[i].f21[j].re, &(*fmat)[i].f21[j].im,
+                       &(*fmat)[i].f22[j].re, &(*fmat)[i].f22[j].im) != 8) {
+                status = DDSCAT_ERR_PARSING_FAILED;
+                goto cleanup;
+            }
+        }
+    }
+    fclose(fml_file);
+    return status;
+
+cleanup:
+    fclose(fml_file);
+
+    if (*fmat) {
+        for (size_t i = 0; i < fmat_allocated; ++i) {
+            free((*fmat)[i].f11);
+            free((*fmat)[i].f12);
+            free((*fmat)[i].f21);
+            free((*fmat)[i].f22);
+        }
+        free(*fmat);
+        *fmat = NULL;
+    }
+
+    return status;
 }
