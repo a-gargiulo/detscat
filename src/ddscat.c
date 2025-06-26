@@ -1,4 +1,5 @@
 #include "ddscat.h"
+#include "mymath.h"
 
 #include <errno.h>
 #include <stdbool.h>
@@ -192,8 +193,8 @@ DdscatError ddscat_parse_fml_file(const char *fml_file_path, const Par *par, Fma
             }
             if (sscanf(line,  "%*lf %*lf %lf %lf %lf %lf %lf %lf %lf %lf",
                        &(*fmat)[i].f11[j].re, &(*fmat)[i].f11[j].im,
-                       &(*fmat)[i].f12[j].re, &(*fmat)[i].f12[j].im,
                        &(*fmat)[i].f21[j].re, &(*fmat)[i].f21[j].im,
+                       &(*fmat)[i].f12[j].re, &(*fmat)[i].f12[j].im,
                        &(*fmat)[i].f22[j].re, &(*fmat)[i].f22[j].im) != 8) {
                 status = DDSCAT_ERR_PARSING_FAILED;
                 goto cleanup;
@@ -209,8 +210,8 @@ cleanup:
     if (*fmat) {
         for (size_t i = 0; i < fmat_allocated; ++i) {
             free((*fmat)[i].f11);
-            free((*fmat)[i].f12);
             free((*fmat)[i].f21);
+            free((*fmat)[i].f12);
             free((*fmat)[i].f22);
         }
         free(*fmat);
@@ -218,4 +219,14 @@ cleanup:
     }
 
     return status;
+}
+
+DdscatError ddscat_calculate_scatmat(const Par *par, const Fmat *fmat, Smat **smat) {
+
+
+    Vec3 x = {1.0, 0.0, 0.0};
+
+
+
+    return STATUS_OK;
 }
