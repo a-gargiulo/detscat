@@ -2,12 +2,13 @@
 #include <stdlib.h>
 
 #include "ddscat.h"
+#include "mymath.h"
 
 
 int main(void) {
 
 
-    const char *root = ".";
+    const char *root = "./sphere";
 
     DdscatError ddscat_err;
 

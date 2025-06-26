@@ -224,9 +224,40 @@ cleanup:
 DdscatError ddscat_calculate_scatmat(const Par *par, const Fmat *fmat, Smat **smat) {
 
 
-    Vec3 x = {1.0, 0.0, 0.0};
+    ComplexVec3 x_LF = {{1, 0}, {0, 0}, {0, 0}};
+
+    ComplexVec3 eHat01, eHat01conj;
+    ComplexVec3 e02, eHat02;
+
+    double e01norm = mymath_norm_complex(&par->e01);
+    mymath_norm_vec_complex(&eHat01, &par->e01, e01norm);
+    mymath_vec_conj_complex(&eHat01conj, &par->e01);
+    
+    mymath_cross_complex(&e02, &(const ComplexVec3){{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}}, &eHat01conj);
+    double e02norm = mymath_norm_complex(&e02);
+    mymath_norm_vec_complex(&eHat02, &e02, e02norm);
+
+    Complex a = mymath_dot_complex(
+        &eHat01,
+        &(const ComplexVec3){{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}}
+    );
+
+    Complex b = mymath_dot_complex(
+        &eHat01,
+        &(const ComplexVec3){{0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}}
+    );
+
+    Complex c = mymath_dot_complex(
+        &eHat02,
+        &(const ComplexVec3){{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}}
+    );
+
+    Complex d = mymath_dot_complex(
+        &eHat02,
+        &(const ComplexVec3){{0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}}
+    );
 
 
 
-    return STATUS_OK;
+    return DDSCAT_OK;
 }
