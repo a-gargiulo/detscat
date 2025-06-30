@@ -334,12 +334,12 @@ DdscatError ddscat_calculate_scatmat(const Par *par, const Fmat *fmat,
                                          mymath_cadd(mymath_cmult(c, cp),
                                                      mymath_cmult(d, sp)))));
 
-            double S43 = mymath_csub(
-                mymath_cmult((*smat)[i].S1[j], mymath_conj((*smat)[i].S2[j])), 
-                mymath_cmult((*smat)[i].S3[j], mymath_conj((*smat)[i].S4[j])) 
-            ).im;
-
-            printf("%22.15E\n", S43);
+            // DIAGNOSTICS! Remove later
+            // double S43 = mymath_csub(
+            //     mymath_cmult((*smat)[i].S1[j], mymath_conj((*smat)[i].S2[j])), 
+            //     mymath_cmult((*smat)[i].S3[j], mymath_conj((*smat)[i].S4[j])) 
+            // ).im;
+            // printf("%22.15E\n", S43);
         }
     }
 

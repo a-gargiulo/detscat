@@ -10,7 +10,7 @@
 int main(void) {
 
 
-    const char *root = "./sphere";
+    const char *root = "../../ddscat/ELLIPSOID";
 
     DdscatError ddscat_err;
 
