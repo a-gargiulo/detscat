@@ -15,11 +15,17 @@ typedef struct {
 
 void mymath_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2);
 
-double mymath_abs_complex(const Complex *cnum);
 double mymath_norm_complex(const ComplexVec3 *cvec);
 void mymath_cross_complex(ComplexVec3 *cross, const ComplexVec3 *c1, const ComplexVec3 *c2);
 void mymath_vec_conj_complex(ComplexVec3 *conj, const ComplexVec3 *cvec);
 void mymath_norm_vec_complex(ComplexVec3 *nvec, const ComplexVec3 *cvec, const double norm);
-Complex mymath_dot_complex(const ComplexVec3 *c1, const ComplexVec3 *c2);
+
+Complex mymath_cdot(const ComplexVec3 *c1, const ComplexVec3 *c2);
+
+double mymath_cabs(Complex c);
+Complex mymath_cmult(Complex c1, Complex c2);
+Complex mymath_cadd(Complex c1, Complex c2);
+Complex mymath_csub(Complex c1, Complex c2);
+Complex mymath_conj(Complex c);
 
 #endif  // MYMATH 

@@ -4,8 +4,36 @@
 #include <string.h>
 
 
-double mymath_abs_complex(const Complex *cnum) {
-    return hypot(cnum->re, cnum->im);
+double mymath_cabs(Complex c) {
+    return hypot(c.re, c.im);
+}
+
+Complex mymath_cmult(Complex c1, Complex c2) {
+    Complex result;
+    result.re = c1.re * c2.re - c1.im * c2.im;
+    result.im = c1.re * c2.im + c1.im * c2.re;
+    return result;
+}
+
+Complex mymath_cadd(Complex c1, Complex c2) {
+    Complex result;
+    result.re = c1.re + c2.re;
+    result.im = c1.im + c2.im;
+    return result;
+}
+
+Complex mymath_csub(Complex c1, Complex c2) {
+    Complex result;
+    result.re = c1.re - c2.re;
+    result.im = c1.im - c2.im;
+    return result;
+}
+
+Complex mymath_conj(Complex c) {
+    Complex result;
+    result.re = c.re;
+    result.im = -c.im;
+    return result;
 }
 
 double mymath_norm_complex(const ComplexVec3 *cvec) {
@@ -78,7 +106,9 @@ void mymath_norm_vec_complex(ComplexVec3 *nvec, const ComplexVec3 *cvec, const d
 }
 
 
-Complex mymath_dot_complex(const ComplexVec3 *c1, const ComplexVec3 *c2) {
+Complex mymath_cdot(const ComplexVec3 *c1, const ComplexVec3 *c2) {
+    // Computes a * b = conj(a) * b
+    // Note: conj(conj(a) * b) = a * conj(b)
 
     Complex result = {0.0, 0.0};
 
@@ -94,4 +124,7 @@ Complex mymath_dot_complex(const ComplexVec3 *c1, const ComplexVec3 *c2) {
 
     return result;
 }
+
+
+
 

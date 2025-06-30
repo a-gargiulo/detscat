@@ -34,7 +34,7 @@ typedef struct {
 
 typedef struct {
     size_t n;
-    double *S1, *S2, *S3, *S4;
+    Complex *S1, *S2, *S3, *S4;
 } Smat; 
 
 DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par);
