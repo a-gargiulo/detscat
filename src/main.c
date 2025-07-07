@@ -12,7 +12,9 @@
 Config config;
 
 int main(void) {
+
     const char *config_file = "../resources/detscat.cfg";
+
     ConfigParser *parser = detscat_config_parser_init(config_file);
     if (!parser) {
         fprintf(stderr, "[ERROR]: Could not initialize config parser.\n");

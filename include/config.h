@@ -12,6 +12,7 @@ typedef struct {
     double wavelength_nm;
     double pulse_energy_mj;
     double pulse_width_ns;
+    double beam_diameter_mm;
     char particle_file_path[MAX_PATH_LENGTH];
     Vec3 camera_center_position;
     Vec3 camera_sensor_normal;

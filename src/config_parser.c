@@ -194,6 +194,13 @@ bool detscat_config_parser_parse(ConfigParser *parser, Config *config)
                 return false;
             }
         }
+        else if (strcmp(key, "beam_diameter_mm") == 0)
+        {
+            if (!parse_double(value, &config->beam_diameter_mm, parser, key))
+            {
+                return false;
+            }
+        }
         else if (strcmp(key, "particle_file_path") == 0)
         {
             strncpy(config->particle_file_path, value, MAX_PATH_LENGTH - 1);
