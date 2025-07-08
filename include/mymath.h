@@ -1,6 +1,10 @@
 #ifndef MYMATH
 #define MYMATH
 
+#define MJ2J 1e-03
+#define NS2S 1e-09
+#define MM2M 1e-03
+
 typedef struct
 {
     double re, im;
