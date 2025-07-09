@@ -1,9 +1,11 @@
 #include "config_parser.h"
 
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "strutil.h"
 
@@ -24,6 +26,7 @@ ConfigParser *detscat_config_parser_init(const char *config_file_path)
     parser->eof = false;
     parser->error_code = CONFIG_PARSER_OK;
     parser->line[0] = '\0';
+    parser->error_message[0] = '\0';
 
     return parser;
 }
@@ -115,9 +118,11 @@ bool detscat_config_parser_parse(ConfigParser *parser, Config *config)
     if (!parser || !config)
     {
         if (parser)
+        {
             parser->error_code = CONFIG_PARSER_ERR_INVALID_ARGUMENT;
-        snprintf(parser->error_message, sizeof(parser->error_message),
-                 "Internal error: invalid argument to 'detscat_config_parser_parse'");
+            snprintf(parser->error_message, sizeof(parser->error_message),
+                     "Internal error: invalid argument to 'detscat_config_parser_parse'");
+        }
         return false;
     }
 

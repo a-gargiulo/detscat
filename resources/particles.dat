@@ -2,7 +2,7 @@ $(StartTypeDef)
 1
 sphere ./data/sphere
 $(EndTypeDef)
-# number of particles
-5
-# type, x, y, z
+$(StartParticles)
+1
 sphere 0 0 0
+$(EndParticles)

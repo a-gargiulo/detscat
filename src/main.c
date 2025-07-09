@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "config_parser.h"
 #include "config.h"
+#include "particles.h"
 
 // #include <stdlib.h>
 // #include <string.h>
@@ -14,6 +15,7 @@ Config config;
 int main(void) {
 
     const char *config_file = "../resources/detscat.cfg";
+    const char *particles_file = "../resources/particles.dat";
 
     ConfigParser *parser = detscat_config_parser_init(config_file);
     if (!parser) {
@@ -27,6 +29,14 @@ int main(void) {
         return 1;
     }
     detscat_config_parser_free(parser);
+
+
+    ParticleParser *pparser = detscat_particles_parser_init(particles_file);
+    if (!pparser) {
+        fprintf(stderr, "[ERROR]: Could not initialize particles parser.\n");
+        return 1;
+    }
+
 
 
 
