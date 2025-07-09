@@ -1,8 +1,11 @@
 $(StartTypeDef)
-1
+2
 sphere ./data/sphere
+ellipsoid ./data/ellipsoid
 $(EndTypeDef)
 $(StartParticles)
-1
+3
 sphere 0 0 0
+ellipsoid 0 3 4
+sphere 0 1 2
 $(EndParticles)

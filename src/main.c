@@ -17,6 +17,7 @@ int main(void) {
     const char *config_file = "../resources/detscat.cfg";
     const char *particles_file = "../resources/particles.dat";
 
+    // Parse Config
     ConfigParser *parser = detscat_config_parser_init(config_file);
     if (!parser) {
         fprintf(stderr, "[ERROR]: Could not initialize config parser.\n");
@@ -31,15 +32,33 @@ int main(void) {
     detscat_config_parser_free(parser);
 
 
+    // Parse Particles
     ParticleParser *pparser = detscat_particles_parser_init(particles_file);
     if (!pparser) {
         fprintf(stderr, "[ERROR]: Could not initialize particles parser.\n");
         return 1;
     }
 
+    Particles particles = {0};
+    if(!detscat_particles_parser_parse(pparser, &particles)) {
+        fprintf(stderr, "[ERROR]: While parsing '%s': %s\n", particles_file, pparser->error_message); 
+        detscat_particles_parser_free(pparser);
+        detscat_particles_free(&particles);
+        return 1;
+    }
+    detscat_particles_parser_free(pparser);
+
+
+    // Allocate FMATS for each type
+
+    // Main Loop
 
 
 
+
+
+
+    detscat_particles_free(&particles);
     return 0;
 
 

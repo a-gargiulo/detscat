@@ -153,6 +153,15 @@ bool detscat_particles_parser_parse(ParticleParser *parser, Particles *particles
                     return false;
                 }
 
+                if (types_allocated >= particles->n_types)
+                {
+                    parser->error_code = DETSCAT_PARTICLE_PARSER_ERR_INVALID_FORMAT;
+                    snprintf(parser->error_message, sizeof(parser->error_message),
+                             "Too many particle types defined at line %d", parser->line_number);
+                    free_types(particles, types_allocated);
+                    return false;
+                }
+
                 particles->types[types_allocated].type = strdup(tmp_type);
                 particles->types[types_allocated].data_path = strdup(tmp_path);
 
@@ -171,14 +180,6 @@ bool detscat_particles_parser_parse(ParticleParser *parser, Particles *particles
 
                 types_allocated++;
 
-                if (types_allocated > particles->n_types)
-                {
-                    parser->error_code = DETSCAT_PARTICLE_PARSER_ERR_INVALID_FORMAT;
-                    snprintf(parser->error_message, sizeof(parser->error_message),
-                             "Expected %zu particle types, got %zu", particles->n_types, types_allocated);
-                    free_types(particles, types_allocated);
-                    return false;
-                }
 
             }
 
@@ -258,6 +259,16 @@ bool detscat_particles_parser_parse(ParticleParser *parser, Particles *particles
                     return false;
                 }
 
+                if (particles_allocated >= particles->n_particles)
+                {
+                    parser->error_code = DETSCAT_PARTICLE_PARSER_ERR_INVALID_FORMAT;
+                    snprintf(parser->error_message, sizeof(parser->error_message),
+                             "Too many particles defined at line %d", parser->line_number);
+
+                    free_particles(particles, particles_allocated);
+                    return false;
+                }
+
                 particles->particles[particles_allocated].type = strdup(tmp_type);
                 particles->particles[particles_allocated].position.x = tmp_x;
                 particles->particles[particles_allocated].position.y = tmp_y;
@@ -274,14 +285,6 @@ bool detscat_particles_parser_parse(ParticleParser *parser, Particles *particles
 
                 particles_allocated++;
 
-                if (particles_allocated > particles->n_particles)
-                {
-                    parser->error_code = DETSCAT_PARTICLE_PARSER_ERR_INVALID_FORMAT;
-                    snprintf(parser->error_message, sizeof(parser->error_message),
-                             "Too many particles defined at line %d", parser->line_number);
-                    free_particles(particles, particles_allocated);
-                    return false;
-                }
             }
 
 
