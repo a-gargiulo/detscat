@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#include "config.h"
+#include "detscat_config.h"
 #include "mymath.h"
 
 #define C_MS 299792458

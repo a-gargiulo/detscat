@@ -1,8 +1,9 @@
-$(StartTypeDef)
-2
+$(StartDef)
+3
 sphere ./data/sphere
 ellipsoid ./data/ellipsoid
-$(EndTypeDef)
+sphere ./data/sphere
+$(EndDef)
 $(StartParticles)
 3
 sphere 0 0 0
