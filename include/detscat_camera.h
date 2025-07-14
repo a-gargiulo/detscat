@@ -26,6 +26,7 @@ typedef struct {
 
 
 Camera *detscat_camera_create(DetScatConfig *cfg);
+Image *detscat_camera_image_create(int w, int h);
 
 void detscat_camera_pixel_coordinate_to_world(const Camera *camera, Vec3 *p, int u, int v);
 

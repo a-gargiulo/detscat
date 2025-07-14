@@ -1,5 +1,9 @@
 #include "detscat_camera.h"
 
+#include <stdlib.h>
+
+
+#include "detscat_config.h"
 #include "mymath.h"
 
 void detscat_camera_pixel_coordinate_to_world(const Camera *camera, Vec3 *p, int u, int v) {
@@ -36,4 +40,15 @@ void detscat_camera_pixel_observation_direction(const Camera *camera, Vec3 *d, i
     d->x = dir.x / dir_norm;
     d->y = dir.y / dir_norm;
     d->z = dir.z / dir_norm;
+}
+
+
+Camera *detscat_camera_create(DetScatConfig *cfg) {
+    Camera *cam = malloc(sizeof(Camera));
+    if (!cam) return NULL;
+
+    cam->C = cfg->camera
+
+
+    return cam;
 }
