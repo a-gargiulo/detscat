@@ -28,6 +28,9 @@ void mymath_norm_vec_complex(ComplexVec3 *nvec, const ComplexVec3 *cvec, const d
 double mymath_norm_complex(const ComplexVec3 *cvec);
 Complex mymath_cdot(const ComplexVec3 *c1, const ComplexVec3 *c2);
 
+// Vec3 operations
+double mymath_vec3_norm(const Vec3 *v);
+
 // Complex value operations
 double mymath_cabs(Complex c);
 Complex mymath_cmult(Complex c1, Complex c2);

@@ -62,6 +62,28 @@ double mymath_norm_complex(const ComplexVec3 *cvec) {
     return scale * sqrt(ssq);
 }
 
+double mymath_vec3_norm(const Vec3 *v) {
+    double scale = 0.0; // largest absolute value encountered
+    double ssq = 1.0;  // sum of squares
+
+    double comps[3] = {fabs(v->x), fabs(v->y), fabs(v->z)};
+
+    for (int i = 0; i < 3; i++) {
+        double c = comps[i];
+        if (c != 0.0) {
+            if (scale < c) {
+                double t = scale / c;
+                ssq = 1.0 + ssq * t * t;  // rescaling with respect to new scale
+                scale = c;
+            } else {
+                double t = c / scale;
+                ssq += t * t;
+            }
+        }
+    }
+    return scale * sqrt(ssq);
+}
+
 void mymath_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2) {
     cross->x = v1->y * v2->z - v2->y * v1->z;
     cross->y = v1->z * v2->x - v1->x * v2->z;

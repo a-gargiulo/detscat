@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <omp.h>
 
 #include "detscat_config.h"
 #include "detscat_particles.h"
+#include "detscat_camera.h"
 
 // #include <stdlib.h>
 // #include <string.h>
@@ -51,7 +53,8 @@ int main(int argc, char **argv) {
     }
     detscat_particles_parser_free(particles_parser);
 
-    // INSERT MORE CODE HERE
+    // Initialize the camera 
+    
 
     detscat_particles_free(&particles_data);
     return 0;
