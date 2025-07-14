@@ -34,8 +34,7 @@ int main(int argc, char **argv) {
     detscat_config_parser_free(cfg_parser);
 
     // PARSE PARTICLES
-    DetScatParticlesParser *particles_parser =
-        detscat_particles_parser_create(config.particles_definition_file);
+    DetScatParticlesParser *particles_parser = detscat_particles_parser_create(config.particles_definition_file);
     if (!particles_parser) {
         fprintf(stderr, "[ERROR]: Could not initialize particles parser.\n");
         return 1;
