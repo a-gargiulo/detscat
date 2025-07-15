@@ -79,8 +79,8 @@ Camera *detscat_camera_create(DetScatConfig *cfg) {
     cam->width = cfg->camera_resolution_x_px;
     cam->height= cfg->camera_resolution_y_px;
 
-
-
+    cam->c_x = (cam->width - 1.0) / 2.0;
+    cam->c_y = (cam->height - 1.0) / 2.0;
 
     return cam;
 }

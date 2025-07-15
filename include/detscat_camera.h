@@ -14,8 +14,8 @@ typedef struct {
     double p_y;         // Pixel size in y (meters)
     int width;          // Number of pixels horizontally
     int height;         // Number of pixels vertically
-    double c_x;         // Principal point x (usually width / 2) in px
-    double c_y;         // Principal point y (usually height / 2) in px
+    double c_x;         // Principal point x (usually (width - 1) / 2) in px
+    double c_y;         // Principal point y (usually (height - 1) / 2) in px
 } Camera;
 
 typedef struct {
