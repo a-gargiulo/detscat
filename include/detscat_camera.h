@@ -8,7 +8,7 @@ typedef struct {
     Vec3 C;             // Camera center position in world coordinates
     Vec3 r;             // Right vector (unit vector)
     Vec3 u;             // up vector (unit vector)
-    Vec3 n;             // Optical axis (unit vector): from camera toward scene
+    Vec3 n;             // Optical axis (unit vector): from camera toward scene: world units
     double f;           // Focal length (meters)
     double p_x;         // Pixel size in x (meters)
     double p_y;         // Pixel size in y (meters)
@@ -26,6 +26,7 @@ typedef struct {
 
 
 Camera *detscat_camera_create(DetScatConfig *cfg);
+
 Image *detscat_camera_image_create(int w, int h);
 
 void detscat_camera_pixel_coordinate_to_world(const Camera *camera, Vec3 *p, int u, int v);

@@ -1,9 +1,6 @@
 #ifndef MYMATH
 #define MYMATH
 
-#define MJ2J 1e-03
-#define NS2S 1e-09
-#define MM2M 1e-03
 
 typedef struct
 {
@@ -21,7 +18,6 @@ typedef struct
 } Vec3;
 
 // Complex vector operations
-void mymath_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2);
 void mymath_cross_complex(ComplexVec3 *cross, const ComplexVec3 *c1, const ComplexVec3 *c2);
 void mymath_vec_conj_complex(ComplexVec3 *conj, const ComplexVec3 *cvec);
 void mymath_norm_vec_complex(ComplexVec3 *nvec, const ComplexVec3 *cvec, const double norm);
@@ -30,6 +26,7 @@ Complex mymath_cdot(const ComplexVec3 *c1, const ComplexVec3 *c2);
 
 // Vec3 operations
 double mymath_vec3_norm(const Vec3 *v);
+void mymath_vec3_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2);
 
 // Complex value operations
 double mymath_cabs(Complex c);
