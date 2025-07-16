@@ -1,11 +1,8 @@
-#ifndef STRUTIL
-#define STRUTIL
+#ifndef STRUTIL_H
+#define STRUTIL_H
 
-char *strutil_trim(char *str);
-int strutil_strcasecmp(const char *s1, const char *s2);
+char *strutil_trim(char *str);                              // Trim leading and trailing white spaces from a string (in place) 
 
-#ifdef STRUTIL_NO_PREFIX
-#define trim strutil_trim
-#endif
+int strutil_strcasecmp(const char *s1, const char *s2);     // Compare two strings (case insensitive)
 
-#endif  // STRUTIL
+#endif  // STRUTIL_H

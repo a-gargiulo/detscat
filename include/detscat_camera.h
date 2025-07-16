@@ -6,6 +6,7 @@
 
 typedef struct {
     Vec3 C;             // Camera center position in world coordinates Vec3 r;             // Right vector (unit vector)
+    Vec3 r;
     Vec3 u;             // up vector (unit vector)
     Vec3 n;             // Optical axis (unit vector): from camera toward scene: world units
     double f;           // Focal length (meters)

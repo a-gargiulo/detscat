@@ -2,6 +2,9 @@
 #include <math.h>
 #include <omp.h>
 
+
+#include "detscat.h"
+
 #include "detscat_config.h"
 #include "detscat_particles.h"
 #include "detscat_camera.h"
@@ -18,69 +21,93 @@
 DetScatConfig config;
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
-        fprintf(stderr,
-                "[ERROR]: Missing command-line argument. Please specify the 'config file' path.\n");
-        return 1;
-    }
-
-    // PARSE CONFIG FILE
-    DetScatConfigParser *cfg_parser = detscat_config_parser_create(argv[1]);
-    if (!cfg_parser) {
-        fprintf(stderr, "[ERROR]: Could not initialize the config parser.\n");
-        return 1;
-    }
-
-    if (!detscat_config_parser_parse(cfg_parser, &config)) {
-        fprintf(stderr, "[ERROR]: While parsing '%s': %s\n", argv[1], cfg_parser->error_message);
-        detscat_config_parser_free(cfg_parser);
-        return 1;
-    }
-    detscat_config_parser_free(cfg_parser);
-
-    // PARSE PARTICLES
-    DetScatParticlesParser *particles_parser = detscat_particles_parser_create(config.particles_definition_file);
-    if (!particles_parser) {
-        fprintf(stderr, "[ERROR]: Could not initialize particles parser.\n");
-        return 1;
-    }
-
-    DetScatParticlesData particles_data = {0};
-
-    if (!detscat_particles_parser_parse(particles_parser, &particles_data)) {
-        fprintf(stderr, "[ERROR]: While parsing '%s': %s\n", config.particles_definition_file,
-                particles_parser->error_message);
-        detscat_particles_parser_free(particles_parser);
-        detscat_particles_free(&particles_data);
-        return 1;
-    }
-    detscat_particles_parser_free(particles_parser);
-
-    // Initialize the camera and an image
-    Camera *camera = detscat_camera_create(&config);
-    Image *image = detscat_camera_image_create(camera->width, camera->height);
+    int status = detscat_run(argc, argv);
+    return status;
+}
 
 
-    #pragma omp parallel for collapse(2)
-    for (int i = 0; i < image->height; ++i) {
-        for (int j = 0; j < image->width; ++j) {
+    // if (argc < 2) {
+    //     fprintf(stderr,
+    //             "[ERROR]: Missing command-line argument. Please specify the 'config file' path.\n");
+    //     return 1;
+    // }
 
-            Vec3 ds;
-            detscat_camera_pixel_observation_direction(camera, &ds, i, j);
+    // // PARSE CONFIG FILE
+    // DetScatConfigParser *cfg_parser = detscat_config_parser_create(argv[1]);
+    // if (!cfg_parser) {
+    //     fprintf(stderr, "[ERROR]: Could not initialize the config parser.\n");
+    //     return 1;
+    // }
 
-            double k = 2.0 * M_PI / (config.wavelength_nm * DETSCAT_CONST_NM2M);
+    // if (!detscat_config_parser_parse(cfg_parser, &config)) {
+    //     fprintf(stderr, "[ERROR]: While parsing '%s': %s\n", argv[1], cfg_parser->error_message);
+    //     detscat_config_parser_free(cfg_parser);
+    //     return 1;
+    // }
+    // detscat_config_parser_free(cfg_parser);
 
-            Vec3 ks = {k * ds.x, k * ds.y, k * ds.z};
+    // // PARSE PARTICLES
+    // DetScatParticlesParser *particles_parser = detscat_particles_parser_create(config.particles_definition_file);
+    // if (!particles_parser) {
+    //     fprintf(stderr, "[ERROR]: Could not initialize particles parser.\n");
+    //     return 1;
+    // }
+
+    // DetScatParticlesData particles_data = {0};
+
+    // if (!detscat_particles_parser_parse(particles_parser, &particles_data)) {
+    //     fprintf(stderr, "[ERROR]: While parsing '%s': %s\n", config.particles_definition_file,
+    //             particles_parser->error_message);
+    //     detscat_particles_parser_free(particles_parser);
+    //     detscat_particles_free(&particles_data);
+    //     return 1;
+    // }
+    // detscat_particles_parser_free(particles_parser);
+
+    // // Initialize the camera and an image
+    // Camera *camera = detscat_camera_create(&config);
+    // Image *image = detscat_camera_image_create(camera->width, camera->height);
 
 
+    // // // Gather fmat data
 
-        }
-    }
+    // // Fmat **fmat = malloc(particles_data.n_definitions * sizeof(*Fmat));
+    // // for (size_t i = 0; i < particles_data.n_definitions; ++i) {
+    // //     DdscatErr ddscat_err;
+    // //     Par par;
+
+    // //     ddscat_err = ddscat_parse_par_file(par_file_path, &par);
+    // //     if (ddscat_err != DDSCAT_OK) {
+    // //         // TODO: report error
+    // //         printf("ERROR %d\n", ddscat_err);
+    // //         return 1;
+    // //     }
+
+    // // }
+
+
+    // #pragma omp parallel for collapse(2)
+    // for (int i = 0; i < image->height; ++i) {
+    //     for (int j = 0; j < image->width; ++j) {
+
+    //         int pidx = detscat_camera_get_image_index(image, i, j);
+
+    //         Vec3 ds;
+    //         detscat_camera_pixel_observation_direction(camera, &ds, i, j);
+    //         double k = 2.0 * M_PI / (config.wavelength_nm * DETSCAT_CONST_NM2M);
+    //         Vec3 ks = {k * ds.x, k * ds.y, k * ds.z};
+
+    //         double phi = atan2(ks.z, ks.y) * 180.0 / M_PI;
+    //         double theta = acos(ks.x / k) * 180.0 / M_PI;
+
+
+    //     }
+    // }
     
 
-    detscat_particles_free(&particles_data);
-    return 0;
-}
+    // detscat_particles_free(&particles_data);
+    // return 0;
+// }
 
 // Allocate FMATS for each type
 
@@ -100,12 +127,6 @@ int main(int argc, char **argv) {
 // Fmat *fmat;
 // Smat *smat;
 
-// ddscat_err = ddscat_parse_par_file(par_file_path, &par);
-// if (ddscat_err != DDSCAT_OK) {
-//     // TODO: report error
-//     printf("ERROR %d\n", ddscat_err);
-//     return 1;
-// }
 
 // ddscat_err = ddscat_parse_fml_file(fml_file_path, &par, &fmat);
 // if (ddscat_err != DDSCAT_OK) {
