@@ -5,8 +5,7 @@
 #include "mymath.h"
 
 typedef struct {
-    Vec3 C;             // Camera center position in world coordinates
-    Vec3 r;             // Right vector (unit vector)
+    Vec3 C;             // Camera center position in world coordinates Vec3 r;             // Right vector (unit vector)
     Vec3 u;             // up vector (unit vector)
     Vec3 n;             // Optical axis (unit vector): from camera toward scene: world units
     double f;           // Focal length (meters)
@@ -28,6 +27,8 @@ typedef struct {
 Camera *detscat_camera_create(DetScatConfig *cfg);
 
 Image *detscat_camera_image_create(int w, int h);
+
+int detscat_camera_get_image_index(Image* img, int i, int j);
 
 void detscat_camera_pixel_coordinate_to_world(const Camera *camera, Vec3 *p, int u, int v);
 

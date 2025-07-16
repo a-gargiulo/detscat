@@ -44,6 +44,8 @@ void detscat_camera_pixel_observation_direction(const Camera *camera, Vec3 *d, i
 }
 
 
+// TODO: Add robustness with checks for config variables and for norms
+// TODO: Add a more generic / safe choice for yref
 Camera *detscat_camera_create(DetScatConfig *cfg) {
     Camera *cam = malloc(sizeof(Camera));
     if (!cam) return NULL;
@@ -83,4 +85,37 @@ Camera *detscat_camera_create(DetScatConfig *cfg) {
     cam->c_y = (cam->height - 1.0) / 2.0;
 
     return cam;
+}
+
+
+Image *detscat_camera_image_create(int w, int h)
+{
+    if (w <= 0 || h <= 0) return NULL;
+
+    Image *img = malloc(sizeof(Image));
+    if (!img) return NULL;
+
+    size_t size = (size_t)w * (size_t)h;
+    // Check for overflow
+    if (size / (size_t)w != (size_t)h) {
+        free(img);
+        return NULL;
+    }
+
+    img->width = w;
+    img->height = h;
+
+    img->pixels = calloc(size, sizeof(float));
+
+    if (!img->pixels) {
+        free(img);
+        return NULL;
+    }
+
+    return img;
+}
+
+int detscat_camera_get_image_index(Image* img, int i, int j) {
+    // Row-major
+    return i * img->width + j;
 }

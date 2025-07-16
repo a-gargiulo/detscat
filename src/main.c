@@ -1,16 +1,19 @@
 #include <stdio.h>
+#include <math.h>
 #include <omp.h>
 
 #include "detscat_config.h"
 #include "detscat_particles.h"
 #include "detscat_camera.h"
+#include "detscat_const.h"
+
+#include "mymath.h"
 
 // #include <stdlib.h>
 // #include <string.h>
 // #include <errno.h>
 
 // #include "ddscat.h"
-// #include "mymath.h"
 
 DetScatConfig config;
 
@@ -53,7 +56,26 @@ int main(int argc, char **argv) {
     }
     detscat_particles_parser_free(particles_parser);
 
-    // Initialize the camera 
+    // Initialize the camera and an image
+    Camera *camera = detscat_camera_create(&config);
+    Image *image = detscat_camera_image_create(camera->width, camera->height);
+
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < image->height; ++i) {
+        for (int j = 0; j < image->width; ++j) {
+
+            Vec3 ds;
+            detscat_camera_pixel_observation_direction(camera, &ds, i, j);
+
+            double k = 2.0 * M_PI / (config.wavelength_nm * DETSCAT_CONST_NM2M);
+
+            Vec3 ks = {k * ds.x, k * ds.y, k * ds.z};
+
+
+
+        }
+    }
     
 
     detscat_particles_free(&particles_data);
