@@ -4,42 +4,15 @@
 
 int main(int argc, char **argv) {
     DetScatDiagnose diagnose = {0};
-
     detscat_run(argc, argv, &diagnose);
     if (diagnose.status != DETSCAT_OK) {
-        fprintf(
-            stderr,
-            "[\033[91mERROR\033[0m]: \033[95mFrom function %s on line %d in file %s\033[0m: %s\n",
-            diagnose.function, diagnose.line, diagnose.file, diagnose.err_msg);
+        detscat_error(diagnose.function, diagnose.line, diagnose.file, diagnose.err_msg);
         return 1;
     }
-    printf("[\033[94mINFO\033[0m]: DetScat completed successfully!\n");
-
+    detscat_info("DetScat completed successfully!");
     return 0;
 }
 
-
-// // PARSE PARTICLES
-// DetScatParticlesParser *particles_parser =
-// detscat_particles_parser_create(config.particles_definition_file); if (!particles_parser) {
-//     fprintf(stderr, "[ERROR]: Could not initialize particles parser.\n");
-//     return 1;
-// }
-
-// DetScatParticlesData particles_data = {0};
-
-// if (!detscat_particles_parser_parse(particles_parser, &particles_data)) {
-//     fprintf(stderr, "[ERROR]: While parsing '%s': %s\n", config.particles_definition_file,
-//             particles_parser->error_message);
-//     detscat_particles_parser_free(particles_parser);
-//     detscat_particles_free(&particles_data);
-//     return 1;
-// }
-// detscat_particles_parser_free(particles_parser);
-
-// // Initialize the camera and an image
-// Camera *camera = detscat_camera_create(&config);
-// Image *image = detscat_camera_image_create(camera->width, camera->height);
 
 // // // Gather fmat data
 

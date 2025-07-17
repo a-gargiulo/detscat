@@ -10,12 +10,12 @@
 
 #include "mymath.h"
 
-DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
+DetScatDdscatUtilStatus detscat_ddscat_util_parse_par_file(const char *par_file_path, DdscatPar *par) {
     FILE *par_file = fopen(par_file_path, "r");
-    if (!par_file) return DDSCAT_ERR_CANNOT_OPEN_FILE;
+    if (!par_file) return DETSCAT_DDSCAT_UTIL_ERR_CANNOT_OPEN_FILE;
 
-    char line[MAX_LINE_LENGTH];
-    DdscatError status = DDSCAT_OK;
+    char line[DETSCAT_DDSCAT_UTIL_LINE_MAX];
+    DetScatDdscatUtilStatus status = DETSCAT_DDSCAT_UTIL_OK;
 
     size_t comp_allocated = 0;
     size_t comp_index = 0;
@@ -26,24 +26,24 @@ DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
     par->ncomp = 0;
     par->nplanes = 0;
 
-    enum ParseState { PARSE_INITIAL, PARSE_COMP, PARSE_PLANES };
-    enum ParseState state = PARSE_INITIAL;
+    enum DdscatParseState { PARSE_INITIAL, PARSE_COMP, PARSE_PLANES };
+    enum DdscatParseState state = PARSE_INITIAL;
 
-    while (fgets(line, MAX_LINE_LENGTH, par_file)) {
+    while (fgets(line, DETSCAT_DDSCAT_UTIL_LINE_MAX, par_file)) {
         switch (state) {
             case PARSE_INITIAL:
                 if (strstr(line, "NCOMP")) {
                     size_t ncomp;
                     if (sscanf(line, "%zu", &ncomp) != 1 || ncomp == 0 ||
-                        ncomp >= MAX_NCOMP) {
-                        status = DDSCAT_ERR_PARSING_FAILED;
+                        ncomp >= DETSCAT_DDSCAT_UTIL_NCOMP_MAX) {
+                        status = DETSCAT_DDSCAT_UTIL_ERR_PARSING;
                         goto cleanup;
                     }
 
                     par->ncomp = ncomp;
                     par->comp = (char **)malloc(ncomp * sizeof(char *));
                     if (!par->comp) {
-                        status = DDSCAT_ERR_ALLOCATION_FAILED;
+                        status = DETSCAT_DDSCAT_UTIL_ERR_ALLOC;
                         goto cleanup;
                     }
 
@@ -53,16 +53,16 @@ DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
                 } else if (strstr(line, "NPLANES")) {
                     size_t nplanes;
                     if (sscanf(line, "%zu", &nplanes) != 1 || nplanes == 0 ||
-                        nplanes >= MAX_NPLANES) {
-                        status = DDSCAT_ERR_PARSING_FAILED;
+                        nplanes >= DETSCAT_DDSCAT_UTIL_NPLANES_MAX) {
+                        status = DETSCAT_DDSCAT_UTIL_ERR_PARSING;
                         goto cleanup;
                     }
 
                     par->nplanes = nplanes;
-                    par->planes = (double(*)[PLANE_PARAMS])malloc(
-                        nplanes * sizeof(double[PLANE_PARAMS]));
+                    par->planes = (double(*)[DETSCAT_DDSCAT_UTIL_PLANE_PARAMS])malloc(
+                        nplanes * sizeof(double[DETSCAT_DDSCAT_UTIL_PLANE_PARAMS]));
                     if (!par->planes) {
-                        status = DDSCAT_ERR_ALLOCATION_FAILED;
+                        status = DETSCAT_DDSCAT_UTIL_ERR_ALLOC;
                         goto cleanup;
                     }
 
@@ -73,7 +73,7 @@ DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
                                &par->e01.x.re, &par->e01.x.im, &par->e01.y.re,
                                &par->e01.y.im, &par->e01.z.re,
                                &par->e01.z.im) != 6) {
-                        status = DDSCAT_ERR_PARSING_FAILED;
+                        status = DETSCAT_DDSCAT_UTIL_ERR_PARSING;
                         goto cleanup;
                     }
                 }
@@ -86,15 +86,15 @@ DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
                 }
 
                 par->comp[comp_index] =
-                    (char *)malloc(MAX_COMP_LENGTH * sizeof(char));
+                    (char *)malloc(DETSCAT_DDSCAT_UTIL_COMP_MAX * sizeof(char));
                 if (!par->comp[comp_index]) {
-                    status = DDSCAT_ERR_ALLOCATION_FAILED;
+                    status = DETSCAT_DDSCAT_UTIL_ERR_ALLOC;
                     goto cleanup;
                 }
                 comp_allocated++;
 
                 if (sscanf(line, "'%[^']'", par->comp[comp_index]) != 1) {
-                    status = DDSCAT_ERR_PARSING_FAILED;
+                    status = DETSCAT_DDSCAT_UTIL_ERR_PARSING;
                     goto cleanup;
                 }
 
@@ -114,8 +114,8 @@ DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
                            &par->planes[planes_parsed][0],
                            &par->planes[planes_parsed][1],
                            &par->planes[planes_parsed][2],
-                           &par->planes[planes_parsed][3]) != PLANE_PARAMS) {
-                    status = DDSCAT_ERR_PARSING_FAILED;
+                           &par->planes[planes_parsed][3]) != DETSCAT_DDSCAT_UTIL_PLANE_PARAMS) {
+                    status = DETSCAT_DDSCAT_UTIL_ERR_PARSING;
                     goto cleanup;
                 }
 
@@ -131,7 +131,7 @@ DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par) {
 cleanup:
     fclose(par_file);
 
-    if (status != DDSCAT_OK) {
+    if (status != DETSCAT_DDSCAT_UTIL_OK) {
         if (par->comp) {
             for (size_t i = 0; i < comp_allocated; ++i) {
                 free(par->comp[i]);
@@ -152,17 +152,17 @@ cleanup:
     return status;
 }
 
-DdscatError ddscat_parse_fml_file(const char *fml_file_path, const Par *par,
+DetScatDdscatUtilStatus detscat_ddscat_util_parse_fml_file(const char *fml_file_path, const DdscatPar *par,
                                   Fmat **fmat) {
     FILE *fml_file = fopen(fml_file_path, "r");
-    if (!fml_file) return DDSCAT_ERR_CANNOT_OPEN_FILE;
+    if (!fml_file) return DETSCAT_DDSCAT_UTIL_ERR_CANNOT_OPEN_FILE;
 
-    char line[MAX_LINE_LENGTH];
-    DdscatError status = DDSCAT_OK;
+    char line[DETSCAT_DDSCAT_UTIL_LINE_MAX];
+    DetScatDdscatUtilStatus status = DETSCAT_DDSCAT_UTIL_OK;
 
     size_t fmat_allocated = 0;
 
-    while (fgets(line, MAX_LINE_LENGTH, fml_file)) {
+    while (fgets(line, DETSCAT_DDSCAT_UTIL_LINE_MAX, fml_file)) {
         if (strstr(line, "Re")) {
             break;
         }
@@ -170,7 +170,7 @@ DdscatError ddscat_parse_fml_file(const char *fml_file_path, const Par *par,
 
     *fmat = (Fmat *)malloc(par->nplanes * sizeof(Fmat));
     if (!*fmat) {
-        status = DDSCAT_ERR_ALLOCATION_FAILED;
+        status = DETSCAT_DDSCAT_UTIL_ERR_ALLOC;
         goto cleanup;
     }
     for (size_t i = 0; i < par->nplanes; ++i) {
@@ -190,23 +190,23 @@ DdscatError ddscat_parse_fml_file(const char *fml_file_path, const Par *par,
 
         if (!(*fmat)[i].f11 || !(*fmat)[i].f12 || !(*fmat)[i].f21 ||
             !(*fmat)[i].f22) {
-            status = DDSCAT_ERR_ALLOCATION_FAILED;
+            status = DETSCAT_DDSCAT_UTIL_ERR_ALLOC;
             goto cleanup;
         }
 
         fmat_allocated++;
 
         for (size_t j = 0; j < n_theta; ++j) {
-            if (!fgets(line, MAX_LINE_LENGTH, fml_file)) {
-                status = DDSCAT_ERR_PARSING_FAILED;
+            if (!fgets(line, DETSCAT_DDSCAT_UTIL_LINE_MAX, fml_file)) {
+                status = DETSCAT_DDSCAT_UTIL_ERR_PARSING;
                 goto cleanup;
             }
-            if (sscanf(line, "%*lf %*lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            if (sscanf(line, "%*f %*f %lf %lf %lf %lf %lf %lf %lf %lf",
                        &(*fmat)[i].f11[j].re, &(*fmat)[i].f11[j].im,
                        &(*fmat)[i].f21[j].re, &(*fmat)[i].f21[j].im,
                        &(*fmat)[i].f12[j].re, &(*fmat)[i].f12[j].im,
                        &(*fmat)[i].f22[j].re, &(*fmat)[i].f22[j].im) != 8) {
-                status = DDSCAT_ERR_PARSING_FAILED;
+                status = DETSCAT_DDSCAT_UTIL_ERR_PARSING;
                 goto cleanup;
             }
         }
@@ -231,11 +231,11 @@ cleanup:
     return status;
 }
 
-DdscatError ddscat_calculate_scatmat(const Par *par, const Fmat *fmat,
+DetScatDdscatUtilStatus detscat_ddscat_util_calculate_scatmat(const DdscatPar *par, const Fmat *fmat,
                                      Smat **smat) {
     *smat = malloc(par->nplanes * sizeof(Smat));
     if (!(*smat)) {
-        return DDSCAT_ERR_ALLOCATION_FAILED;
+        return DETSCAT_DDSCAT_UTIL_ERR_ALLOC;
     }
 
     size_t scomp_allocated = 0;
@@ -243,26 +243,26 @@ DdscatError ddscat_calculate_scatmat(const Par *par, const Fmat *fmat,
     ComplexVec3 eHat01, eHat01conj;
     ComplexVec3 e02, eHat02;
 
-    double e01norm = mymath_norm_complex(&par->e01);
-    mymath_norm_vec_complex(&eHat01, &par->e01, e01norm);
-    mymath_vec_conj_complex(&eHat01conj, &eHat01);
+    double e01norm = mymath_complex_vec3_abs(&par->e01);
+    mymath_complex_vec3_normalize(&eHat01, &par->e01, e01norm);
+    mymath_complex_vec3_conj(&eHat01conj, &eHat01);
 
-    mymath_cross_complex(
+    mymath_complex_vec3_cross(
         &e02, &(const ComplexVec3){{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}},
         &eHat01conj);
-    double e02norm = mymath_norm_complex(&e02);
-    mymath_norm_vec_complex(&eHat02, &e02, e02norm);
+    double e02norm = mymath_complex_vec3_abs(&e02);
+    mymath_complex_vec3_normalize(&eHat02, &e02, e02norm);
 
-    Complex a = mymath_cdot(
+    Complex a = mymath_complex_vec3_dot(
         &eHat01, &(const ComplexVec3){{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}});
 
-    Complex b = mymath_cdot(
+    Complex b = mymath_complex_vec3_dot(
         &eHat01, &(const ComplexVec3){{0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}});
 
-    Complex c = mymath_cdot(
+    Complex c = mymath_complex_vec3_dot(
         &eHat02, &(const ComplexVec3){{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}});
 
-    Complex d = mymath_cdot(
+    Complex d = mymath_complex_vec3_dot(
         &eHat02, &(const ComplexVec3){{0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}});
 
     for (size_t i = 0; i < par->nplanes; ++i) {
@@ -285,7 +285,7 @@ DdscatError ddscat_calculate_scatmat(const Par *par, const Fmat *fmat,
             }
             free((*smat));
             (*smat) = NULL;
-            return DDSCAT_ERR_ALLOCATION_FAILED;
+            return DETSCAT_DDSCAT_UTIL_ERR_ALLOC;
         }
         scomp_allocated++;
 
@@ -293,46 +293,46 @@ DdscatError ddscat_calculate_scatmat(const Par *par, const Fmat *fmat,
             Complex cp = {cos(phi), 0.0};
             Complex sp = {sin(phi), 0.0};
 
-            (*smat)[i].S1[j] = mymath_cmult(
+            (*smat)[i].S1[j] = mymath_complex_mult(
                 (Complex){0.0, -1.0},
-                mymath_cadd(mymath_cmult(fmat[i].f21[j],
-                                         mymath_csub(mymath_cmult(b, cp),
-                                                     mymath_cmult(a, sp))),
-                            mymath_cmult(fmat[i].f22[j],
-                                         mymath_csub(mymath_cmult(d, cp),
-                                                     mymath_cmult(c, sp)))));
+                mymath_complex_add(mymath_complex_mult(fmat[i].f21[j],
+                                         mymath_complex_sub(mymath_complex_mult(b, cp),
+                                                     mymath_complex_mult(a, sp))),
+                            mymath_complex_mult(fmat[i].f22[j],
+                                         mymath_complex_sub(mymath_complex_mult(d, cp),
+                                                     mymath_complex_mult(c, sp)))));
 
 
 
 
-            (*smat)[i].S2[j] = mymath_cmult(
+            (*smat)[i].S2[j] = mymath_complex_mult(
                 (Complex){0.0, -1.0},
-                mymath_cadd(mymath_cmult(fmat[i].f11[j],
-                                         mymath_cadd(mymath_cmult(a, cp),
-                                                     mymath_cmult(b, sp))),
-                            mymath_cmult(fmat[i].f12[j],
-                                         mymath_cadd(mymath_cmult(c, cp),
-                                                     mymath_cmult(d, sp)))));
+                mymath_complex_add(mymath_complex_mult(fmat[i].f11[j],
+                                         mymath_complex_add(mymath_complex_mult(a, cp),
+                                                     mymath_complex_mult(b, sp))),
+                            mymath_complex_mult(fmat[i].f12[j],
+                                         mymath_complex_add(mymath_complex_mult(c, cp),
+                                                     mymath_complex_mult(d, sp)))));
 
 
-            (*smat)[i].S3[j] = mymath_cmult(
+            (*smat)[i].S3[j] = mymath_complex_mult(
                 (Complex){0.0, 1.0},
-                mymath_cadd(mymath_cmult(fmat[i].f11[j],
-                                         mymath_csub(mymath_cmult(b, cp),
-                                                     mymath_cmult(a, sp))),
-                            mymath_cmult(fmat[i].f12[j],
-                                         mymath_csub(mymath_cmult(d, cp),
-                                                     mymath_cmult(c, sp)))));
+                mymath_complex_add(mymath_complex_mult(fmat[i].f11[j],
+                                         mymath_complex_sub(mymath_complex_mult(b, cp),
+                                                     mymath_complex_mult(a, sp))),
+                            mymath_complex_mult(fmat[i].f12[j],
+                                         mymath_complex_sub(mymath_complex_mult(d, cp),
+                                                     mymath_complex_mult(c, sp)))));
 
 
-            (*smat)[i].S4[j] = mymath_cmult(
+            (*smat)[i].S4[j] = mymath_complex_mult(
                 (Complex){0.0, 1.0},
-                mymath_cadd(mymath_cmult(fmat[i].f21[j],
-                                         mymath_cadd(mymath_cmult(a, cp),
-                                                     mymath_cmult(b, sp))),
-                            mymath_cmult(fmat[i].f22[j],
-                                         mymath_cadd(mymath_cmult(c, cp),
-                                                     mymath_cmult(d, sp)))));
+                mymath_complex_add(mymath_complex_mult(fmat[i].f21[j],
+                                         mymath_complex_add(mymath_complex_mult(a, cp),
+                                                     mymath_complex_mult(b, sp))),
+                            mymath_complex_mult(fmat[i].f22[j],
+                                         mymath_complex_add(mymath_complex_mult(c, cp),
+                                                     mymath_complex_mult(d, sp)))));
 
             // DIAGNOSTICS! Remove later
             // double S43 = mymath_csub(
@@ -343,5 +343,5 @@ DdscatError ddscat_calculate_scatmat(const Par *par, const Fmat *fmat,
         }
     }
 
-    return DDSCAT_OK;
+    return DETSCAT_DDSCAT_UTIL_OK;
 }

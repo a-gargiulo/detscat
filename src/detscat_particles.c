@@ -138,7 +138,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                 }
 
                 data->definitions[definitions_allocated].id = strdup(tmp_id);
-                data->definitions[definitions_allocated].data_dir = strdup(tmp_data_dir);
+                data->definitions[definitions_allocated].data_dir = strdup(strutil_normpath(tmp_data_dir));
 
                 if (!data->definitions[definitions_allocated].id ||
                     !data->definitions[definitions_allocated].data_dir) {

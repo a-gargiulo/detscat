@@ -43,3 +43,20 @@ int strutil_strcasecmp(const char *s1, const char *s2) {
     }
     return (unsigned char)tolower((unsigned char)*s1) - (unsigned char)tolower((unsigned char)*s2);
 }
+
+char *strutil_normpath(char *path) {
+    if (path == NULL) return NULL;
+
+    char *p = path;
+    while (*p) {
+        if (*p == '\\') *p = '/';
+        p++;
+    }
+
+    return path;
+}
+
+
+
+
+

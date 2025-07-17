@@ -1,30 +1,29 @@
-#ifndef DDSCAT
-#define DDSCAT
+#ifndef DETSCAT_DDSCAT_UTIL_H
+#define DETSCAT_DDSCAT_UTIL_H
 
 #include <stddef.h>
 #include "mymath.h"
 
-#define MAX_LINE_LENGTH 1024
-#define MAX_NCOMP 100
-#define MAX_NPLANES 100
-#define MAX_COMP_LENGTH 512
-#define PLANE_PARAMS 4
+#define DETSCAT_DDSCAT_UTIL_LINE_MAX 1024
+#define DETSCAT_DDSCAT_UTIL_NCOMP_MAX 100
+#define DETSCAT_DDSCAT_UTIL_NPLANES_MAX 100
+#define DETSCAT_DDSCAT_UTIL_COMP_MAX 512
+#define DETSCAT_DDSCAT_UTIL_PLANE_PARAMS 4
 
 typedef enum {
-    DDSCAT_OK,
-    DDSCAT_ERR_CANNOT_OPEN_FILE,
-    DDSCAT_ERR_PARSING_FAILED,
-    DDSCAT_ERR_ALLOCATION_FAILED
-
-} DdscatError;
+    DETSCAT_DDSCAT_UTIL_OK,
+    DETSCAT_DDSCAT_UTIL_ERR_CANNOT_OPEN_FILE,
+    DETSCAT_DDSCAT_UTIL_ERR_PARSING,
+    DETSCAT_DDSCAT_UTIL_ERR_ALLOC
+} DetScatDdscatUtilStatus;
 
 typedef struct {
     size_t ncomp;
     size_t nplanes;
     char **comp;
-    double (*planes)[PLANE_PARAMS];
+    double (*planes)[DETSCAT_DDSCAT_UTIL_PLANE_PARAMS];
     ComplexVec3 e01;
-} Par;
+} DdscatPar;
 
 typedef struct {
     size_t n;
@@ -37,8 +36,8 @@ typedef struct {
     Complex *S1, *S2, *S3, *S4;
 } Smat; 
 
-DdscatError ddscat_parse_par_file(const char *par_file_path, Par *par);
-DdscatError ddscat_parse_fml_file(const char *fml_file_path, const Par *par, Fmat **fmat);
-DdscatError ddscat_calculate_scatmat(const Par *par, const Fmat *fmat, Smat **smat);
+DetScatDdscatUtilStatus detscat_ddscat_util_parse_par_file(const char *par_file_path, DdscatPar *par);
+DetScatDdscatUtilStatus detscat_ddscat_util_parse_fml_file(const char *fml_file_path, const DdscatPar *par, Fmat **fmat);
+DetScatDdscatUtilStatus detscat_ddscat_util_calculate_scatmat(const DdscatPar *par, const Fmat *fmat, Smat **smat);
 
-#endif  // DDSCAT
+#endif  // DETSCAT_DDSCAT_UTIL_H
