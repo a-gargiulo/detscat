@@ -11,7 +11,7 @@
 #define DETSCAT_CONFIG_PARSER_ERR_MSG_MAX 256
 
 typedef struct {
-    // INCIDENT LIGHT SOURCE (LASER)
+    // INCIDENT LIGHT SOURCE (here, LASER)
     bool is_polarized;
     ComplexVec3 polarization;
     double wavelength_nm;

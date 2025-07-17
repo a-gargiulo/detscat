@@ -1,4 +1,4 @@
-#include "ddscat.h"
+#include "detscat_ddscat_util.h"
 
 #include <errno.h>
 #include <math.h>

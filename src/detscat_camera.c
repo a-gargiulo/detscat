@@ -36,7 +36,7 @@ void detscat_camera_pixel_observation_direction(const Camera *camera, Vec3 *d, i
             camera->p_y * (v - camera->c_y) * camera->u.z +
             camera->f * camera->n.z;
 
-    double dir_norm = mymath_vec3_norm(&dir);
+    double dir_norm = mymath_vec3_abs(&dir);
 
     d->x = dir.x / dir_norm;
     d->y = dir.y / dir_norm;
@@ -54,7 +54,7 @@ Camera *detscat_camera_create(DetScatConfig *cfg) {
 
     cam->C = cfg->camera_center_position_m;
 
-    tmp_norm = mymath_vec3_norm(&cfg->camera_sensor_normal_vector);
+    tmp_norm = mymath_vec3_abs(&cfg->camera_sensor_normal_vector);
     cam->n.x = cfg->camera_sensor_normal_vector.x / tmp_norm; 
     cam->n.y = cfg->camera_sensor_normal_vector.y / tmp_norm; 
     cam->n.z = cfg->camera_sensor_normal_vector.z / tmp_norm; 
@@ -62,14 +62,14 @@ Camera *detscat_camera_create(DetScatConfig *cfg) {
     Vec3 yref = {0, -1, 0};
     Vec3 tmp_r;
     mymath_vec3_cross(&tmp_r, &yref, &cam->n);
-    tmp_norm = mymath_vec3_norm(&tmp_r);
+    tmp_norm = mymath_vec3_abs(&tmp_r);
     cam->r.x = tmp_r.x / tmp_norm;
     cam->r.y = tmp_r.y / tmp_norm;
     cam->r.z = tmp_r.z / tmp_norm;
 
     Vec3 tmp_u;
     mymath_vec3_cross(&tmp_u, &cam->n, &cam->r);
-    tmp_norm = mymath_vec3_norm(&tmp_u);
+    tmp_norm = mymath_vec3_abs(&tmp_u);
     cam->u.x = tmp_u.x / tmp_norm;
     cam->u.y = tmp_u.y / tmp_norm;
     cam->u.z = tmp_u.z / tmp_norm;
