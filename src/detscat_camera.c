@@ -115,7 +115,7 @@ Image *detscat_camera_image_create(int w, int h)
     return img;
 }
 
-int detscat_camera_get_image_index(Image* img, int i, int j) {
+int detscat_camera_get_image_index(Image* img, int u, int v) {
     // Row-major
-    return i * img->width + j;
+    return v * img->width + u;
 }

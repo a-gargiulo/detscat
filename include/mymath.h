@@ -27,7 +27,14 @@ void mymath_complex_vec3_normalize(ComplexVec3 *e, const ComplexVec3 *c, double 
 // Vec3
 double mymath_vec3_abs(const Vec3 *v);                                                              // Euclidean norm of a 3d vector
 
-void mymath_vec3_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2);                                // Cross product between two vectors
+void mymath_vec3_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2);                                // Cross product between two 3d vectors
+
+void mymath_vec3_add(Vec3 *vsum, const Vec3 *v1, const Vec3 *v2);                                   // Sum of two 3d vectors
+
+void mymath_vec3_sub(Vec3 *vdiff, const Vec3 *v1, const Vec3 *v2);                                  // Difference of two 3d vectors
+
+void mymath_vec3_normalize(Vec3 *e, const Vec3 *v, double abs);                                     // Nomalizes a 3d vector
+
 
 // Complex
 double mymath_complex_abs(Complex c);                                                               // Absolute value of a complex number

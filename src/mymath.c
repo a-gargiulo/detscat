@@ -109,6 +109,24 @@ void mymath_vec3_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2) {
     cross->z = v1->x * v2->y - v1->y * v2->x;
 }
 
+void mymath_vec3_add(Vec3 *vsum, const Vec3 *v1, const Vec3 *v2) {
+    vsum->x = v1->x + v2->x;
+    vsum->y = v1->y + v2->y;
+    vsum->z = v1->z + v2->z;
+}
+
+void mymath_vec3_sub(Vec3 *vdiff, const Vec3 *v1, const Vec3 *v2) {
+    vdiff->x = v1->x - v2->x;
+    vdiff->y = v1->y - v2->y;
+    vdiff->z = v1->z - v2->z;
+}
+
+void mymath_vec3_normalize(Vec3 *e, const Vec3 *v, double abs) {
+    e->x = v->x / abs;
+    e->y = v->y / abs;
+    e->z = v->z / abs;
+}
+
 double mymath_complex_abs(Complex c) {
     return hypot(c.re, c.im);
 }

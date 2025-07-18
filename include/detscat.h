@@ -10,7 +10,7 @@
     do {                                                                            \
         (diag).status = (status_val);                                               \
         snprintf((diag).err_msg, sizeof((diag).err_msg), (msg_fmt), ##__VA_ARGS__); \
-        (diag).function = __func__;                                                 \
+        (diag).func = __func__;                                                     \
         (diag).file = __FILE__;                                                     \
         (diag).line = __LINE__;                                                     \
     } while (0)
@@ -24,11 +24,11 @@ typedef enum {
 } DetScatStatus;
 
 typedef struct {
+    const char *file;
+    const char *func;
+    int line;
     DetScatStatus status;
     char err_msg[DETSCAT_ERR_MSG_MAX];
-    const char *file;
-    const char *function;
-    int line;
 } DetScatDiagnose;
 
 void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose);
