@@ -12,6 +12,9 @@
 
 typedef struct {
     char *id;
+    int w;
+    int r;
+    int k;
     Vec3 position;
 } DetScatParticle;
 

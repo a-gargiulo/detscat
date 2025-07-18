@@ -1,12 +1,16 @@
 #include "detscat.h"
 
+#include <assert.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <omp.h>
 
 #include "detscat_camera.h"
 #include "detscat_config.h"
+#include "detscat_const.h"
 #include "detscat_ddscat_util.h"
 #include "detscat_particles.h"
 
@@ -141,22 +145,36 @@ static void detscat_parse_particles_definition_file(DetScatParticlesData *partic
     return;
 }
 
-static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat, DetScatParticlesData *particles_data, DetScatDiagnose *diagnose) {
+static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat, size_t **map, DetScatParticlesData *particles_data, DetScatDiagnose *diagnose) {
+    assert(particles_data->n_particles > 0);
+    assert(particles_data->n_definitions > 0);
 
+    *fmat = malloc(particles_data->n_particles * sizeof(Fmat*));
+    *map = malloc(particles_data->n_particles* sizeof(size_t));
     *par = malloc(particles_data->n_definitions * sizeof(DdscatPar*));
-    *fmat = malloc(particles_data->n_definitions * sizeof(Fmat*));
 
-    if (!*par || !*fmat) {
-        *par = NULL;
-        *fmat = NULL;
+    if (!*par || !*fmat || !*map) {
+        if (*par) {
+            free(*par);
+            *par = NULL;
+        }
+        if (*fmat) {
+            free(*fmat);
+            *fmat = NULL;
+        }
+        if (*map) {
+            free(*map);
+            *map = NULL;
+        }
         DETSCAT_SET_DIAGNOSE(
             *diagnose, DETSCAT_ERR_ALLOC, "%s",
             "Could not allocate DDSCAT data containers.");
         return;
     }
 
+    DetScatDdscatUtilStatus status;
+
     for (size_t i = 0; i < particles_data->n_definitions; ++i) {
-        DetScatDdscatUtilStatus status;
         
         char par_file_path[DETSCAT_PATH_MAX];
         strcpy(par_file_path, particles_data->definitions[i].data_dir);
@@ -172,16 +190,123 @@ static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat, DetScatPar
                 *diagnose, DETSCAT_ERR_FILE_PARSING, 
                 "Could not parse the DDSCAT parameter file '%s' for particle type '%s'. Parser failed with error code: %d.",
                 par_file_path, particles_data->definitions[i].id, status);
+            free(*par);
             free(*fmat);
+            free(*map);
+            *par = NULL;
             *fmat = NULL;
+            *map = NULL;
+            return;
         }
-
-        
     }
 
-    return fmat;
+    for (size_t i = 0; i < particles_data->n_particles; ++i) {
+        // // note: fml naming: w000r000k000.fml, where
+        // // w = wavelength
+        // // r = radius
+        // // k = orientation
+
+        // TODO: Could implement a hash table for faster lookup
+        // -----
+        size_t idx = (size_t)(-1);
+        for (size_t j = 0; j < particles_data->n_definitions; ++j) {
+            if (strcmp(particles_data->particles[i].id, particles_data->definitions[j].id) == 0)
+            {
+                idx = j;
+                break;
+            }
+        }
+
+        if (idx == (size_t)(-1)) {
+            DETSCAT_SET_DIAGNOSE(
+                *diagnose, DETSCAT_ERR_LOOKUP, 
+                "Particle type '%s' not found in definitions.",
+                particles_data->particles[i].id);
+            free(*fmat);
+            free(*par);
+            free(*map);
+            *fmat = NULL;
+            *par = NULL;
+            *map = NULL;
+            return;
+        }
+        *map[i] = idx;
+        // -----
+        
+        char fml_file_path[DETSCAT_PATH_MAX];
+        char fml_name[64];
+        strcpy(fml_file_path, particles_data->definitions[idx].data_dir);
+        if (fml_file_path[strlen(fml_file_path) - 1] == '/') {
+            sprintf(fml_name, "w%03dr%03dk%03d.fml", 
+                    particles_data->particles[i].w,
+                    particles_data->particles[i].r,
+                    particles_data->particles[i].k);
+            strcat(fml_file_path, fml_name);
+        } else {
+            sprintf(fml_name, "/w%03dr%03dk%03d.fml", 
+                    particles_data->particles[i].w,
+                    particles_data->particles[i].r,
+                    particles_data->particles[i].k);
+            strcat(fml_file_path, fml_name);
+        }
+
+        // fmat is an array of size n_particles. Here, this is *fmat.
+        // each element of fmat is an array of size n_phi (azimuthal angle) of Fmat (f-matrix)
+        // each Fmat contains arrays (f11, f12, f21, f22) of size n_theta (scattering angle)
+        // The following function
+        // DetScatDdscatUtilStatus detscat_ddscat_util_parse_fml_file(const char *fml_file_path, const DdscatPar *par, Fmat **fmat);
+        // allocates the array of size n_phi
+        status = detscat_ddscat_util_parse_fml_file(fml_file_path, (*par)[idx], (*fmat + i));
+        if (status != DETSCAT_DDSCAT_UTIL_OK) {
+            DETSCAT_SET_DIAGNOSE(
+                *diagnose, DETSCAT_ERR_FILE_PARSING, 
+                "Could not parse the DDSCAT fml file '%s' for particle number '%zu'. Parser failed with error code: %d.",
+                fml_file_path, i, status);
+            free(*par);
+            free(*fmat);
+            free(*map);
+            *par = NULL;
+            *fmat = NULL;
+            *map = NULL;
+            return;
+        }
+    }
+
+
+    detscat_info("Successfully fetched all DDSCAT data.");
+    return;
 }
 
+
+static void detscat_ddscat_data_free(DdscatPar **par, Fmat **fmat, size_t *fmat_to_par_map, size_t n_fmat, size_t n_par) {
+
+    for (size_t i = 0; i < n_fmat; ++i) {
+        for (size_t j = 0; j < par[fmat_to_par_map[i]]->nplanes; ++j){
+            free(fmat[i][j].f11);
+            free(fmat[i][j].f21);
+            free(fmat[i][j].f12);
+            free(fmat[i][j].f22);
+            free(fmat[i][j].theta);
+        }
+        free(fmat[i]);
+    }
+    free(fmat);
+    fmat = NULL;
+
+
+    for (size_t i = 0; i < n_par; ++i) {
+        for (size_t j = 0; j < par[i]->ncomp; ++j) {
+            free(par[i]->comp[j]);
+        }
+        free(par[i]->comp);
+        free(par[i]->planes);
+        free(par[i]);
+    }
+    free(par);
+    free(fmat_to_par_map);
+    par = NULL;
+    fmat_to_par_map = NULL;
+}
 
 
 void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
@@ -190,9 +315,16 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     DetScatConfig config;
     DetScatParticlesData particles_data = {0};
 
+    DdscatPar **par;
+    Fmat **fmat;
+    size_t *fmat_to_par_map;
 
-    // Camera *camera = detscat_camera_create(&config);
-    // Image *image = detscat_camera_image_create(camera->width, camera->height);
+    size_t n_par = particles_data.n_definitions;
+    size_t n_fmat = particles_data.n_particles;
+    size_t n_fmat_to_par_map = n_fmat;
+
+    Camera *camera = detscat_camera_create(&config);
+    Image *image = detscat_camera_image_create(camera->width, camera->height);
 
     // VALIDATE COMMAND-LINE INPUT
     if (argc < 2) {
@@ -211,12 +343,37 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_parse_particles_definition_file(&particles_data, &config, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-
     // COLLECT DDSCAT DATA
-    DdscatPar **par;
-    Fmat **fmat;
-    detscat_fetch_ddscat_data(&par, &fmat, &particles_data, diagnose);
+    detscat_fetch_ddscat_data(&par, &fmat, &fmat_to_par_map, &particles_data, diagnose);
+    if (diagnose->status != DETSCAT_OK) return;
 
+
+    // MAIN LOOP
+    #pragma omp parallel for collapse(2) 
+    for (int i = 0; i < image->height; ++i) {
+        for (int j = 0; j < image->width; ++j) {
+
+        int pidx = detscat_camera_get_image_index(image, i, j);
+
+        Vec3 ds;
+        detscat_camera_pixel_observation_direction(camera, &ds, i, j);
+        double k = 2.0 * M_PI / (config.wavelength_nm * DETSCAT_CONST_NM2M);
+        Vec3 ks = {k * ds.x, k * ds.y, k * ds.z};
+
+        double phi = atan2(ks.z, ks.y) * 180.0 / M_PI;
+        double theta = acos(ks.x / k) * 180.0 / M_PI;
+
+
+
+        }
+    }
+
+
+
+
+
+
+    detscat_ddscat_data_free(par, fmat, fmat_to_par_map, n_fmat, n_par); 
     detscat_particles_free(&particles_data);
     return;
 }

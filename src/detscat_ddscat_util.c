@@ -179,16 +179,20 @@ DetScatDdscatUtilStatus detscat_ddscat_util_parse_fml_file(const char *fml_file_
                                   par->planes[i][3]) +
                          1;
 
+        (*fmat)[i].phi = par->planes[i][0];
         (*fmat)[i].n = n_theta;
+
+        (*fmat)[i].theta = NULL;
 
         (*fmat)[i].f11 = (*fmat)[i].f12 = (*fmat)[i].f21 = (*fmat)[i].f22 =
             NULL;
-        (*fmat)[i].f11 = (Complex *)malloc(n_theta * sizeof(Complex));
-        (*fmat)[i].f12 = (Complex *)malloc(n_theta * sizeof(Complex));
-        (*fmat)[i].f21 = (Complex *)malloc(n_theta * sizeof(Complex));
-        (*fmat)[i].f22 = (Complex *)malloc(n_theta * sizeof(Complex));
+        (*fmat)[i].theta = malloc(n_theta * sizeof(double));
+        (*fmat)[i].f11 = malloc(n_theta * sizeof(Complex));
+        (*fmat)[i].f12 = malloc(n_theta * sizeof(Complex));
+        (*fmat)[i].f21 = malloc(n_theta * sizeof(Complex));
+        (*fmat)[i].f22 = malloc(n_theta * sizeof(Complex));
 
-        if (!(*fmat)[i].f11 || !(*fmat)[i].f12 || !(*fmat)[i].f21 ||
+        if (!(*fmat)[i].theta || !(*fmat)[i].f11 || !(*fmat)[i].f12 || !(*fmat)[i].f21 ||
             !(*fmat)[i].f22) {
             status = DETSCAT_DDSCAT_UTIL_ERR_ALLOC;
             goto cleanup;
@@ -201,11 +205,12 @@ DetScatDdscatUtilStatus detscat_ddscat_util_parse_fml_file(const char *fml_file_
                 status = DETSCAT_DDSCAT_UTIL_ERR_PARSING;
                 goto cleanup;
             }
-            if (sscanf(line, "%*f %*f %lf %lf %lf %lf %lf %lf %lf %lf",
+            if (sscanf(line, "%lf %*f %lf %lf %lf %lf %lf %lf %lf %lf",
+                       &(*fmat)[i].theta[j],
                        &(*fmat)[i].f11[j].re, &(*fmat)[i].f11[j].im,
                        &(*fmat)[i].f21[j].re, &(*fmat)[i].f21[j].im,
                        &(*fmat)[i].f12[j].re, &(*fmat)[i].f12[j].im,
-                       &(*fmat)[i].f22[j].re, &(*fmat)[i].f22[j].im) != 8) {
+                       &(*fmat)[i].f22[j].re, &(*fmat)[i].f22[j].im) != 9) {
                 status = DETSCAT_DDSCAT_UTIL_ERR_PARSING;
                 goto cleanup;
             }
@@ -219,6 +224,7 @@ cleanup:
 
     if (*fmat) {
         for (size_t i = 0; i < fmat_allocated; ++i) {
+            free((*fmat)[i].theta);
             free((*fmat)[i].f11);
             free((*fmat)[i].f21);
             free((*fmat)[i].f12);

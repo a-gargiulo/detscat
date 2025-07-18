@@ -19,7 +19,8 @@ typedef enum {
     DETSCAT_OK = 0,
     DETSCAT_ERR_COMMAND_LINE_ARGS,
     DETSCAT_ERR_FILE_PARSING,
-    DETSCAT_ERR_ALLOC
+    DETSCAT_ERR_ALLOC,
+    DETSCAT_ERR_LOOKUP
 } DetScatStatus;
 
 typedef struct {

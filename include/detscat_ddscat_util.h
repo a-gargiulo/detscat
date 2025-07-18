@@ -28,6 +28,8 @@ typedef struct {
 typedef struct {
     size_t n;
     Complex *f11, *f21, *f12, *f22;
+    double *theta;
+    double phi;
 } Fmat;
 
 

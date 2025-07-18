@@ -213,9 +213,10 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                 }
 
                 char tmp_id[64];
+                int tmp_w, tmp_r, tmp_k;
                 double tmp_x, tmp_y, tmp_z;
 
-                if (sscanf(trimmed, " %63s %lf %lf %lf ", tmp_id, &tmp_x, &tmp_y, &tmp_z) != 4) {
+                if (sscanf(trimmed, " %63s %d %d %d %lf %lf %lf ", tmp_id, &tmp_w, &tmp_r, &tmp_k, &tmp_x, &tmp_y, &tmp_z) != 7) {
                     parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
                     snprintf(parser->error_message, sizeof(parser->error_message),
                              "Invalid particle definition on line %d", parser->line_number);
@@ -234,6 +235,9 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                 }
 
                 data->particles[particles_allocated].id = strdup(tmp_id);
+                data->particles[particles_allocated].w = tmp_w;
+                data->particles[particles_allocated].r = tmp_r;
+                data->particles[particles_allocated].k = tmp_k;
                 data->particles[particles_allocated].position.x = tmp_x;
                 data->particles[particles_allocated].position.y = tmp_y;
                 data->particles[particles_allocated].position.z = tmp_z;
