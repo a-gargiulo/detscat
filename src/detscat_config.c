@@ -1,5 +1,6 @@
 #include "detscat_config.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -10,6 +11,9 @@
 #include "strutil.h"
 
 DetScatConfigParser *detscat_config_parser_create(const char *file_path) {
+
+    assert(file_path != NULL && file_path[0] != '\0');
+
     DetScatConfigParser *parser = malloc(sizeof(DetScatConfigParser));
     if (!parser) return NULL;
 
@@ -23,7 +27,7 @@ DetScatConfigParser *detscat_config_parser_create(const char *file_path) {
     parser->eof = false;
     parser->status = DETSCAT_CONFIG_PARSER_OK;
     parser->line[0] = '\0';
-    parser->error_message[0] = '\0';
+    parser->err_msg[0] = '\0';
 
     return parser;
 }
@@ -32,7 +36,7 @@ static bool parse_int(const char *value, int *out, DetScatConfigParser *parser, 
     if (!value || !out || !parser || !key) {
         if (parser) {
             parser->status = DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG;
-            snprintf(parser->error_message, sizeof(parser->error_message),
+            snprintf(parser->err_msg, sizeof(parser->err_msg),
                      "Internal error: invalid argument to 'parse_int'");
         }
         return false;
@@ -44,14 +48,14 @@ static bool parse_int(const char *value, int *out, DetScatConfigParser *parser, 
 
     if (errno != 0) {
         parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-        snprintf(parser->error_message, sizeof(parser->error_message),
+        snprintf(parser->err_msg, sizeof(parser->err_msg),
                  "Overflow/underflow parsing '%s' on line %d", key, parser->line_number);
         return false;
     }
 
     if (endptr == value || *endptr != '\0') {
         parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-        snprintf(parser->error_message, sizeof(parser->error_message),
+        snprintf(parser->err_msg, sizeof(parser->err_msg),
                  "Invalid integer format for '%s' on line %d", key, parser->line_number);
         return false;
     }
@@ -59,7 +63,7 @@ static bool parse_int(const char *value, int *out, DetScatConfigParser *parser, 
     // safety check before casting long to int
     if (val < INT_MIN || val > INT_MAX) {
         parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-        snprintf(parser->error_message, sizeof(parser->error_message),
+        snprintf(parser->err_msg, sizeof(parser->err_msg),
                  "Integer value out of range for '%s' on line %d", key, parser->line_number);
         return false;
     }
@@ -73,7 +77,7 @@ static bool parse_double(const char *value, double *out, DetScatConfigParser *pa
     if (!value || !out || !parser || !key) {
         if (parser) {
             parser->status = DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG;
-            snprintf(parser->error_message, sizeof(parser->error_message),
+            snprintf(parser->err_msg, sizeof(parser->err_msg),
                      "Internal error: invalid argument to 'parse_double'");
         }
         return false;
@@ -85,14 +89,14 @@ static bool parse_double(const char *value, double *out, DetScatConfigParser *pa
 
     if (errno != 0) {
         parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-        snprintf(parser->error_message, sizeof(parser->error_message),
+        snprintf(parser->err_msg, sizeof(parser->err_msg),
                  "Overflow/underflow parsing '%s' on line %d", key, parser->line_number);
         return false;
     }
 
     if (endptr == value || *endptr != '\0') {
         parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-        snprintf(parser->error_message, sizeof(parser->error_message),
+        snprintf(parser->err_msg, sizeof(parser->err_msg),
                  "Invalid double format for '%s' on line %d", key, parser->line_number);
         return false;
     }
@@ -105,7 +109,7 @@ static bool parse_bool(const char *value, bool *out, DetScatConfigParser *parser
     if (!value || !out || !parser || !key) {
         if (parser) {
             parser->status = DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG;
-            snprintf(parser->error_message, sizeof(parser->error_message),
+            snprintf(parser->err_msg, sizeof(parser->err_msg),
                      "Internal error: invalid argument to 'parse_bool'");
         }
         return false;
@@ -117,7 +121,7 @@ static bool parse_bool(const char *value, bool *out, DetScatConfigParser *parser
         *out = false;
     } else {
         parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-        snprintf(parser->error_message, sizeof(parser->error_message),
+        snprintf(parser->err_msg, sizeof(parser->err_msg),
                  "Invalid bool format for '%s' on line %d", key, parser->line_number);
         return false;
     }
@@ -126,16 +130,7 @@ static bool parse_bool(const char *value, bool *out, DetScatConfigParser *parser
 }
 
 bool detscat_config_parser_parse(DetScatConfigParser *parser, DetScatConfig *config) {
-    if (!parser || !config) {
-        if (parser) {
-            parser->status = DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG;
-            snprintf(parser->error_message, sizeof(parser->error_message),
-                     "Internal error: invalid argument to 'detscat_config_parser_parse'");
-        }
-        return false;
-    }
-
-    memset(config, 0, sizeof(*config));
+    assert(parser != NULL && config != NULL);
 
     while (fgets(parser->line, sizeof(parser->line), parser->file)) {
         parser->line_number++;
@@ -146,7 +141,7 @@ bool detscat_config_parser_parse(DetScatConfigParser *parser, DetScatConfig *con
         char *equals = strchr(trimmed, '=');
         if (!equals) {
             parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-            snprintf(parser->error_message, sizeof(parser->error_message), "Missing '=' on line %d",
+            snprintf(parser->err_msg, sizeof(parser->err_msg), "Missing '=' on line %d",
                      parser->line_number);
             return false;
         }
@@ -170,7 +165,7 @@ bool detscat_config_parser_parse(DetScatConfigParser *parser, DetScatConfig *con
                                  &config->polarization.z.re, &config->polarization.z.im);
             if (matched != 6) {
                 parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-                snprintf(parser->error_message, sizeof(parser->error_message),
+                snprintf(parser->err_msg, sizeof(parser->err_msg),
                          "Failed to parse 'polarization' on line %d", parser->line_number);
                 return false;
             }
@@ -199,7 +194,7 @@ bool detscat_config_parser_parse(DetScatConfigParser *parser, DetScatConfig *con
                        &config->camera_center_position_m.y, &config->camera_center_position_m.z);
             if (matched != 3) {
                 parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-                snprintf(parser->error_message, sizeof(parser->error_message),
+                snprintf(parser->err_msg, sizeof(parser->err_msg),
                          "Failed to parse 'camera_center_position' on line %d",
                          parser->line_number);
                 return false;
@@ -210,7 +205,7 @@ bool detscat_config_parser_parse(DetScatConfigParser *parser, DetScatConfig *con
                 &config->camera_sensor_normal_vector.y, &config->camera_sensor_normal_vector.z);
             if (matched != 3) {
                 parser->status = DETSCAT_CONFIG_PARSER_ERR_FORMAT;
-                snprintf(parser->error_message, sizeof(parser->error_message),
+                snprintf(parser->err_msg, sizeof(parser->err_msg),
                          "Failed to parse 'camera_sensor_normal' on line %d", parser->line_number);
                 return false;
             }
@@ -236,8 +231,8 @@ bool detscat_config_parser_parse(DetScatConfigParser *parser, DetScatConfig *con
             }
         } else {
             parser->status = DETSCAT_CONFIG_PARSER_ERR_UNKNOWN_KEY;
-            snprintf(parser->error_message, sizeof(parser->error_message),
-                     "Unknown key '%s' on line %d", key, parser->line_number);
+            snprintf(parser->err_msg, sizeof(parser->err_msg), "Unknown key '%s' on line %d", key,
+                     parser->line_number);
             return false;
         }
     }

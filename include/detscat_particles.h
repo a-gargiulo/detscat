@@ -40,11 +40,11 @@ typedef enum {
 
 typedef struct {
     FILE *file;
-    char line[DETSCAT_PARTICLES_LINE_MAX];
     int line_number;
-    bool eof;
     DetScatParticlesParserStatus status;
-    char error_message[DETSCAT_PARTICLES_PARSER_ERR_MSG_MAX];
+    bool eof;
+    char line[DETSCAT_PARTICLES_LINE_MAX];
+    char err_msg[DETSCAT_PARTICLES_PARSER_ERR_MSG_MAX];
 } DetScatParticlesParser;
 
 // Open and initialize parser from file path; returns parser or NULL on failure.
@@ -57,6 +57,6 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 void detscat_particles_parser_free(DetScatParticlesParser *parser);
 
 // Free particles data struct memory.
-void detscat_particles_free(DetScatParticlesData *data);
+void detscat_particles_data_free(DetScatParticlesData *data);
 
 #endif  // DETSCAT_PARTICLES_H

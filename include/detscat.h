@@ -9,7 +9,7 @@
 #define DETSCAT_SET_DIAGNOSE(diag, status_val, msg_fmt, ...)                        \
     do {                                                                            \
         (diag).status = (status_val);                                               \
-        snprintf((diag).err_msg, sizeof((diag).err_msg), (msg_fmt), ##__VA_ARGS__); \
+        snprintf((diag).err_msg, sizeof((diag).err_msg), (msg_fmt), __VA_ARGS__);   \
         (diag).func = __func__;                                                     \
         (diag).file = __FILE__;                                                     \
         (diag).line = __LINE__;                                                     \
@@ -17,7 +17,7 @@
 
 typedef enum {
     DETSCAT_OK = 0,
-    DETSCAT_ERR_COMMAND_LINE_ARGS,
+    DETSCAT_ERR_MISSING_CMD_ARG,
     DETSCAT_ERR_FILE_PARSING,
     DETSCAT_ERR_ALLOC,
     DETSCAT_ERR_LOOKUP

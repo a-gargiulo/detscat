@@ -1,5 +1,6 @@
 #include "detscat_particles.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <strings.h>
 
@@ -19,7 +20,7 @@ DetScatParticlesParser *detscat_particles_parser_create(const char *file_path) {
     parser->eof = false;
     parser->status = DETSCAT_PARTICLES_PARSER_OK;
     parser->line[0] = '\0';
-    parser->error_message[0] = '\0';
+    parser->err_msg[0] = '\0';
 
     return parser;
 }
@@ -55,16 +56,8 @@ static void free_particles(DetScatParticlesData *data, size_t count) {
 }
 
 bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParticlesData *data) {
-    if (!parser || !data) {
-        if (parser) {
-            parser->status = DETSCAT_PARTICLES_PARSER_ERR_INVALID_ARG;
-            snprintf(parser->error_message, sizeof(parser->error_message),
-                     "Internal error: invalid argument to 'detscat_particles_parser_parse'");
-        }
-        return false;
-    }
-
-    memset(data, 0, sizeof(*data));
+    assert(parser != NULL);
+    assert(data != NULL);
 
     bool definition_sec = false;
     bool particles_sec = false;
@@ -96,22 +89,20 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                 if (!n_definitions_parsed) {
                     if (sscanf(trimmed, " %zu ", &data->n_definitions) != 1) {
                         parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                        snprintf(parser->error_message, sizeof(parser->error_message),
+                        snprintf(parser->err_msg, sizeof(parser->err_msg),
                                  "Missing number of particle definitions on line %d",
                                  parser->line_number);
                         return false;
                     }
 
-                    data->definitions =
-                        malloc(data->n_definitions * sizeof(DetScatParticleDefinition));
+                    data->definitions = malloc(data->n_definitions * sizeof(DetScatParticleDefinition));
                     if (!data->definitions) {
                         parser->status = DETSCAT_PARTICLES_PARSER_ERR_ALLOC;
-                        snprintf(parser->error_message, sizeof(parser->error_message),
+                        snprintf(parser->err_msg, sizeof(parser->err_msg),
                                  "Could not allocate particle definitions array");
                         return false;
                     }
-                    memset(data->definitions, 0,
-                           data->n_definitions * sizeof(DetScatParticleDefinition));
+                    memset(data->definitions, 0, data->n_definitions * sizeof(DetScatParticleDefinition));
 
                     n_definitions_parsed = true;
                     continue;
@@ -122,7 +113,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 
                 if (sscanf(trimmed, " %63s %1023s ", tmp_id, tmp_data_dir) != 2) {
                     parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                    snprintf(parser->error_message, sizeof(parser->error_message),
+                    snprintf(parser->err_msg, sizeof(parser->err_msg),
                              "Invalid particle definition on line %d", parser->line_number);
                     free_types(data, definitions_allocated);
                     return false;
@@ -130,7 +121,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 
                 if (definitions_allocated >= data->n_definitions) {
                     parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                    snprintf(parser->error_message, sizeof(parser->error_message),
+                    snprintf(parser->err_msg, sizeof(parser->err_msg),
                              "Too many particle definitions. Stopped at line %d",
                              parser->line_number);
                     free_types(data, definitions_allocated);
@@ -138,12 +129,13 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                 }
 
                 data->definitions[definitions_allocated].id = strdup(tmp_id);
-                data->definitions[definitions_allocated].data_dir = strdup(strutil_normpath(tmp_data_dir));
+                data->definitions[definitions_allocated].data_dir =
+                    strdup(strutil_normpath(tmp_data_dir));
 
                 if (!data->definitions[definitions_allocated].id ||
                     !data->definitions[definitions_allocated].data_dir) {
                     parser->status = DETSCAT_PARTICLES_PARSER_ERR_ALLOC;
-                    snprintf(parser->error_message, sizeof(parser->error_message),
+                    snprintf(parser->err_msg, sizeof(parser->err_msg),
                              "Could not allocate particle definition on line %d",
                              parser->line_number);
                     if (data->definitions[definitions_allocated].id)
@@ -159,7 +151,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 
             if (!end_def_found) {
                 parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                snprintf(parser->error_message, sizeof(parser->error_message),
+                snprintf(parser->err_msg, sizeof(parser->err_msg),
                          "Could not find $(EndDef) until line %d", parser->line_number);
                 free_types(data, definitions_allocated);
                 return false;
@@ -167,7 +159,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 
             if (definitions_allocated != data->n_definitions) {
                 parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                snprintf(parser->error_message, sizeof(parser->error_message),
+                snprintf(parser->err_msg, sizeof(parser->err_msg),
                          "Expected %zu particle definitions, got %zu", data->n_definitions,
                          definitions_allocated);
                 free_types(data, definitions_allocated);
@@ -193,7 +185,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                 if (!n_particles_parsed) {
                     if (sscanf(trimmed, " %zu ", &data->n_particles) != 1) {
                         parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                        snprintf(parser->error_message, sizeof(parser->error_message),
+                        snprintf(parser->err_msg, sizeof(parser->err_msg),
                                  "Missing number of particles in $(StartParticles) on line %d",
                                  parser->line_number);
                         return false;
@@ -202,7 +194,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                     data->particles = malloc(data->n_particles * sizeof(DetScatParticle));
                     if (!data->particles) {
                         parser->status = DETSCAT_PARTICLES_PARSER_ERR_ALLOC;
-                        snprintf(parser->error_message, sizeof(parser->error_message),
+                        snprintf(parser->err_msg, sizeof(parser->err_msg),
                                  "Could not allocate array for particles.");
                         return false;
                     }
@@ -216,9 +208,10 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                 int tmp_w, tmp_r, tmp_k;
                 double tmp_x, tmp_y, tmp_z;
 
-                if (sscanf(trimmed, " %63s %d %d %d %lf %lf %lf ", tmp_id, &tmp_w, &tmp_r, &tmp_k, &tmp_x, &tmp_y, &tmp_z) != 7) {
+                if (sscanf(trimmed, " %63s %d %d %d %lf %lf %lf ", tmp_id, &tmp_w, &tmp_r, &tmp_k,
+                           &tmp_x, &tmp_y, &tmp_z) != 7) {
                     parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                    snprintf(parser->error_message, sizeof(parser->error_message),
+                    snprintf(parser->err_msg, sizeof(parser->err_msg),
                              "Invalid particle definition on line %d", parser->line_number);
                     free_particles(data, particles_allocated);
                     return false;
@@ -226,9 +219,8 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 
                 if (particles_allocated >= data->n_particles) {
                     parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                    snprintf(parser->error_message, sizeof(parser->error_message),
-                             "Too many particle defined.Stopped at line %d",
-                             parser->line_number);
+                    snprintf(parser->err_msg, sizeof(parser->err_msg),
+                             "Too many particle defined.Stopped at line %d", parser->line_number);
 
                     free_particles(data, particles_allocated);
                     return false;
@@ -244,7 +236,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 
                 if (!data->particles[particles_allocated].id) {
                     parser->status = DETSCAT_PARTICLES_PARSER_ERR_ALLOC;
-                    snprintf(parser->error_message, sizeof(parser->error_message),
+                    snprintf(parser->err_msg, sizeof(parser->err_msg),
                              "Could not allocate particle on line %d", parser->line_number);
                     free_particles(data, particles_allocated);
                     return false;
@@ -255,7 +247,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 
             if (!end_particles_found) {
                 parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                snprintf(parser->error_message, sizeof(parser->error_message),
+                snprintf(parser->err_msg, sizeof(parser->err_msg),
                          "Could not find $(EndParticles) until line %d", parser->line_number);
                 free_particles(data, particles_allocated);
                 return false;
@@ -263,7 +255,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 
             if (particles_allocated != data->n_particles) {
                 parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-                snprintf(parser->error_message, sizeof(parser->error_message),
+                snprintf(parser->err_msg, sizeof(parser->err_msg),
                          "Expected %zu particles, got %zu", data->n_particles, particles_allocated);
                 free_particles(data, particles_allocated);
                 return false;
@@ -275,7 +267,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
 
     if (!definition_sec || !particles_sec) {
         parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
-        snprintf(parser->error_message, sizeof(parser->error_message), "Missing section(s): %s%s",
+        snprintf(parser->err_msg, sizeof(parser->err_msg), "Missing section(s): %s%s",
                  definition_sec ? "" : "$(StartDef) ", particles_sec ? "" : "$(StartParticles)");
         if (data->definitions) free_types(data, data->n_definitions);
         if (data->particles) free_particles(data, data->n_particles);
@@ -286,7 +278,7 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
     return true;
 }
 
-void detscat_particles_free(DetScatParticlesData *data) {
+void detscat_particles_data_free(DetScatParticlesData *data) {
     if (!data) return;
 
     if (data->definitions) {

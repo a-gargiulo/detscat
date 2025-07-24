@@ -1,5 +1,6 @@
 #include "detscat_ddscat_util.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <math.h>
 #include <stdbool.h>
@@ -11,10 +12,12 @@
 #include "mymath.h"
 
 DetScatDdscatUtilStatus detscat_ddscat_util_parse_par_file(const char *par_file_path, DdscatPar *par) {
+    assert(par != NULL);
+    assert(par_file_path != NULL);
+
     FILE *par_file = fopen(par_file_path, "r");
     if (!par_file) return DETSCAT_DDSCAT_UTIL_ERR_CANNOT_OPEN_FILE;
 
-    char line[DETSCAT_DDSCAT_UTIL_LINE_MAX];
     DetScatDdscatUtilStatus status = DETSCAT_DDSCAT_UTIL_OK;
 
     size_t comp_allocated = 0;
@@ -28,6 +31,8 @@ DetScatDdscatUtilStatus detscat_ddscat_util_parse_par_file(const char *par_file_
 
     enum DdscatParseState { PARSE_INITIAL, PARSE_COMP, PARSE_PLANES };
     enum DdscatParseState state = PARSE_INITIAL;
+
+    char line[DETSCAT_DDSCAT_UTIL_LINE_MAX];
 
     while (fgets(line, DETSCAT_DDSCAT_UTIL_LINE_MAX, par_file)) {
         switch (state) {

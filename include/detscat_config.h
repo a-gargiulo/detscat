@@ -46,11 +46,11 @@ typedef enum {
 
 typedef struct {
     FILE *file;                                             // Open config file
-    char line[DETSCAT_CONFIG_LINE_MAX];                     // Current line buffer
     int line_number;                                        // Current line number
-    bool eof;                                               // End-of-file flag
     DetScatConfigParserStatus status;                       // Parser status code
-    char error_message[DETSCAT_CONFIG_PARSER_ERR_MSG_MAX];  // Last error message
+    bool eof;                                               // End-of-file flag
+    char line[DETSCAT_CONFIG_LINE_MAX];                     // Current line buffer
+    char err_msg[DETSCAT_CONFIG_PARSER_ERR_MSG_MAX];  // Last error message
 } DetScatConfigParser;
 
 // Open and initialize parser from file path; returns parser or NULL on failure.
