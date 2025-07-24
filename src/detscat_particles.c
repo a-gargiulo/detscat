@@ -95,6 +95,13 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                         return false;
                     }
 
+                    if (data->n_definitions == 0) {
+                        parser->status =  DETSCAT_PARTICLES_PARSER_ERR_INVALID_INPUT;
+                        snprintf(parser->err_msg, sizeof(parser->err_msg),
+                                 "Number of particles definitions cannot be zero.");
+                        return false;
+                    }
+
                     data->definitions = malloc(data->n_definitions * sizeof(DetScatParticleDefinition));
                     if (!data->definitions) {
                         parser->status = DETSCAT_PARTICLES_PARSER_ERR_ALLOC;
@@ -188,6 +195,14 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *parser, DetScatParti
                         snprintf(parser->err_msg, sizeof(parser->err_msg),
                                  "Missing number of particles in $(StartParticles) on line %d",
                                  parser->line_number);
+                        return false;
+                    }
+
+
+                    if (data->n_particles == 0) {
+                        parser->status =  DETSCAT_PARTICLES_PARSER_ERR_INVALID_INPUT;
+                        snprintf(parser->err_msg, sizeof(parser->err_msg),
+                                 "Number of particles cannot be zero.");
                         return false;
                     }
 

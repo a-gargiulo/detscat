@@ -33,14 +33,10 @@ DetScatConfigParser *detscat_config_parser_create(const char *file_path) {
 }
 
 static bool parse_int(const char *value, int *out, DetScatConfigParser *parser, const char *key) {
-    if (!value || !out || !parser || !key) {
-        if (parser) {
-            parser->status = DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG;
-            snprintf(parser->err_msg, sizeof(parser->err_msg),
-                     "Internal error: invalid argument to 'parse_int'");
-        }
-        return false;
-    }
+    assert(parser != NULL);
+    assert(key != NULL);
+    assert(value != NULL);
+    assert(out != NULL);
 
     errno = 0;
     char *endptr = NULL;
@@ -74,14 +70,11 @@ static bool parse_int(const char *value, int *out, DetScatConfigParser *parser, 
 
 static bool parse_double(const char *value, double *out, DetScatConfigParser *parser,
                          const char *key) {
-    if (!value || !out || !parser || !key) {
-        if (parser) {
-            parser->status = DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG;
-            snprintf(parser->err_msg, sizeof(parser->err_msg),
-                     "Internal error: invalid argument to 'parse_double'");
-        }
-        return false;
-    }
+
+    assert(parser != NULL);
+    assert(key != NULL);
+    assert(value != NULL);
+    assert(out != NULL);
 
     errno = 0;
     char *endptr = NULL;
@@ -106,14 +99,11 @@ static bool parse_double(const char *value, double *out, DetScatConfigParser *pa
 }
 
 static bool parse_bool(const char *value, bool *out, DetScatConfigParser *parser, const char *key) {
-    if (!value || !out || !parser || !key) {
-        if (parser) {
-            parser->status = DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG;
-            snprintf(parser->err_msg, sizeof(parser->err_msg),
-                     "Internal error: invalid argument to 'parse_bool'");
-        }
-        return false;
-    }
+
+    assert(parser != NULL);
+    assert(key != NULL);
+    assert(value != NULL);
+    assert(out != NULL);
 
     if (strutil_strcasecmp(value, "true") == 0) {
         *out = true;
@@ -130,7 +120,8 @@ static bool parse_bool(const char *value, bool *out, DetScatConfigParser *parser
 }
 
 bool detscat_config_parser_parse(DetScatConfigParser *parser, DetScatConfig *config) {
-    assert(parser != NULL && config != NULL);
+    assert(parser != NULL);
+    assert(config != NULL);
 
     while (fgets(parser->line, sizeof(parser->line), parser->file)) {
         parser->line_number++;

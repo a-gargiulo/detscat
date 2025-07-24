@@ -138,10 +138,24 @@ static void detscat_parse_config_file(const char *config_file_path, DetScatConfi
 }
 
 static void detscat_parse_particles_file(DetScatParticlesData *particles_data, DetScatConfig *cfg, DetScatDiagnose *diagnose) {
+
+    assert(particles_data != NULL);
+    assert(cfg != NULL);
+    assert(diagnose != NULL);
+
+    errno = 0;
     DetScatParticlesParser *particles_parser = detscat_particles_parser_create(cfg->particles_definition_file);
     if (!particles_parser) {
-        DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING, "%s",
-                             "Could not initialize the particles definition file parser.");
+        if (errno != 0)
+            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
+                                 "Could not initialize particles definition file parser from '%s': %s",
+                                 cfg->particles_definition_file,
+                                 strerror(errno));
+        else
+            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
+                                 "Could not initialize particles definition file parser from '%s': Failed to allocate parser.",
+                                 cfg->particles_definition_file);
+
         return;
     }
 
@@ -167,6 +181,9 @@ static int cmp_phi(const void *a, const void *b) {
 static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat, size_t **map,
                                       DetScatParticlesData *particles_data,
                                       DetScatDiagnose *diagnose) {
+    assert(particles_data != NULL);
+    assert(diagnose != NULL);
+
     assert(particles_data->n_particles > 0);
     assert(particles_data->n_definitions > 0);
 
@@ -333,10 +350,10 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_info("DetScat initialized successfully.");
 
     DetScatConfig config = {0};
-    // DetScatParticlesData particles_data = {0};
+    DetScatParticlesData particles_data = {0};
 
-    // DdscatPar **par; // one parameter file per definition.
-    // Fmat **fmat;
+    DdscatPar **par; // one parameter file per definition.
+    Fmat **fmat;
     // size_t *fmat_to_par_map;
 
     // size_t n_par = particles_data.n_definitions;
@@ -350,11 +367,11 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_parse_config_file(config_file_path, &config, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-    // detscat_parse_particles_file(&particles_data, &config, diagnose);
-    // if (diagnose->status != DETSCAT_OK) return;
+    detscat_parse_particles_file(&particles_data, &config, diagnose);
+    if (diagnose->status != DETSCAT_OK) return;
 
-    // detscat_fetch_ddscat_data(&par, &fmat, &fmat_to_par_map, &particles_data, diagnose);
-    // if (diagnose->status != DETSCAT_OK) return;
+    detscat_fetch_ddscat_data(&par, &fmat, &fmat_to_par_map, &particles_data, diagnose);
+    if (diagnose->status != DETSCAT_OK) return;
 
     // // MAIN LOOP
     // #pragma omp parallel for collapse(2)
