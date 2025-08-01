@@ -11,7 +11,8 @@
 #define DETSCAT_CONFIG_PARSER_ERR_MSG_MAX 256
 
 typedef struct {
-    // INCIDENT LIGHT SOURCE (here, LASER)
+
+    // INCIDENT LIGHT SOURCE - PULSED LASER
     bool is_polarized;
     ComplexVec3 polarization;
     double wavelength_nm;
@@ -50,7 +51,7 @@ typedef struct {
     DetScatConfigParserStatus status;                       // Parser status code
     bool eof;                                               // End-of-file flag
     char line[DETSCAT_CONFIG_LINE_MAX];                     // Current line buffer
-    char err_msg[DETSCAT_CONFIG_PARSER_ERR_MSG_MAX];  // Last error message
+    char err_msg[DETSCAT_CONFIG_PARSER_ERR_MSG_MAX];        // Last error message
 } DetScatConfigParser;
 
 // Open and initialize parser from file path; returns parser or NULL on failure.

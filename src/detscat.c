@@ -17,7 +17,7 @@
 
 static void detscat_print_banner(void) {
     printf(
-        "************** Welcome to **************\n"
+        "****************************************\n"
         "  _____       _    _____           _    \n"
         " |  __ \\     | |  / ____|         | |   \n"
         " | |  | | ___| |_| (___   ___ __ _| |_  \n"
@@ -110,8 +110,8 @@ static void detscat_parse_config_file(const char *config_file_path, DetScatConfi
     assert(diagnose != NULL);
 
     errno = 0;
-    DetScatConfigParser *cfg_parser = detscat_config_parser_create(config_file_path);
-    if (!cfg_parser) {
+    DetScatConfigParser *config_parser = detscat_config_parser_create(config_file_path);
+    if (!config_parser) {
         if (errno != 0)
             DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
                                  "Could not initialize the configuration file parser from '%s': %s",
@@ -124,14 +124,14 @@ static void detscat_parse_config_file(const char *config_file_path, DetScatConfi
         return;
     }
 
-    if (!detscat_config_parser_parse(cfg_parser, config)) {
+    if (!detscat_config_parser_parse(config_parser, config)) {
         DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
                              "While parsing '%s': %s",
-                             config_file_path, cfg_parser->err_msg);
-        detscat_config_parser_free(cfg_parser);
+                             config_file_path, config_parser->err_msg);
+        detscat_config_parser_free(config_parser);
         return;
     }
-    detscat_config_parser_free(cfg_parser);
+    detscat_config_parser_free(config_parser);
 
     detscat_info("Successfully parsed '%s'.", config_file_path);
     return;
@@ -352,9 +352,9 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     DetScatConfig config = {0};
     DetScatParticlesData particles_data = {0};
 
-    DdscatPar **par; // one parameter file per definition.
-    Fmat **fmat;
-    // size_t *fmat_to_par_map;
+    DdscatPar **par = NULL; // one parameter file per definition.
+    Fmat **fmat = NULL;
+    size_t *fmat_to_par_map = NULL;
 
     // size_t n_par = particles_data.n_definitions;
     // size_t n_fmat = particles_data.n_particles;
