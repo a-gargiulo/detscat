@@ -1,0 +1,189 @@
+\doxysection{include/detscat\+\_\+config.h File Reference}
+\hypertarget{detscat__config_8h}{}\label{detscat__config_8h}\index{include/detscat\_config.h@{include/detscat\_config.h}}
+
+
+Configuration file parser and data container.  
+
+
+{\ttfamily \#include $<$stdbool.\+h$>$}\newline
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include "{}mymath.\+h"{}}\newline
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{struct_det_scat_config}{Det\+Scat\+Config}}
+\begin{DoxyCompactList}\small\item\em Structured data container for configuration file parameters. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{struct_det_scat_config_parser}{Det\+Scat\+Config\+Parser}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{detscat__config_8h_aaea7f13fd191ff52dfd122bbb44f8e74}{DETSCAT\+\_\+\+CONFIG\+\_\+\+LINE\+\_\+\+MAX}}~1024
+\item 
+\#define \mbox{\hyperlink{detscat__config_8h_af4cdc14ce6155c6d9336dd23ae035afa}{DETSCAT\+\_\+\+CONFIG\+\_\+\+PATH\+\_\+\+MAX}}~512
+\item 
+\#define \mbox{\hyperlink{detscat__config_8h_afb5e39a9a588a735ca5389b9570d146b}{DETSCAT\+\_\+\+CONFIG\+\_\+\+ERR\+\_\+\+MSG\+\_\+\+MAX}}~256
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4}{Det\+Scat\+Config\+Parser\+Status}} \{ \newline
+\mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e}{DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+OK}} = 0
+, \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4abd14a4eed1a508d5fdd49f1bd0357601}{DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+FILE\+\_\+\+NOT\+\_\+\+FOUND}}
+, \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4af9ef6cba38281e57f506b94f25b6ee2d}{DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+ALLOC}}
+, \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a5936e64d6db6bbdf553b7e3c98a6ce31}{DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+INVALID\+\_\+\+ARG}}
+, \newline
+\mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576}{DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+FORMAT}}
+, \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079}{DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+UNKNOWN\+\_\+\+KEY}}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{struct_det_scat_config_parser}{Det\+Scat\+Config\+Parser}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{detscat__config_8h_a9011b25526ca9b01041eba4e9bd3a981}{detscat\+\_\+config\+\_\+parser\+\_\+create}} (const char \texorpdfstring{$\ast$}{*}file\+\_\+path)
+\item 
+bool \mbox{\hyperlink{detscat__config_8h_a7336e43cb6202ede03b4020264891ee1}{detscat\+\_\+config\+\_\+parser\+\_\+parse}} (\mbox{\hyperlink{struct_det_scat_config_parser}{Det\+Scat\+Config\+Parser}} \texorpdfstring{$\ast$}{*}parser, \mbox{\hyperlink{struct_det_scat_config}{Det\+Scat\+Config}} \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{detscat__config_8h_a39b2a0475df4e2f89a1a9727dba5f893}{config}})
+\begin{DoxyCompactList}\small\item\em Opens and initializes the configuration file parser. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{detscat__config_8h_adf28b752954dd2a01c2fe7e6b603e9c1}{detscat\+\_\+config\+\_\+parser\+\_\+free}} (\mbox{\hyperlink{struct_det_scat_config_parser}{Det\+Scat\+Config\+Parser}} \texorpdfstring{$\ast$}{*}parser)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{struct_det_scat_config}{Det\+Scat\+Config}} \mbox{\hyperlink{detscat__config_8h_a39b2a0475df4e2f89a1a9727dba5f893}{config}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Configuration file parser and data container. 
+
+This module provides functionality for parsing the main user input configuration file. It also defines a structured data container for storing the parsed configuration parameters.
+
+\begin{DoxyAuthor}{Author}
+Aldo Gargiulo 
+
+Postdoctoral Research Associate 
+
+Aerospace Research Laboratory 
+
+University of Virginia 
+
+Department of Mechanical and Aerospace Engineering 
+
+570 Edgemont Rd. 
+
+Charlottesville, VA 22903 
+
+\href{mailto:bzc6rs@virginia.edu}{\texttt{bzc6rs@virginia.\+edu}}
+\end{DoxyAuthor}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2025-\/08-\/02 
+\end{DoxyDate}
+
+
+\label{doc-define-members}
+\Hypertarget{detscat__config_8h_doc-define-members}
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{detscat__config_8h_afb5e39a9a588a735ca5389b9570d146b}\index{detscat\_config.h@{detscat\_config.h}!DETSCAT\_CONFIG\_ERR\_MSG\_MAX@{DETSCAT\_CONFIG\_ERR\_MSG\_MAX}}
+\index{DETSCAT\_CONFIG\_ERR\_MSG\_MAX@{DETSCAT\_CONFIG\_ERR\_MSG\_MAX}!detscat\_config.h@{detscat\_config.h}}
+\doxysubsubsection{\texorpdfstring{DETSCAT\_CONFIG\_ERR\_MSG\_MAX}{DETSCAT\_CONFIG\_ERR\_MSG\_MAX}}
+{\footnotesize\ttfamily \label{detscat__config_8h_afb5e39a9a588a735ca5389b9570d146b} 
+\#define DETSCAT\+\_\+\+CONFIG\+\_\+\+ERR\+\_\+\+MSG\+\_\+\+MAX~256}
+
+\Hypertarget{detscat__config_8h_aaea7f13fd191ff52dfd122bbb44f8e74}\index{detscat\_config.h@{detscat\_config.h}!DETSCAT\_CONFIG\_LINE\_MAX@{DETSCAT\_CONFIG\_LINE\_MAX}}
+\index{DETSCAT\_CONFIG\_LINE\_MAX@{DETSCAT\_CONFIG\_LINE\_MAX}!detscat\_config.h@{detscat\_config.h}}
+\doxysubsubsection{\texorpdfstring{DETSCAT\_CONFIG\_LINE\_MAX}{DETSCAT\_CONFIG\_LINE\_MAX}}
+{\footnotesize\ttfamily \label{detscat__config_8h_aaea7f13fd191ff52dfd122bbb44f8e74} 
+\#define DETSCAT\+\_\+\+CONFIG\+\_\+\+LINE\+\_\+\+MAX~1024}
+
+\Hypertarget{detscat__config_8h_af4cdc14ce6155c6d9336dd23ae035afa}\index{detscat\_config.h@{detscat\_config.h}!DETSCAT\_CONFIG\_PATH\_MAX@{DETSCAT\_CONFIG\_PATH\_MAX}}
+\index{DETSCAT\_CONFIG\_PATH\_MAX@{DETSCAT\_CONFIG\_PATH\_MAX}!detscat\_config.h@{detscat\_config.h}}
+\doxysubsubsection{\texorpdfstring{DETSCAT\_CONFIG\_PATH\_MAX}{DETSCAT\_CONFIG\_PATH\_MAX}}
+{\footnotesize\ttfamily \label{detscat__config_8h_af4cdc14ce6155c6d9336dd23ae035afa} 
+\#define DETSCAT\+\_\+\+CONFIG\+\_\+\+PATH\+\_\+\+MAX~512}
+
+
+
+\label{doc-enum-members}
+\Hypertarget{detscat__config_8h_doc-enum-members}
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{detscat__config_8h_adff7ce6848949c65278c953c939e2db4}\index{detscat\_config.h@{detscat\_config.h}!DetScatConfigParserStatus@{DetScatConfigParserStatus}}
+\index{DetScatConfigParserStatus@{DetScatConfigParserStatus}!detscat\_config.h@{detscat\_config.h}}
+\doxysubsubsection{\texorpdfstring{DetScatConfigParserStatus}{DetScatConfigParserStatus}}
+{\footnotesize\ttfamily \label{detscat__config_8h_adff7ce6848949c65278c953c939e2db4} 
+enum \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4}{Det\+Scat\+Config\+Parser\+Status}}}
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{DETSCAT\_CONFIG\_PARSER\_OK@{DETSCAT\_CONFIG\_PARSER\_OK}!detscat\_config.h@{detscat\_config.h}}\index{detscat\_config.h@{detscat\_config.h}!DETSCAT\_CONFIG\_PARSER\_OK@{DETSCAT\_CONFIG\_PARSER\_OK}}}\Hypertarget{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e}\label{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e} 
+DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+OK&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{DETSCAT\_CONFIG\_PARSER\_ERR\_FILE\_NOT\_FOUND@{DETSCAT\_CONFIG\_PARSER\_ERR\_FILE\_NOT\_FOUND}!detscat\_config.h@{detscat\_config.h}}\index{detscat\_config.h@{detscat\_config.h}!DETSCAT\_CONFIG\_PARSER\_ERR\_FILE\_NOT\_FOUND@{DETSCAT\_CONFIG\_PARSER\_ERR\_FILE\_NOT\_FOUND}}}\Hypertarget{detscat__config_8h_adff7ce6848949c65278c953c939e2db4abd14a4eed1a508d5fdd49f1bd0357601}\label{detscat__config_8h_adff7ce6848949c65278c953c939e2db4abd14a4eed1a508d5fdd49f1bd0357601} 
+DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+FILE\+\_\+\+NOT\+\_\+\+FOUND&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{DETSCAT\_CONFIG\_PARSER\_ERR\_ALLOC@{DETSCAT\_CONFIG\_PARSER\_ERR\_ALLOC}!detscat\_config.h@{detscat\_config.h}}\index{detscat\_config.h@{detscat\_config.h}!DETSCAT\_CONFIG\_PARSER\_ERR\_ALLOC@{DETSCAT\_CONFIG\_PARSER\_ERR\_ALLOC}}}\Hypertarget{detscat__config_8h_adff7ce6848949c65278c953c939e2db4af9ef6cba38281e57f506b94f25b6ee2d}\label{detscat__config_8h_adff7ce6848949c65278c953c939e2db4af9ef6cba38281e57f506b94f25b6ee2d} 
+DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+ALLOC&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{DETSCAT\_CONFIG\_PARSER\_ERR\_INVALID\_ARG@{DETSCAT\_CONFIG\_PARSER\_ERR\_INVALID\_ARG}!detscat\_config.h@{detscat\_config.h}}\index{detscat\_config.h@{detscat\_config.h}!DETSCAT\_CONFIG\_PARSER\_ERR\_INVALID\_ARG@{DETSCAT\_CONFIG\_PARSER\_ERR\_INVALID\_ARG}}}\Hypertarget{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a5936e64d6db6bbdf553b7e3c98a6ce31}\label{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a5936e64d6db6bbdf553b7e3c98a6ce31} 
+DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+INVALID\+\_\+\+ARG&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{DETSCAT\_CONFIG\_PARSER\_ERR\_FORMAT@{DETSCAT\_CONFIG\_PARSER\_ERR\_FORMAT}!detscat\_config.h@{detscat\_config.h}}\index{detscat\_config.h@{detscat\_config.h}!DETSCAT\_CONFIG\_PARSER\_ERR\_FORMAT@{DETSCAT\_CONFIG\_PARSER\_ERR\_FORMAT}}}\Hypertarget{detscat__config_8h_adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576}\label{detscat__config_8h_adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576} 
+DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+FORMAT&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{DETSCAT\_CONFIG\_PARSER\_ERR\_UNKNOWN\_KEY@{DETSCAT\_CONFIG\_PARSER\_ERR\_UNKNOWN\_KEY}!detscat\_config.h@{detscat\_config.h}}\index{detscat\_config.h@{detscat\_config.h}!DETSCAT\_CONFIG\_PARSER\_ERR\_UNKNOWN\_KEY@{DETSCAT\_CONFIG\_PARSER\_ERR\_UNKNOWN\_KEY}}}\Hypertarget{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079}\label{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079} 
+DETSCAT\+\_\+\+CONFIG\+\_\+\+PARSER\+\_\+\+ERR\+\_\+\+UNKNOWN\+\_\+\+KEY&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\label{doc-func-members}
+\Hypertarget{detscat__config_8h_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{detscat__config_8h_a9011b25526ca9b01041eba4e9bd3a981}\index{detscat\_config.h@{detscat\_config.h}!detscat\_config\_parser\_create@{detscat\_config\_parser\_create}}
+\index{detscat\_config\_parser\_create@{detscat\_config\_parser\_create}!detscat\_config.h@{detscat\_config.h}}
+\doxysubsubsection{\texorpdfstring{detscat\_config\_parser\_create()}{detscat\_config\_parser\_create()}}
+{\footnotesize\ttfamily \label{detscat__config_8h_a9011b25526ca9b01041eba4e9bd3a981} 
+\mbox{\hyperlink{struct_det_scat_config_parser}{Det\+Scat\+Config\+Parser}} \texorpdfstring{$\ast$}{*} detscat\+\_\+config\+\_\+parser\+\_\+create (\begin{DoxyParamCaption}\item[{const char \texorpdfstring{$\ast$}{*}}]{file\+\_\+path}{}\end{DoxyParamCaption})}
+
+\Hypertarget{detscat__config_8h_adf28b752954dd2a01c2fe7e6b603e9c1}\index{detscat\_config.h@{detscat\_config.h}!detscat\_config\_parser\_free@{detscat\_config\_parser\_free}}
+\index{detscat\_config\_parser\_free@{detscat\_config\_parser\_free}!detscat\_config.h@{detscat\_config.h}}
+\doxysubsubsection{\texorpdfstring{detscat\_config\_parser\_free()}{detscat\_config\_parser\_free()}}
+{\footnotesize\ttfamily \label{detscat__config_8h_adf28b752954dd2a01c2fe7e6b603e9c1} 
+void detscat\+\_\+config\+\_\+parser\+\_\+free (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_det_scat_config_parser}{Det\+Scat\+Config\+Parser}} \texorpdfstring{$\ast$}{*}}]{parser}{}\end{DoxyParamCaption})}
+
+\Hypertarget{detscat__config_8h_a7336e43cb6202ede03b4020264891ee1}\index{detscat\_config.h@{detscat\_config.h}!detscat\_config\_parser\_parse@{detscat\_config\_parser\_parse}}
+\index{detscat\_config\_parser\_parse@{detscat\_config\_parser\_parse}!detscat\_config.h@{detscat\_config.h}}
+\doxysubsubsection{\texorpdfstring{detscat\_config\_parser\_parse()}{detscat\_config\_parser\_parse()}}
+{\footnotesize\ttfamily \label{detscat__config_8h_a7336e43cb6202ede03b4020264891ee1} 
+bool detscat\+\_\+config\+\_\+parser\+\_\+parse (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{struct_det_scat_config_parser}{Det\+Scat\+Config\+Parser}} \texorpdfstring{$\ast$}{*}}]{parser}{, }\item[{\mbox{\hyperlink{struct_det_scat_config}{Det\+Scat\+Config}} \texorpdfstring{$\ast$}{*}}]{config}{}\end{DoxyParamCaption})}
+
+
+
+Opens and initializes the configuration file parser. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em file\+\_\+path} & Path to the configuration file. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Pointer to the configuration parser, or \textquotesingle{}NULL\textquotesingle{} if the function fails. 
+\end{DoxyReturn}
+
+
+\label{doc-var-members}
+\Hypertarget{detscat__config_8h_doc-var-members}
+\doxysubsection{Variable Documentation}
+\Hypertarget{detscat__config_8h_a39b2a0475df4e2f89a1a9727dba5f893}\index{detscat\_config.h@{detscat\_config.h}!config@{config}}
+\index{config@{config}!detscat\_config.h@{detscat\_config.h}}
+\doxysubsubsection{\texorpdfstring{config}{config}}
+{\footnotesize\ttfamily \label{detscat__config_8h_a39b2a0475df4e2f89a1a9727dba5f893} 
+\mbox{\hyperlink{struct_det_scat_config}{Det\+Scat\+Config}} config\hspace{0.3cm}{\ttfamily [extern]}}
+

@@ -1,0 +1,100 @@
+\chapter{Configuration File Format }
+\hypertarget{config_file_format}{}\label{config_file_format}\index{Configuration File Format@{Configuration File Format}}
+\hypertarget{config_file_format_autotoc_md0}{}\doxysubsection{\texorpdfstring{Overview}{Overview}}\label{config_file_format_autotoc_md0}
+The configuration file defines the user input parameters for Det\+Scat. It uses a simple key-\/value format\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{is\_polarized\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\ \ \textcolor{keyword}{true}\ }
+\DoxyCodeLine{}
+\DoxyCodeLine{polarization\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\ \ [[0,\ 0],\ [1,\ 0],\ [0,\ 0]]}
+\DoxyCodeLine{}
+\DoxyCodeLine{wavelength\_nm\ \ \ \ \ \ \ \ \ \ \ \ \ \ =\ \ 532.0}
+\DoxyCodeLine{}
+\DoxyCodeLine{pulse\_energy\_mj\ \ \ \ \ \ \ \ \ \ \ \ =\ \ 1.3e-\/03\ }
+\DoxyCodeLine{}
+\DoxyCodeLine{particles\_definition\_file\ \ =\ \ ../resources/particles.dat}
+\DoxyCodeLine{}
+\DoxyCodeLine{camera\_center\_position\_m\ \ \ =\ \ [1.5,\ 0,\ 0]}
+\DoxyCodeLine{}
+\DoxyCodeLine{...}
+
+\end{DoxyCode}
+\hypertarget{config_file_format_autotoc_md1}{}\doxysubsection{\texorpdfstring{Important Notes}{Important Notes}}\label{config_file_format_autotoc_md1}
+
+\begin{DoxyItemize}
+\item Arrays are defined using square brackets ({\ttfamily \mbox{[}\mbox{[}...\mbox{]}, ...\mbox{]}}) with comma-\/separated values.
+\item Lines starting with {\ttfamily \#} are treated as comments and ignored.
+\item All parameter names are case-\/sensitive.
+\item Arbitrary whitespace is allowed between keys, values, and delimiters.
+\item Blank lines between key-\/value definitions are allowed.
+\item Do not enclose strings in {\ttfamily "{}..."{}} or {\ttfamily \textquotesingle{}...\textquotesingle{}}.
+\end{DoxyItemize}\hypertarget{config_file_format_autotoc_md2}{}\doxysubsection{\texorpdfstring{Required Parameters}{Required Parameters}}\label{config_file_format_autotoc_md2}
+\hypertarget{config_file_format_autotoc_md3}{}\doxysubsubsection{\texorpdfstring{Incident Light Source -\/ Pulsed Laser Source}{Incident Light Source -\/ Pulsed Laser Source}}\label{config_file_format_autotoc_md3}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/\ is\_polarized\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Boolean\ value\ indicating\ whether\ the}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ incident\ light\ is\ polarized.\ If\ set\ to}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \`{}true`,\ the\ light\ is\ polarized;\ if}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \`{}false`,\ it\ is\ unpolarized.}}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ polarization\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ 3D\ complex\ vector\ specifying\ the}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ polarization\ direction\ of\ the\ incident}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ light.\ }}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ wavelength\_nm\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Wavelength\ of\ the\ incident\ monochromatic}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ incident\ light\ wave\ from\ a\ pulsed\ laser}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ source\ specified\ in\ [nm].}}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ pulse\_energy\_mj\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Pulse\ energy\ of\ the\ incident}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ monochromatic\ light\ wave\ from\ a\ pulsed}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ laser\ source\ specified\ in\ [mJ].\ \ }}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ pulse\_width\_ns\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Pulse\ width\ of\ the\ incident}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ monochromatic\ light\ wave\ from\ a\ pulsed}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ laser\ source\ specified\ in\ [ns].\ \ }}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ beam\_diameter\_mm\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Beam\ diameter\ of\ the\ incident}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ monochromatic\ light\ wave\ from\ a\ pulsed}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ laser\ source\ specified\ in\ [mm].\ \ }}
+
+\end{DoxyCode}
+\hypertarget{config_file_format_autotoc_md4}{}\doxysubsubsection{\texorpdfstring{Particles}{Particles}}\label{config_file_format_autotoc_md4}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/\ particles\_definition\_file\ \ \ \ \ \ \textcolor{comment}{//\ System\ path\ to\ the\ particles\ definition}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ file.}}
+
+\end{DoxyCode}
+\hypertarget{config_file_format_autotoc_md5}{}\doxysubsubsection{\texorpdfstring{Camera -\/ Pinhole Camera Model}{Camera -\/ Pinhole Camera Model}}\label{config_file_format_autotoc_md5}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{-\/\ camera\_center\_position\_m\ \ \ \ \ \ \ \textcolor{comment}{//\ 3D\ vector\ in\ world\ coordinate\ frame,}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ pointing\ from\ the\ origin\ to\ the\ camera}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ center,\ with\ components\ specified\ in\ [m].}}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ camera\_sensor\_normal\_vector\ \ \ \ \textcolor{comment}{//\ 3D\ vector\ in\ world\ coordinate\ frame,}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ normal\ to\ and\ pointing\ away\ from\ the}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ camera\ sensor.\ If\ not\ already\ done,\ the}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ vector\ will\ be\ internally\ normalized\ to\ a}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ unit\ vector.\ The\ components\ are\ specified}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ in\ [m].}}
+\DoxyCodeLine{\ \ \ }
+\DoxyCodeLine{-\/\ sensor\_width\_mm\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Camera\ sensor\ width\ specified\ in\ [mm].}}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ sensor\_height\_mm\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Camera\ sensor\ height\ specified\ in\ [mm].}}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ focal\_length\_mm\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Camera\ focal\ length\ specified\ in\ [mm].}}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ camera\_resolution\_x\_px\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Camera\ sensor\ resolution\ in\ the}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ x-\/direction(width)\ in\ [px].}}
+\DoxyCodeLine{}
+\DoxyCodeLine{-\/\ camera\_resolution\_y\_px\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Camera\ sensor\ resolution\ in\ the}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ y-\/direction\ (height)\ in\ [px].}}
+
+\end{DoxyCode}
+
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{detscat__config_8h}{detscat\+\_\+config.\+h} 
+\end{DoxySeeAlso}
