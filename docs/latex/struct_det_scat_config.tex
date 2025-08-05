@@ -24,7 +24,7 @@ double \mbox{\hyperlink{struct_det_scat_config_a2930b20ed6ee9437bc168e61e531de75
 \item 
 double \mbox{\hyperlink{struct_det_scat_config_a07c836466ef41416766838b8b266816e}{beam\+\_\+diameter\+\_\+mm}}
 \item 
-char \mbox{\hyperlink{struct_det_scat_config_a1c060f72ad0fdf2d30bddf83022333b2}{particles\+\_\+file}} \mbox{[}512\mbox{]}
+char \mbox{\hyperlink{struct_det_scat_config_ae062e1a8b9303512494033a9dc50246f}{particles\+\_\+definition\+\_\+file}} \mbox{[}512\mbox{]}
 \item 
 Vec3 \mbox{\hyperlink{struct_det_scat_config_a924c5395c0e91564f8eb52982f94dce8}{camera\+\_\+center\+\_\+position\+\_\+m}}
 \item 
@@ -58,49 +58,49 @@ See \doxysectlink{config_file_format}{Configuration File Format}{0} for details 
 {\footnotesize\ttfamily \label{struct_det_scat_config_a07c836466ef41416766838b8b266816e} 
 double beam\+\_\+diameter\+\_\+mm}
 
-\Hypertarget{struct_det_scat_config_a924c5395c0e91564f8eb52982f94dce8}\index{DetScatConfig@{DetScatConfig}!camera\_center\_position\_m@{camera\_center\_position\_m}}
+Beam diameter of the incident monochromatic light wave from a pulsed laser source specified in \mbox{[}mm\mbox{]}. \Hypertarget{struct_det_scat_config_a924c5395c0e91564f8eb52982f94dce8}\index{DetScatConfig@{DetScatConfig}!camera\_center\_position\_m@{camera\_center\_position\_m}}
 \index{camera\_center\_position\_m@{camera\_center\_position\_m}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{camera\_center\_position\_m}{camera\_center\_position\_m}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_a924c5395c0e91564f8eb52982f94dce8} 
 Vec3 camera\+\_\+center\+\_\+position\+\_\+m}
 
-\Hypertarget{struct_det_scat_config_a1a14ce24f6f186892d309a6bae8c76b2}\index{DetScatConfig@{DetScatConfig}!camera\_resolution\_x\_px@{camera\_resolution\_x\_px}}
+3D vector in world coordinate frame, pointing from the origin to the camera center, with components specified in \mbox{[}m\mbox{]}. \Hypertarget{struct_det_scat_config_a1a14ce24f6f186892d309a6bae8c76b2}\index{DetScatConfig@{DetScatConfig}!camera\_resolution\_x\_px@{camera\_resolution\_x\_px}}
 \index{camera\_resolution\_x\_px@{camera\_resolution\_x\_px}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{camera\_resolution\_x\_px}{camera\_resolution\_x\_px}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_a1a14ce24f6f186892d309a6bae8c76b2} 
 int camera\+\_\+resolution\+\_\+x\+\_\+px}
 
-\Hypertarget{struct_det_scat_config_aceae846cb54faeb41341f0bec2cfab73}\index{DetScatConfig@{DetScatConfig}!camera\_resolution\_y\_px@{camera\_resolution\_y\_px}}
+Camera sensor resolution in the x-\/direction (width) in \mbox{[}px\mbox{]}. \Hypertarget{struct_det_scat_config_aceae846cb54faeb41341f0bec2cfab73}\index{DetScatConfig@{DetScatConfig}!camera\_resolution\_y\_px@{camera\_resolution\_y\_px}}
 \index{camera\_resolution\_y\_px@{camera\_resolution\_y\_px}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{camera\_resolution\_y\_px}{camera\_resolution\_y\_px}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_aceae846cb54faeb41341f0bec2cfab73} 
 int camera\+\_\+resolution\+\_\+y\+\_\+px}
 
-\Hypertarget{struct_det_scat_config_a7d1f9c46ce7e50a942b4306c9ee6ee78}\index{DetScatConfig@{DetScatConfig}!camera\_sensor\_normal\_vector@{camera\_sensor\_normal\_vector}}
+Camera sensor resolution in the y-\/direction (height) in \mbox{[}px\mbox{]}. \Hypertarget{struct_det_scat_config_a7d1f9c46ce7e50a942b4306c9ee6ee78}\index{DetScatConfig@{DetScatConfig}!camera\_sensor\_normal\_vector@{camera\_sensor\_normal\_vector}}
 \index{camera\_sensor\_normal\_vector@{camera\_sensor\_normal\_vector}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{camera\_sensor\_normal\_vector}{camera\_sensor\_normal\_vector}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_a7d1f9c46ce7e50a942b4306c9ee6ee78} 
 Vec3 camera\+\_\+sensor\+\_\+normal\+\_\+vector}
 
-\Hypertarget{struct_det_scat_config_a57007d05ede4ebe9baa19377cc427fc9}\index{DetScatConfig@{DetScatConfig}!focal\_length\_mm@{focal\_length\_mm}}
+3D vector in world coordinate frame, normal to and pointing away from the camera sensor. If not already done, the vector will be internally normalized to a unit vector. The components are specified in \mbox{[}m\mbox{]}. \Hypertarget{struct_det_scat_config_a57007d05ede4ebe9baa19377cc427fc9}\index{DetScatConfig@{DetScatConfig}!focal\_length\_mm@{focal\_length\_mm}}
 \index{focal\_length\_mm@{focal\_length\_mm}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{focal\_length\_mm}{focal\_length\_mm}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_a57007d05ede4ebe9baa19377cc427fc9} 
 double focal\+\_\+length\+\_\+mm}
 
-\Hypertarget{struct_det_scat_config_ae3d8fcd32e276c275efd45671a3c1fbb}\index{DetScatConfig@{DetScatConfig}!is\_polarized@{is\_polarized}}
+Camera focal length specified in \mbox{[}mm\mbox{]}. \Hypertarget{struct_det_scat_config_ae3d8fcd32e276c275efd45671a3c1fbb}\index{DetScatConfig@{DetScatConfig}!is\_polarized@{is\_polarized}}
 \index{is\_polarized@{is\_polarized}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{is\_polarized}{is\_polarized}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_ae3d8fcd32e276c275efd45671a3c1fbb} 
 bool is\+\_\+polarized}
 
-Boolean value indicating whether the incident light is polarized. If set to {\ttfamily true}, the light is polarized; if {\ttfamily false}, it is unpolarized. \Hypertarget{struct_det_scat_config_a1c060f72ad0fdf2d30bddf83022333b2}\index{DetScatConfig@{DetScatConfig}!particles\_file@{particles\_file}}
-\index{particles\_file@{particles\_file}!DetScatConfig@{DetScatConfig}}
-\doxysubsubsection{\texorpdfstring{particles\_file}{particles\_file}}
-{\footnotesize\ttfamily \label{struct_det_scat_config_a1c060f72ad0fdf2d30bddf83022333b2} 
-char particles\+\_\+file\mbox{[}512\mbox{]}}
+Boolean value indicating whether the incident light is polarized. If set to {\ttfamily true}, the light is polarized; if {\ttfamily false}, it is unpolarized. \Hypertarget{struct_det_scat_config_ae062e1a8b9303512494033a9dc50246f}\index{DetScatConfig@{DetScatConfig}!particles\_definition\_file@{particles\_definition\_file}}
+\index{particles\_definition\_file@{particles\_definition\_file}!DetScatConfig@{DetScatConfig}}
+\doxysubsubsection{\texorpdfstring{particles\_definition\_file}{particles\_definition\_file}}
+{\footnotesize\ttfamily \label{struct_det_scat_config_ae062e1a8b9303512494033a9dc50246f} 
+char particles\+\_\+definition\+\_\+file\mbox{[}512\mbox{]}}
 
-\Hypertarget{struct_det_scat_config_aa33044c75ca0c31fbca13d4d3b79dd5e}\index{DetScatConfig@{DetScatConfig}!polarization@{polarization}}
+System path to the particles definition file. \Hypertarget{struct_det_scat_config_aa33044c75ca0c31fbca13d4d3b79dd5e}\index{DetScatConfig@{DetScatConfig}!polarization@{polarization}}
 \index{polarization@{polarization}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{polarization}{polarization}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_aa33044c75ca0c31fbca13d4d3b79dd5e} 
@@ -112,31 +112,31 @@ Complex\+Vec3 polarization}
 {\footnotesize\ttfamily \label{struct_det_scat_config_a3f61bc2eea2d2bec947905d71ab5b157} 
 double pulse\+\_\+energy\+\_\+mj}
 
-\Hypertarget{struct_det_scat_config_a2930b20ed6ee9437bc168e61e531de75}\index{DetScatConfig@{DetScatConfig}!pulse\_width\_ns@{pulse\_width\_ns}}
+Pulse energy of the incident monochromatic light wave from a pulsed laser source specified in \mbox{[}mJ\mbox{]}. \Hypertarget{struct_det_scat_config_a2930b20ed6ee9437bc168e61e531de75}\index{DetScatConfig@{DetScatConfig}!pulse\_width\_ns@{pulse\_width\_ns}}
 \index{pulse\_width\_ns@{pulse\_width\_ns}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{pulse\_width\_ns}{pulse\_width\_ns}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_a2930b20ed6ee9437bc168e61e531de75} 
 double pulse\+\_\+width\+\_\+ns}
 
-\Hypertarget{struct_det_scat_config_a676a10143d0989e9ae29ad20de90686e}\index{DetScatConfig@{DetScatConfig}!sensor\_height\_mm@{sensor\_height\_mm}}
+Pulse width of the incident monochromatic light wave from a pulsed laser source specified in \mbox{[}ns\mbox{]}. \Hypertarget{struct_det_scat_config_a676a10143d0989e9ae29ad20de90686e}\index{DetScatConfig@{DetScatConfig}!sensor\_height\_mm@{sensor\_height\_mm}}
 \index{sensor\_height\_mm@{sensor\_height\_mm}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{sensor\_height\_mm}{sensor\_height\_mm}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_a676a10143d0989e9ae29ad20de90686e} 
 double sensor\+\_\+height\+\_\+mm}
 
-\Hypertarget{struct_det_scat_config_a695264461a00b66936870f3c3b8793c9}\index{DetScatConfig@{DetScatConfig}!sensor\_width\_mm@{sensor\_width\_mm}}
+Camera sensor height specified in \mbox{[}mm\mbox{]}. \Hypertarget{struct_det_scat_config_a695264461a00b66936870f3c3b8793c9}\index{DetScatConfig@{DetScatConfig}!sensor\_width\_mm@{sensor\_width\_mm}}
 \index{sensor\_width\_mm@{sensor\_width\_mm}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{sensor\_width\_mm}{sensor\_width\_mm}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_a695264461a00b66936870f3c3b8793c9} 
 double sensor\+\_\+width\+\_\+mm}
 
-\Hypertarget{struct_det_scat_config_a79412f1739c967b5ece0c55cf9aa6294}\index{DetScatConfig@{DetScatConfig}!wavelength\_nm@{wavelength\_nm}}
+Camera sensor width specified in \mbox{[}mm\mbox{]}. \Hypertarget{struct_det_scat_config_a79412f1739c967b5ece0c55cf9aa6294}\index{DetScatConfig@{DetScatConfig}!wavelength\_nm@{wavelength\_nm}}
 \index{wavelength\_nm@{wavelength\_nm}!DetScatConfig@{DetScatConfig}}
 \doxysubsubsection{\texorpdfstring{wavelength\_nm}{wavelength\_nm}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_a79412f1739c967b5ece0c55cf9aa6294} 
 double wavelength\+\_\+nm}
 
-
+Wavelength of the incident monochromatic light wave from a pulsed laser source specified in \mbox{[}nm\mbox{]}. 
 
 The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
 \item 

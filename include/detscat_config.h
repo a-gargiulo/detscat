@@ -54,30 +54,70 @@ typedef struct {
      */
     ComplexVec3 polarization;
     /**
-     *
+     * Wavelength of the incident monochromatic light wave from a pulsed laser
+     * source specified in [nm].
      */
     double wavelength_nm;
     /**
-     *
+     * Pulse energy of the incident monochromatic light wave from a pulsed laser
+     * source specified in [mJ].
      */
     double pulse_energy_mj;
+    /**
+     * Pulse width of the incident monochromatic light wave from a pulsed laser
+     * source specified in [ns].
+     */
     double pulse_width_ns;
+    /**
+     * Beam diameter of the incident monochromatic light wave from a pulsed
+     * laser source specified in [mm].
+     */
     double beam_diameter_mm;
 
     // Particles
-    char particles_file[DETSCAT_CONFIG_PATH_MAX];   // Particles file path
+    /**
+     * System path to the particles definition file.
+     */
+    char particles_definition_file[DETSCAT_CONFIG_PATH_MAX];
 
     // Camera
+    /**
+     * 3D vector in world coordinate frame, pointing from the origin to the
+     * camera center, with components specified in [m].
+     */
     Vec3 camera_center_position_m;
+    /**
+     * 3D vector in world coordinate frame, normal to and pointing away from the
+     * camera sensor. If not already done, the vector will be internally
+     * normalized to a unit vector. The components are specified in [m].
+     */
     Vec3 camera_sensor_normal_vector;
+    /**
+     * Camera sensor width specified in [mm].
+     */
     double sensor_width_mm;
+    /**
+     * Camera sensor height specified in [mm].
+     */
     double sensor_height_mm;
+    /**
+     * Camera focal length specified in [mm].
+     */
     double focal_length_mm;
+    /**
+     * Camera sensor resolution in the x-direction (width) in [px].
+     */
     int camera_resolution_x_px;
+    /**
+     * Camera sensor resolution in the y-direction (height) in [px].
+     */
     int camera_resolution_y_px;
 
 } DetScatConfig;
 
+/**
+ * Global instance of the configuration file struct. 
+ */
 extern DetScatConfig config;
 
 
@@ -171,8 +211,8 @@ void detscat_config_parser_free(DetScatConfigParser *parser);
  *                                  // light. 
  *
  * - wavelength_nm                  // Wavelength of the incident monochromatic
- *                                  // incident light wave from a pulsed laser
- *                                  // source specified in [nm].
+ *                                  // light wave from a pulsed laser source
+ *                                  // specified in [nm].
  *
  * - pulse_energy_mj                // Pulse energy of the incident
  *                                  // monochromatic light wave from a pulsed
@@ -213,7 +253,7 @@ void detscat_config_parser_free(DetScatConfigParser *parser);
  * - focal_length_mm                // Camera focal length specified in [mm].
  *
  * - camera_resolution_x_px         // Camera sensor resolution in the
- *                                  // x-direction(width) in [px].
+ *                                  // x-direction (width) in [px].
  *
  * - camera_resolution_y_px         // Camera sensor resolution in the
  *                                  // y-direction (height) in [px].

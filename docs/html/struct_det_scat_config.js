@@ -7,7 +7,7 @@ var struct_det_scat_config =
     [ "camera_sensor_normal_vector", "struct_det_scat_config.html#a7d1f9c46ce7e50a942b4306c9ee6ee78", null ],
     [ "focal_length_mm", "struct_det_scat_config.html#a57007d05ede4ebe9baa19377cc427fc9", null ],
     [ "is_polarized", "struct_det_scat_config.html#ae3d8fcd32e276c275efd45671a3c1fbb", null ],
-    [ "particles_file", "struct_det_scat_config.html#a1c060f72ad0fdf2d30bddf83022333b2", null ],
+    [ "particles_definition_file", "struct_det_scat_config.html#ae062e1a8b9303512494033a9dc50246f", null ],
     [ "polarization", "struct_det_scat_config.html#aa33044c75ca0c31fbca13d4d3b79dd5e", null ],
     [ "pulse_energy_mj", "struct_det_scat_config.html#a3f61bc2eea2d2bec947905d71ab5b157", null ],
     [ "pulse_width_ns", "struct_det_scat_config.html#a2930b20ed6ee9437bc168e61e531de75", null ],

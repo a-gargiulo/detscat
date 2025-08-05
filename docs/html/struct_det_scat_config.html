@@ -105,7 +105,7 @@ Data Fields</h2></td></tr>
 <tr class="memitem:a3f61bc2eea2d2bec947905d71ab5b157" id="r_a3f61bc2eea2d2bec947905d71ab5b157"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3f61bc2eea2d2bec947905d71ab5b157">pulse_energy_mj</a></td></tr>
 <tr class="memitem:a2930b20ed6ee9437bc168e61e531de75" id="r_a2930b20ed6ee9437bc168e61e531de75"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2930b20ed6ee9437bc168e61e531de75">pulse_width_ns</a></td></tr>
 <tr class="memitem:a07c836466ef41416766838b8b266816e" id="r_a07c836466ef41416766838b8b266816e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a07c836466ef41416766838b8b266816e">beam_diameter_mm</a></td></tr>
-<tr class="memitem:a1c060f72ad0fdf2d30bddf83022333b2" id="r_a1c060f72ad0fdf2d30bddf83022333b2"><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1c060f72ad0fdf2d30bddf83022333b2">particles_file</a> [512]</td></tr>
+<tr class="memitem:ae062e1a8b9303512494033a9dc50246f" id="r_ae062e1a8b9303512494033a9dc50246f"><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae062e1a8b9303512494033a9dc50246f">particles_definition_file</a> [512]</td></tr>
 <tr class="memitem:a924c5395c0e91564f8eb52982f94dce8" id="r_a924c5395c0e91564f8eb52982f94dce8"><td class="memItemLeft" align="right" valign="top">Vec3&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a924c5395c0e91564f8eb52982f94dce8">camera_center_position_m</a></td></tr>
 <tr class="memitem:a7d1f9c46ce7e50a942b4306c9ee6ee78" id="r_a7d1f9c46ce7e50a942b4306c9ee6ee78"><td class="memItemLeft" align="right" valign="top">Vec3&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7d1f9c46ce7e50a942b4306c9ee6ee78">camera_sensor_normal_vector</a></td></tr>
 <tr class="memitem:a695264461a00b66936870f3c3b8793c9" id="r_a695264461a00b66936870f3c3b8793c9"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a695264461a00b66936870f3c3b8793c9">sensor_width_mm</a></td></tr>
@@ -130,6 +130,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Beam diameter of the incident monochromatic light wave from a pulsed laser source specified in [mm]. </p>
 
 </div>
 </div>
@@ -144,6 +145,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>3D vector in world coordinate frame, pointing from the origin to the camera center, with components specified in [m]. </p>
 
 </div>
 </div>
@@ -158,6 +160,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Camera sensor resolution in the x-direction (width) in [px]. </p>
 
 </div>
 </div>
@@ -172,6 +175,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Camera sensor resolution in the y-direction (height) in [px]. </p>
 
 </div>
 </div>
@@ -186,6 +190,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>3D vector in world coordinate frame, normal to and pointing away from the camera sensor. If not already done, the vector will be internally normalized to a unit vector. The components are specified in [m]. </p>
 
 </div>
 </div>
@@ -200,6 +205,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Camera focal length specified in [mm]. </p>
 
 </div>
 </div>
@@ -218,17 +224,18 @@ Data Fields</h2></td></tr>
 
 </div>
 </div>
-<a id="a1c060f72ad0fdf2d30bddf83022333b2" name="a1c060f72ad0fdf2d30bddf83022333b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c060f72ad0fdf2d30bddf83022333b2">&#9670;&#160;</a></span>particles_file</h2>
+<a id="ae062e1a8b9303512494033a9dc50246f" name="ae062e1a8b9303512494033a9dc50246f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae062e1a8b9303512494033a9dc50246f">&#9670;&#160;</a></span>particles_definition_file</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">char particles_file[512]</td>
+          <td class="memname">char particles_definition_file[512]</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>System path to the particles definition file. </p>
 
 </div>
 </div>
@@ -258,6 +265,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Pulse energy of the incident monochromatic light wave from a pulsed laser source specified in [mJ]. </p>
 
 </div>
 </div>
@@ -272,6 +280,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Pulse width of the incident monochromatic light wave from a pulsed laser source specified in [ns]. </p>
 
 </div>
 </div>
@@ -286,6 +295,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Camera sensor height specified in [mm]. </p>
 
 </div>
 </div>
@@ -300,6 +310,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Camera sensor width specified in [mm]. </p>
 
 </div>
 </div>
@@ -314,6 +325,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Wavelength of the incident monochromatic light wave from a pulsed laser source specified in [nm]. </p>
 
 </div>
 </div>
