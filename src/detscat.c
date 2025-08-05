@@ -82,9 +82,10 @@ static void detscat_vprint(const char *frmt, va_list args) {
     }
 }
 
-void detscat_error(const char *fnct, int line, const char *file, const char *frmt, ...) {
+void detscat_error(const char *fnct, int line, const char *file,
+                   const char *frmt, ...) {
     printf("[\033[91mERROR\033[0m]: \033[95m\"%s\", line %d, in %s()\033[0m: ",
-        file, line, fnct);
+           file, line, fnct);
     va_list args;
     va_start(args, frmt);
     detscat_vprint(frmt, args);
@@ -103,31 +104,34 @@ void detscat_info(const char *frmt, ...) {
     return;
 }
 
-static void detscat_parse_config_file(const char *config_file_path, DetScatConfig *config, DetScatDiagnose *diagnose) {
-
+static void detscat_parse_config_file(const char *config_file_path,
+                                      DetScatConfig *config,
+                                      DetScatDiagnose *diagnose) {
     assert(config_file_path != NULL && config_file_path[0] != '\0');
     assert(config != NULL);
     assert(diagnose != NULL);
 
     errno = 0;
-    DetScatConfigParser *config_parser = detscat_config_parser_create(config_file_path);
+    DetScatConfigParser *config_parser =
+        detscat_config_parser_create(config_file_path);
     if (!config_parser) {
         if (errno != 0)
             DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not initialize the configuration file parser from '%s': %s",
-                                 config_file_path,
-                                 strerror(errno));
+                                 "Could not initialize the configuration file "
+                                 "parser from '%s': %s",
+                                 config_file_path, strerror(errno));
         else
             DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not initialize configuration file parser from '%s': Failed to allocate parser.",
+                                 "Could not initialize configuration file "
+                                 "parser from '%s': Failed to allocate parser.",
                                  config_file_path);
         return;
     }
 
     if (!detscat_config_parser_parse(config_parser, config)) {
         DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                             "While parsing '%s': %s",
-                             config_file_path, config_parser->err_msg);
+                             "While parsing '%s': %s", config_file_path,
+                             config_parser->err_msg);
         detscat_config_parser_free(config_parser);
         return;
     }
@@ -137,31 +141,37 @@ static void detscat_parse_config_file(const char *config_file_path, DetScatConfi
     return;
 }
 
-static void detscat_parse_particles_file(DetScatParticlesData *particles_data, DetScatConfig *cfg, DetScatDiagnose *diagnose) {
-
+static void detscat_parse_particles_file(DetScatParticlesData *particles_data,
+                                         DetScatConfig *cfg,
+                                         DetScatDiagnose *diagnose) {
     assert(particles_data != NULL);
     assert(cfg != NULL);
     assert(diagnose != NULL);
 
     errno = 0;
-    DetScatParticlesParser *particles_parser = detscat_particles_parser_create(cfg->particles_definition_file);
+    DetScatParticlesParser *particles_parser =
+        detscat_particles_parser_create(cfg->particles_definition_file);
     if (!particles_parser) {
         if (errno != 0)
             DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not initialize particles definition file parser from '%s': %s",
+                                 "Could not initialize particles definition "
+                                 "file parser from '%s': %s",
                                  cfg->particles_definition_file,
                                  strerror(errno));
         else
-            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not initialize particles definition file parser from '%s': Failed to allocate parser.",
-                                 cfg->particles_definition_file);
+            DETSCAT_SET_DIAGNOSE(
+                *diagnose, DETSCAT_ERR_FILE_PARSING,
+                "Could not initialize particles definition file parser from "
+                "'%s': Failed to allocate parser.",
+                cfg->particles_definition_file);
 
         return;
     }
 
     if (!detscat_particles_parser_parse(particles_parser, particles_data)) {
-        DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING, "While parsing '%s': %s",
-                             cfg->particles_definition_file, particles_parser->err_msg);
+        DETSCAT_SET_DIAGNOSE(
+            *diagnose, DETSCAT_ERR_FILE_PARSING, "While parsing '%s': %s",
+            cfg->particles_definition_file, particles_parser->err_msg);
         detscat_particles_parser_free(particles_parser);
         detscat_particles_data_free(particles_data);
         return;
@@ -178,7 +188,8 @@ static int cmp_phi(const void *a, const void *b) {
     return (fa->phi > fb->phi) - (fa->phi < fb->phi);
 }
 
-static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat, size_t **map,
+static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat,
+                                      size_t **map,
                                       DetScatParticlesData *particles_data,
                                       DetScatDiagnose *diagnose) {
     assert(particles_data != NULL);
@@ -223,9 +234,11 @@ static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat, size_t **m
         status = detscat_ddscat_util_parse_par_file(par_file_path, (*par)[i]);
         if (status != DETSCAT_DDSCAT_UTIL_OK) {
             DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not parse the DDSCAT parameter file '%s' for particle type "
+                                 "Could not parse the DDSCAT parameter file "
+                                 "'%s' for particle type "
                                  "'%s'. Parser failed with error code: %d.",
-                                 par_file_path, particles_data->definitions[i].id, status);
+                                 par_file_path,
+                                 particles_data->definitions[i].id, status);
             free(*par);
             free(*fmat);
             free(*map);
@@ -246,7 +259,8 @@ static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat, size_t **m
         // -----
         size_t idx = (size_t)(-1);
         for (size_t j = 0; j < particles_data->n_definitions; ++j) {
-            if (strcmp(particles_data->particles[i].id, particles_data->definitions[j].id) == 0) {
+            if (strcmp(particles_data->particles[i].id,
+                       particles_data->definitions[j].id) == 0) {
                 idx = j;
                 break;
             }
@@ -271,27 +285,33 @@ static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat, size_t **m
         char fml_name[64];
         strcpy(fml_file_path, particles_data->definitions[idx].data_dir);
         if (fml_file_path[strlen(fml_file_path) - 1] == '/') {
-            sprintf(fml_name, "w%03dr%03dk%03d.fml", particles_data->particles[i].w,
-                    particles_data->particles[i].r, particles_data->particles[i].k);
+            sprintf(
+                fml_name, "w%03dr%03dk%03d.fml", particles_data->particles[i].w,
+                particles_data->particles[i].r, particles_data->particles[i].k);
             strcat(fml_file_path, fml_name);
         } else {
-            sprintf(fml_name, "/w%03dr%03dk%03d.fml", particles_data->particles[i].w,
-                    particles_data->particles[i].r, particles_data->particles[i].k);
+            sprintf(fml_name, "/w%03dr%03dk%03d.fml",
+                    particles_data->particles[i].w,
+                    particles_data->particles[i].r,
+                    particles_data->particles[i].k);
             strcat(fml_file_path, fml_name);
         }
 
         // fmat is an array of size n_particles. Here, this is *fmat.
-        // each element of fmat is an array of size n_phi (azimuthal angle) of Fmat (f-matrix)
-        // each Fmat contains arrays (f11, f12, f21, f22) of size n_theta (scattering angle)
-        // The following function
-        // DetScatDdscatUtilStatus detscat_ddscat_util_parse_fml_file(const char *fml_file_path,
-        // const DdscatPar *par, Fmat **fmat); allocates the array of size n_phi
-        status = detscat_ddscat_util_parse_fml_file(fml_file_path, (*par)[idx], (*fmat + i));
+        // each element of fmat is an array of size n_phi (azimuthal angle) of
+        // Fmat (f-matrix) each Fmat contains arrays (f11, f12, f21, f22) of
+        // size n_theta (scattering angle) The following function
+        // DetScatDdscatUtilStatus detscat_ddscat_util_parse_fml_file(const char
+        // *fml_file_path, const DdscatPar *par, Fmat **fmat); allocates the
+        // array of size n_phi
+        status = detscat_ddscat_util_parse_fml_file(fml_file_path, (*par)[idx],
+                                                    (*fmat + i));
         if (status != DETSCAT_DDSCAT_UTIL_OK) {
-            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not parse the DDSCAT fml file '%s' for particle number "
-                                 "'%zu'. Parser failed with error code: %d.",
-                                 fml_file_path, i, status);
+            DETSCAT_SET_DIAGNOSE(
+                *diagnose, DETSCAT_ERR_FILE_PARSING,
+                "Could not parse the DDSCAT fml file '%s' for particle number "
+                "'%zu'. Parser failed with error code: %d.",
+                fml_file_path, i, status);
             free(*par);
             free(*fmat);
             free(*map);
@@ -306,8 +326,9 @@ static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat, size_t **m
     return;
 }
 
-static void detscat_ddscat_data_free(DdscatPar **par, Fmat **fmat, size_t *fmat_to_par_map,
-                                     size_t n_fmat, size_t n_par) {
+static void detscat_ddscat_data_free(DdscatPar **par, Fmat **fmat,
+                                     size_t *fmat_to_par_map, size_t n_fmat,
+                                     size_t n_par) {
     for (size_t i = 0; i < n_fmat; ++i) {
         for (size_t j = 0; j < par[fmat_to_par_map[i]]->nplanes; ++j) {
             free(fmat[i][j].f11);
@@ -343,7 +364,8 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     if (argc < 2 || argv[1][0] == '\0') {
         DETSCAT_SET_DIAGNOSE(
             *diagnose, DETSCAT_ERR_MISSING_CMD_ARG,
-            "Missing command-line argument. Specify configuration file. Usage: %s <path_to_configuration_file>",
+            "Missing command-line argument. Specify configuration file. Usage: "
+            "%s <path_to_configuration_file>",
             argv[0]);
         return;
     }
@@ -352,7 +374,7 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     DetScatConfig config = {0};
     DetScatParticlesData particles_data = {0};
 
-    DdscatPar **par = NULL; // one parameter file per definition.
+    DdscatPar **par = NULL;  // one parameter file per definition.
     Fmat **fmat = NULL;
     size_t *fmat_to_par_map = NULL;
 
@@ -361,7 +383,8 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     // size_t n_fmat_to_par_map = n_fmat;
 
     // Camera *camera = detscat_camera_create(&config);
-    // Image *image = detscat_camera_image_create(camera->width, camera->height);
+    // Image *image = detscat_camera_image_create(camera->width,
+    // camera->height);
 
     const char *config_file_path = argv[1];
     detscat_parse_config_file(config_file_path, &config, diagnose);
@@ -370,7 +393,8 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_parse_particles_file(&particles_data, &config, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-    detscat_fetch_ddscat_data(&par, &fmat, &fmat_to_par_map, &particles_data, diagnose);
+    detscat_fetch_ddscat_data(&par, &fmat, &fmat_to_par_map, &particles_data,
+                              diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
     // // MAIN LOOP
@@ -383,13 +407,15 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
 
     //         for (size_t p = 0; p < particles_data.n_particles; ++p) {
     //             Vec3 x_s_w;
-    //             mymath_vec3_sub(&x_s_w, &x_pxl_w, &particles_data.particles[p].position);
-    //             double x_s_w_abs = mymath_vec3_abs(&x_s_w);
+    //             mymath_vec3_sub(&x_s_w, &x_pxl_w,
+    //             &particles_data.particles[p].position); double x_s_w_abs =
+    //             mymath_vec3_abs(&x_s_w);
 
     //             Vec3 d_s;
     //             mymath_vec3_normalize(&d_s, &x_s_w, x_s_w_abs);
-    //             double k = 2.0 * M_PI / (config.wavelength_nm * DETSCAT_CONST_NM2M);
-    //             Vec3 k_s = {k * d_s.x, k * d_s.y, k * d_s.z};
+    //             double k = 2.0 * M_PI / (config.wavelength_nm *
+    //             DETSCAT_CONST_NM2M); Vec3 k_s = {k * d_s.x, k * d_s.y, k *
+    //             d_s.z};
 
     //             double phi = atan2(k_s.z, k_s.y) * 180.0 / M_PI;
     //             double theta = acos(k_s.x / k) * 180.0 / M_PI;
@@ -413,7 +439,8 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     //                 return;
     //             }
 
-    //             // Interpolate between fmat[p][idx_low] and fmat[p][idx_high] for each theta
+    //             // Interpolate between fmat[p][idx_low] and fmat[p][idx_high]
+    //             for each theta
     //         }
     //     }
     // }
@@ -423,8 +450,9 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     return;
 }
 
-// double detscat_calculate_incident_field_strength(double d, double E_p_mj, double tau_p_ns) {
+// double detscat_calculate_incident_field_strength(double d, double E_p_mj,
+// double tau_p_ns) {
 //     double A = d * d * DETSCAT_CONST_MM2M * DETSCAT_CONST_MM2M * M_PI / 4.0;
-//     double I = E_p_mj * DETSCAT_CONST_MJ2J / tau_p_ns / DETSCAT_CONST_NS2S / A;
-//     return sqrt(2 * I / DETSCAT_CONST_C_MS / DETSCAT_CONST_EPS0_F_M);
+//     double I = E_p_mj * DETSCAT_CONST_MJ2J / tau_p_ns / DETSCAT_CONST_NS2S /
+//     A; return sqrt(2 * I / DETSCAT_CONST_C_MS / DETSCAT_CONST_EPS0_F_M);
 // }

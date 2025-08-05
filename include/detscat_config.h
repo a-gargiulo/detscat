@@ -120,14 +120,9 @@ typedef struct {
  */
 extern DetScatConfig config;
 
-
-// CONFIG FILE PARSER 
-// -----------------------------------------------------------------------------
 typedef enum {
     DETSCAT_CONFIG_PARSER_OK = 0,
-    DETSCAT_CONFIG_PARSER_ERR_FILE_NOT_FOUND,
-    DETSCAT_CONFIG_PARSER_ERR_ALLOC,
-    DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG,
+    DETSCAT_CONFIG_PARSER_ERR_VAL_RANGE,
     DETSCAT_CONFIG_PARSER_ERR_FORMAT,
     DETSCAT_CONFIG_PARSER_ERR_UNKNOWN_KEY
 } DetScatConfigParserStatus;
@@ -141,17 +136,13 @@ typedef struct {
     char err_msg[DETSCAT_CONFIG_ERR_MSG_MAX];       // Last error message
 } DetScatConfigParser;
 
-
-// METHODS 
-// -----------------------------------------------------------------------------
-
-DetScatConfigParser *detscat_config_parser_create(const char *file_path);
 /**
  * @brief Opens and initializes the configuration file parser.
  *
  * @param file_path Path to the configuration file.
  * @return Pointer to the configuration parser, or 'NULL' if the function fails.
  */
+DetScatConfigParser *detscat_config_parser_create(const char *cfg_file_path);
 
 bool detscat_config_parser_parse(DetScatConfigParser *parser,
                                  DetScatConfig *config);
