@@ -92,6 +92,9 @@ $(function(){initNavTree('struct_det_scat_config_parser.html','',''); });
 </div><!--header-->
 <div class="contents">
 
+<p>Structure representing the configuration file parser.  
+ <a href="#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="detscat__config_8h_source.html">detscat_config.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
@@ -103,7 +106,10 @@ Data Fields</h2></td></tr>
 <tr class="memitem:a30737bdb5fdeca973e220c8ee9a4d083" id="r_a30737bdb5fdeca973e220c8ee9a4d083"><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a30737bdb5fdeca973e220c8ee9a4d083">line</a> [1024]</td></tr>
 <tr class="memitem:acea659d58db3642a2698b3d164dbff6a" id="r_acea659d58db3642a2698b3d164dbff6a"><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#acea659d58db3642a2698b3d164dbff6a">err_msg</a> [256]</td></tr>
 </table>
-<a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Structure representing the configuration file parser. </p>
+<p>This struct defines a parser to parse the configuration file data. </p>
+</div><a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
 <a id="a6c052602d1d43227768ad3807f7b7268" name="a6c052602d1d43227768ad3807f7b7268"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6c052602d1d43227768ad3807f7b7268">&#9670;&#160;</a></span>eof</h2>
 
@@ -115,6 +121,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>End-of-file flag, which is set to <span class="tt">true</span> if the parser successfully processes the entire file. </p>
 
 </div>
 </div>
@@ -129,6 +136,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Error message providing details in case that the configuration file parser fails to process a line. </p>
 
 </div>
 </div>
@@ -143,6 +151,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Pointer to the onfiguration file. </p>
 
 </div>
 </div>
@@ -157,6 +166,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Buffer holding the current line processed by the configuration file parser. </p>
 
 </div>
 </div>
@@ -171,6 +181,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Current line number of the configuration file that the configuration file parser is processing. </p>
 
 </div>
 </div>
@@ -185,11 +196,12 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Current status of the configuration file parser. </p>
 
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>include/<a class="el" href="detscat__config_8h_source.html">detscat_config.h</a></li>
+<li>C:/Users/bzc6rs/Documents/01_Dev/detscat/include/<a class="el" href="detscat__config_8h_source.html">detscat_config.h</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -1,0 +1,33 @@
+/**
+ * @file        detscat_config.h 
+ * @brief       Definition of the configuration file parser and data container
+ *
+ * This module provides a parser and corresponding functions for parsing the
+ * main user input configuration file. It also defines a structured data
+ * container for storing the parsed configuration parameters.
+ *
+ * @author      Aldo Gargiulo
+ * @author      Postdoctoral Research Associate
+ * @author      Aerospace Research Laboratory
+ * @author      University of Virginia
+ * @author      Department of Mechanical and Aerospace Engineering
+ * @author      570 Edgemont Rd.
+ * @author      Charlottesville, VA 22903
+ * @author      bzc6rs@virginia.edu
+ *
+ * @version     1.0
+ * @date        2025-08-02
+ */
+
+/**
+ *
+ * @struct DetScatConfig
+ * @brief Structured data container for the configuration file parameters.
+ *
+ * This struct stores all required user input parameters, as defined in the
+ * configuration file. It serves as a central container for accessing parsed
+ * configuration values throughout the application.
+ *
+ * See @ref config_file_format for details on the expected configuration file
+ * format.
+ */

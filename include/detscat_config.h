@@ -1,23 +1,3 @@
-/**
- * @file        detscat_config.h 
- * @brief       Configuration file parser and data container.
- *
- * This module provides functionality for parsing the main user input
- * configuration file. It also defines a structured data container for
- * storing the parsed configuration parameters.
- *
- * @author      Aldo Gargiulo
- * @author      Postdoctoral Research Associate
- * @author      Aerospace Research Laboratory
- * @author      University of Virginia
- * @author      Department of Mechanical and Aerospace Engineering
- * @author      570 Edgemont Rd.
- * @author      Charlottesville, VA 22903
- * @author      bzc6rs@virginia.edu
- *
- * @version     1.0
- * @date        2025-08-02
- */
 #ifndef DETSCAT_CONFIG_H
 #define DETSCAT_CONFIG_H
 
@@ -26,20 +6,30 @@
 
 #include "mymath.h"
 
+/**
+ * @brief Specifies the maximum length, in bytes, of a line in the configuration file.
+ * 
+ * Specifies the maximum length, in bytes, of a line in the configuration file.
+ */
 #define DETSCAT_CONFIG_LINE_MAX 1024
+/**
+ * @brief Specifies the maximum length, in bytes, of a system path definition
+ * in the configuration file.
+ *
+ * Specifies the maximum length, in bytes, of a system path definition in the
+ * configuration file.
+ */
 #define DETSCAT_CONFIG_PATH_MAX 512
+/**
+ * @brief Specifies the maximum length, in bytes, of an error message produced
+ * by the configuration file parser.
+ *
+ * Specifies the maximum length, in bytes, of an error message produced by the
+ * configuration file parser.
+ */
 #define DETSCAT_CONFIG_ERR_MSG_MAX 256
 
 
-/**
- * @brief Structured data container for configuration file parameters.
- *
- * This struct stores all required user input parameters, as defined in the
- * configuration file. It serves as a central container for accessing parsed
- * configuration values throughout the application.
- *
- * See @ref config_file_format for details on the expected configuration format.
- */
 typedef struct {
 
     // Incident light source -- pulsed laser
@@ -116,43 +106,109 @@ typedef struct {
 } DetScatConfig;
 
 /**
- * Global instance of the configuration file struct. 
+ * `extern` declaration of configuration file struct instance to allow global access. 
  */
 extern DetScatConfig config;
 
+/**
+ * @brief Configuration file parser status enum.
+ *
+ * This enum provides status codes for the configuration file parser.
+ */
 typedef enum {
+    /**
+     * The status is OK.
+     */
     DETSCAT_CONFIG_PARSER_OK = 0,
-    DETSCAT_CONFIG_PARSER_ERR_VAL_RANGE,
+    /**
+     * The configuration file format is wrong. 
+     */
     DETSCAT_CONFIG_PARSER_ERR_FORMAT,
-    DETSCAT_CONFIG_PARSER_ERR_UNKNOWN_KEY
+    /**
+     * Unknown configuration file parameter. 
+     */
+    DETSCAT_CONFIG_PARSER_ERR_UNKNOWN_KEY,
+    /**
+     * The value from a key-value pair is out of range.
+     */
+    DETSCAT_CONFIG_PARSER_ERR_VAL_RANGE
 } DetScatConfigParserStatus;
 
+/**
+ * @brief Structure representing the configuration file parser.
+ *
+ * This struct defines a parser to parse the configuration file data.
+ */
 typedef struct {
-    FILE *file;                                     // Config file path
-    int line_number;                                // Current line number
-    DetScatConfigParserStatus status;               // Parser status code
-    bool eof;                                       // End-of-file flag
-    char line[DETSCAT_CONFIG_LINE_MAX];             // Current line buffer
-    char err_msg[DETSCAT_CONFIG_ERR_MSG_MAX];       // Last error message
+    /**
+     * Pointer to the onfiguration file. 
+     */
+    FILE *file;
+    /**
+     * Current line number of the configuration file that the configuration file
+     * parser is processing. 
+     */
+    int line_number;
+    /**
+     * Current status of the configuration file parser.
+     */
+    DetScatConfigParserStatus status;
+    /**
+     * End-of-file flag, which is set to `true` if the parser successfully
+     * processes the entire file.
+     */
+    bool eof;
+    /**
+     * Buffer holding the current line processed by the configuration file
+     * parser.
+     */
+    char line[DETSCAT_CONFIG_LINE_MAX];
+    /**
+     * Error message providing details in case that the configuration file
+     * parser fails to process a line.
+     */
+    char err_msg[DETSCAT_CONFIG_ERR_MSG_MAX];
 } DetScatConfigParser;
 
 /**
- * @brief Opens and initializes the configuration file parser.
+ * @brief Initializes the configuration file parser.
  *
- * @param file_path Path to the configuration file.
- * @return Pointer to the configuration parser, or 'NULL' if the function fails.
+ * This function opens the configuration file and initializes the
+ * configuration file parser.
+ *
+ * @param file_path
+ *   Path to the configuration file.
+ * @return 
+ *   Pointer to the configuration file parser, or 'NULL' if the function
+ *   fails.
  */
 DetScatConfigParser *detscat_config_parser_create(const char *cfg_file_path);
 
+/** 
+ * @brief Parses the configuration file.
+ *
+ * This function parses the configuration file content and save extracted data
+ * into a data struct. It returns `true` on success, or `false` on error.
+ *
+ * @param parser 
+ *   Pointer to the configuration file parser
+ * @param config
+ *   Pointer to the data struct storing the configuration file
+ *   content.
+ */
 bool detscat_config_parser_parse(DetScatConfigParser *parser,
                                  DetScatConfig *config);
-/* Parses file into the config struct.
- *
- * It returns `true` on success, or `false` on error.
- */
 
+/** 
+ * @brief Closes the configuration file and frees parser resources. 
+ *
+ * This function closes the configuration file and frees any unused
+ * configuration file parser resources.
+ * 
+ * @param parser
+ *   Pointer to the configuration file parser
+ */
 void detscat_config_parser_free(DetScatConfigParser *parser);
-// Close file and free parser memory.
 
 #endif  // DETSCAT_CONFIG_H
 

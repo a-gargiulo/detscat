@@ -2,6 +2,11 @@
 \hypertarget{struct_det_scat_config_parser}{}\label{struct_det_scat_config_parser}\index{DetScatConfigParser@{DetScatConfigParser}}
 
 
+Structure representing the configuration file parser.  
+
+
+
+
 {\ttfamily \#include $<$detscat\+\_\+config.\+h$>$}
 
 \doxysubsubsection*{Data Fields}
@@ -21,6 +26,11 @@ char \mbox{\hyperlink{struct_det_scat_config_parser_acea659d58db3642a2698b3d164d
 \end{DoxyCompactItemize}
 
 
+\doxysubsection{Detailed Description}
+Structure representing the configuration file parser. 
+
+This struct defines a parser to parse the configuration file data. 
+
 \label{doc-variable-members}
 \Hypertarget{struct_det_scat_config_parser_doc-variable-members}
 \doxysubsection{Field Documentation}
@@ -30,38 +40,38 @@ char \mbox{\hyperlink{struct_det_scat_config_parser_acea659d58db3642a2698b3d164d
 {\footnotesize\ttfamily \label{struct_det_scat_config_parser_a6c052602d1d43227768ad3807f7b7268} 
 bool eof}
 
-\Hypertarget{struct_det_scat_config_parser_acea659d58db3642a2698b3d164dbff6a}\index{DetScatConfigParser@{DetScatConfigParser}!err\_msg@{err\_msg}}
+End-\/of-\/file flag, which is set to {\ttfamily true} if the parser successfully processes the entire file. \Hypertarget{struct_det_scat_config_parser_acea659d58db3642a2698b3d164dbff6a}\index{DetScatConfigParser@{DetScatConfigParser}!err\_msg@{err\_msg}}
 \index{err\_msg@{err\_msg}!DetScatConfigParser@{DetScatConfigParser}}
 \doxysubsubsection{\texorpdfstring{err\_msg}{err\_msg}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_parser_acea659d58db3642a2698b3d164dbff6a} 
 char err\+\_\+msg\mbox{[}256\mbox{]}}
 
-\Hypertarget{struct_det_scat_config_parser_a702945180aa732857b380a007a7e2a21}\index{DetScatConfigParser@{DetScatConfigParser}!file@{file}}
+Error message providing details in case that the configuration file parser fails to process a line. \Hypertarget{struct_det_scat_config_parser_a702945180aa732857b380a007a7e2a21}\index{DetScatConfigParser@{DetScatConfigParser}!file@{file}}
 \index{file@{file}!DetScatConfigParser@{DetScatConfigParser}}
 \doxysubsubsection{\texorpdfstring{file}{file}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_parser_a702945180aa732857b380a007a7e2a21} 
 FILE\texorpdfstring{$\ast$}{*} file}
 
-\Hypertarget{struct_det_scat_config_parser_a30737bdb5fdeca973e220c8ee9a4d083}\index{DetScatConfigParser@{DetScatConfigParser}!line@{line}}
+Pointer to the onfiguration file. \Hypertarget{struct_det_scat_config_parser_a30737bdb5fdeca973e220c8ee9a4d083}\index{DetScatConfigParser@{DetScatConfigParser}!line@{line}}
 \index{line@{line}!DetScatConfigParser@{DetScatConfigParser}}
 \doxysubsubsection{\texorpdfstring{line}{line}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_parser_a30737bdb5fdeca973e220c8ee9a4d083} 
 char line\mbox{[}1024\mbox{]}}
 
-\Hypertarget{struct_det_scat_config_parser_ada7b81cc6d5bbe25b92c0162697e0f58}\index{DetScatConfigParser@{DetScatConfigParser}!line\_number@{line\_number}}
+Buffer holding the current line processed by the configuration file parser. \Hypertarget{struct_det_scat_config_parser_ada7b81cc6d5bbe25b92c0162697e0f58}\index{DetScatConfigParser@{DetScatConfigParser}!line\_number@{line\_number}}
 \index{line\_number@{line\_number}!DetScatConfigParser@{DetScatConfigParser}}
 \doxysubsubsection{\texorpdfstring{line\_number}{line\_number}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_parser_ada7b81cc6d5bbe25b92c0162697e0f58} 
 int line\+\_\+number}
 
-\Hypertarget{struct_det_scat_config_parser_a5fa2f87445fc39badde0d2e52f10f8d3}\index{DetScatConfigParser@{DetScatConfigParser}!status@{status}}
+Current line number of the configuration file that the configuration file parser is processing. \Hypertarget{struct_det_scat_config_parser_a5fa2f87445fc39badde0d2e52f10f8d3}\index{DetScatConfigParser@{DetScatConfigParser}!status@{status}}
 \index{status@{status}!DetScatConfigParser@{DetScatConfigParser}}
 \doxysubsubsection{\texorpdfstring{status}{status}}
 {\footnotesize\ttfamily \label{struct_det_scat_config_parser_a5fa2f87445fc39badde0d2e52f10f8d3} 
 \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4}{Det\+Scat\+Config\+Parser\+Status}} status}
 
-
+Current status of the configuration file parser. 
 
 The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
 \item 
-include/\mbox{\hyperlink{detscat__config_8h}{detscat\+\_\+config.\+h}}\end{DoxyCompactItemize}
+C\+:/\+Users/bzc6rs/\+Documents/01\+\_\+\+Dev/detscat/include/\mbox{\hyperlink{detscat__config_8h}{detscat\+\_\+config.\+h}}\end{DoxyCompactItemize}

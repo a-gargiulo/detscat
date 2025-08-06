@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.14.0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>DetScat: include/detscat_config.h File Reference</title>
+<title>DetScat: C:/Users/bzc6rs/Documents/01_Dev/detscat/include/detscat_config.h File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -92,7 +92,7 @@ $(function(){initNavTree('detscat__config_8h.html','',''); });
 </div><!--header-->
 <div class="contents">
 
-<p>Configuration file parser and data container.  
+<p>Definition of the configuration file parser and data container.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stdbool.h&gt;</code><br />
 <code>#include &lt;stdio.h&gt;</code><br />
@@ -103,42 +103,44 @@ $(function(){initNavTree('detscat__config_8h.html','',''); });
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:DetScatConfig" id="r_DetScatConfig"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_det_scat_config.html">DetScatConfig</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structured data container for configuration file parameters.  <a href="struct_det_scat_config.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structured data container for the configuration file parameters.  <a href="struct_det_scat_config.html#details">More...</a><br /></td></tr>
 <tr class="memitem:DetScatConfigParser" id="r_DetScatConfigParser"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_det_scat_config_parser.html">DetScatConfigParser</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure representing the configuration file parser.  <a href="struct_det_scat_config_parser.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:aaea7f13fd191ff52dfd122bbb44f8e74" id="r_aaea7f13fd191ff52dfd122bbb44f8e74"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aaea7f13fd191ff52dfd122bbb44f8e74">DETSCAT_CONFIG_LINE_MAX</a>&#160;&#160;&#160;1024</td></tr>
+<tr class="memdesc:aaea7f13fd191ff52dfd122bbb44f8e74"><td class="mdescLeft">&#160;</td><td class="mdescRight">Specifies the maximum length, in bytes, of a line in the configuration file.  <br /></td></tr>
 <tr class="memitem:af4cdc14ce6155c6d9336dd23ae035afa" id="r_af4cdc14ce6155c6d9336dd23ae035afa"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af4cdc14ce6155c6d9336dd23ae035afa">DETSCAT_CONFIG_PATH_MAX</a>&#160;&#160;&#160;512</td></tr>
+<tr class="memdesc:af4cdc14ce6155c6d9336dd23ae035afa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Specifies the maximum length, in bytes, of a system path definition in the configuration file.  <br /></td></tr>
 <tr class="memitem:afb5e39a9a588a735ca5389b9570d146b" id="r_afb5e39a9a588a735ca5389b9570d146b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#afb5e39a9a588a735ca5389b9570d146b">DETSCAT_CONFIG_ERR_MSG_MAX</a>&#160;&#160;&#160;256</td></tr>
+<tr class="memdesc:afb5e39a9a588a735ca5389b9570d146b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Specifies the maximum length, in bytes, of an error message produced by the configuration file parser.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:adff7ce6848949c65278c953c939e2db4" id="r_adff7ce6848949c65278c953c939e2db4"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#adff7ce6848949c65278c953c939e2db4">DetScatConfigParserStatus</a> { <br />
-&#160;&#160;<a class="el" href="#adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e">DETSCAT_CONFIG_PARSER_OK</a> = 0
-, <a class="el" href="#adff7ce6848949c65278c953c939e2db4abd14a4eed1a508d5fdd49f1bd0357601">DETSCAT_CONFIG_PARSER_ERR_FILE_NOT_FOUND</a>
-, <a class="el" href="#adff7ce6848949c65278c953c939e2db4af9ef6cba38281e57f506b94f25b6ee2d">DETSCAT_CONFIG_PARSER_ERR_ALLOC</a>
-, <a class="el" href="#adff7ce6848949c65278c953c939e2db4a5936e64d6db6bbdf553b7e3c98a6ce31">DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG</a>
-, <br />
-&#160;&#160;<a class="el" href="#adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576">DETSCAT_CONFIG_PARSER_ERR_FORMAT</a>
+<tr class="memitem:adff7ce6848949c65278c953c939e2db4" id="r_adff7ce6848949c65278c953c939e2db4"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#adff7ce6848949c65278c953c939e2db4">DetScatConfigParserStatus</a> { <a class="el" href="#adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e">DETSCAT_CONFIG_PARSER_OK</a> = 0
+, <a class="el" href="#adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576">DETSCAT_CONFIG_PARSER_ERR_FORMAT</a>
 , <a class="el" href="#adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079">DETSCAT_CONFIG_PARSER_ERR_UNKNOWN_KEY</a>
-<br />
+, <a class="el" href="#adff7ce6848949c65278c953c939e2db4a2c16c5f5a8c5609a5cb1c8e2af4f316b">DETSCAT_CONFIG_PARSER_ERR_VAL_RANGE</a>
  }</td></tr>
+<tr class="memdesc:adff7ce6848949c65278c953c939e2db4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configuration file parser status enum.  <a href="#adff7ce6848949c65278c953c939e2db4">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9011b25526ca9b01041eba4e9bd3a981" id="r_a9011b25526ca9b01041eba4e9bd3a981"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_det_scat_config_parser.html">DetScatConfigParser</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9011b25526ca9b01041eba4e9bd3a981">detscat_config_parser_create</a> (const char *file_path)</td></tr>
+<tr class="memitem:aedbb81c2175b2b2a068a647846ed64a3" id="r_aedbb81c2175b2b2a068a647846ed64a3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_det_scat_config_parser.html">DetScatConfigParser</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aedbb81c2175b2b2a068a647846ed64a3">detscat_config_parser_create</a> (const char *cfg_file_path)</td></tr>
+<tr class="memdesc:aedbb81c2175b2b2a068a647846ed64a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes the configuration file parser.  <br /></td></tr>
 <tr class="memitem:a7336e43cb6202ede03b4020264891ee1" id="r_a7336e43cb6202ede03b4020264891ee1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7336e43cb6202ede03b4020264891ee1">detscat_config_parser_parse</a> (<a class="el" href="struct_det_scat_config_parser.html">DetScatConfigParser</a> *parser, <a class="el" href="struct_det_scat_config.html">DetScatConfig</a> *<a class="el" href="#a39b2a0475df4e2f89a1a9727dba5f893">config</a>)</td></tr>
-<tr class="memdesc:a7336e43cb6202ede03b4020264891ee1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens and initializes the configuration file parser.  <br /></td></tr>
+<tr class="memdesc:a7336e43cb6202ede03b4020264891ee1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parses the configuration file.  <br /></td></tr>
 <tr class="memitem:adf28b752954dd2a01c2fe7e6b603e9c1" id="r_adf28b752954dd2a01c2fe7e6b603e9c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#adf28b752954dd2a01c2fe7e6b603e9c1">detscat_config_parser_free</a> (<a class="el" href="struct_det_scat_config_parser.html">DetScatConfigParser</a> *parser)</td></tr>
+<tr class="memdesc:adf28b752954dd2a01c2fe7e6b603e9c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes the configuration file and frees parser resources.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a39b2a0475df4e2f89a1a9727dba5f893" id="r_a39b2a0475df4e2f89a1a9727dba5f893"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_det_scat_config.html">DetScatConfig</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a39b2a0475df4e2f89a1a9727dba5f893">config</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Configuration file parser and data container. </p>
-<p>This module provides functionality for parsing the main user input configuration file. It also defines a structured data container for storing the parsed configuration parameters.</p>
+<div class="textblock"><p>Definition of the configuration file parser and data container. </p>
+<p>This module provides a parser and corresponding functions for parsing the main user input configuration file. It also defines a structured data container for storing the parsed configuration parameters.</p>
 <dl class="section author"><dt>Author</dt><dd>Aldo Gargiulo </dd>
 <dd>
 Postdoctoral Research Associate </dd>
@@ -169,6 +171,9 @@ Charlottesville, VA 22903 </dd>
       </table>
 </div><div class="memdoc">
 
+<p>Specifies the maximum length, in bytes, of an error message produced by the configuration file parser. </p>
+<p>Specifies the maximum length, in bytes, of an error message produced by the configuration file parser. </p>
+
 </div>
 </div>
 <a id="aaea7f13fd191ff52dfd122bbb44f8e74" name="aaea7f13fd191ff52dfd122bbb44f8e74"></a>
@@ -182,6 +187,9 @@ Charlottesville, VA 22903 </dd>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Specifies the maximum length, in bytes, of a line in the configuration file. </p>
+<p>Specifies the maximum length, in bytes, of a line in the configuration file. </p>
 
 </div>
 </div>
@@ -197,6 +205,9 @@ Charlottesville, VA 22903 </dd>
       </table>
 </div><div class="memdoc">
 
+<p>Specifies the maximum length, in bytes, of a system path definition in the configuration file. </p>
+<p>Specifies the maximum length, in bytes, of a system path definition in the configuration file. </p>
+
 </div>
 </div>
 <a name="doc-enum-members" id="doc-enum-members"></a><h2 id="header-doc-enum-members" class="groupheader">Enumeration Type Documentation</h2>
@@ -211,20 +222,25 @@ Charlottesville, VA 22903 </dd>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Configuration file parser status enum. </p>
+<p>This enum provides status codes for the configuration file parser. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e" name="adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e"></a>DETSCAT_CONFIG_PARSER_OK&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4abd14a4eed1a508d5fdd49f1bd0357601" name="adff7ce6848949c65278c953c939e2db4abd14a4eed1a508d5fdd49f1bd0357601"></a>DETSCAT_CONFIG_PARSER_ERR_FILE_NOT_FOUND&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4af9ef6cba38281e57f506b94f25b6ee2d" name="adff7ce6848949c65278c953c939e2db4af9ef6cba38281e57f506b94f25b6ee2d"></a>DETSCAT_CONFIG_PARSER_ERR_ALLOC&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4a5936e64d6db6bbdf553b7e3c98a6ce31" name="adff7ce6848949c65278c953c939e2db4a5936e64d6db6bbdf553b7e3c98a6ce31"></a>DETSCAT_CONFIG_PARSER_ERR_INVALID_ARG&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576" name="adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576"></a>DETSCAT_CONFIG_PARSER_ERR_FORMAT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079" name="adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079"></a>DETSCAT_CONFIG_PARSER_ERR_UNKNOWN_KEY&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e" name="adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e"></a>DETSCAT_CONFIG_PARSER_OK&#160;</td><td class="fielddoc"><p>The status is OK. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576" name="adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576"></a>DETSCAT_CONFIG_PARSER_ERR_FORMAT&#160;</td><td class="fielddoc"><p>The configuration file format is wrong. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079" name="adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079"></a>DETSCAT_CONFIG_PARSER_ERR_UNKNOWN_KEY&#160;</td><td class="fielddoc"><p>Unknown configuration file parameter. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="adff7ce6848949c65278c953c939e2db4a2c16c5f5a8c5609a5cb1c8e2af4f316b" name="adff7ce6848949c65278c953c939e2db4a2c16c5f5a8c5609a5cb1c8e2af4f316b"></a>DETSCAT_CONFIG_PARSER_ERR_VAL_RANGE&#160;</td><td class="fielddoc"><p>The value from a key-value pair is out of range. </p>
+</td></tr>
 </table>
 
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="a9011b25526ca9b01041eba4e9bd3a981" name="a9011b25526ca9b01041eba4e9bd3a981"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9011b25526ca9b01041eba4e9bd3a981">&#9670;&#160;</a></span>detscat_config_parser_create()</h2>
+<a id="aedbb81c2175b2b2a068a647846ed64a3" name="aedbb81c2175b2b2a068a647846ed64a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aedbb81c2175b2b2a068a647846ed64a3">&#9670;&#160;</a></span>detscat_config_parser_create()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -232,11 +248,21 @@ Charlottesville, VA 22903 </dd>
         <tr>
           <td class="memname"><a class="el" href="struct_det_scat_config_parser.html">DetScatConfigParser</a> * detscat_config_parser_create </td>
           <td>(</td>
-          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>file_path</em></span></td><td>)</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>cfg_file_path</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Initializes the configuration file parser. </p>
+<p>This function opens the configuration file and initializes the configuration file parser.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">file_path</td><td>Path to the configuration file. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to the configuration file parser, or 'NULL' if the function fails. </dd></dl>
 
 </div>
 </div>
@@ -254,6 +280,15 @@ Charlottesville, VA 22903 </dd>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Closes the configuration file and frees parser resources. </p>
+<p>This function closes the configuration file and frees any unused configuration file parser resources.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">parser</td><td>Pointer to the configuration file parser </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -276,14 +311,15 @@ Charlottesville, VA 22903 </dd>
       </table>
 </div><div class="memdoc">
 
-<p>Opens and initializes the configuration file parser. </p>
+<p>Parses the configuration file. </p>
+<p>This function parses the configuration file content and save extracted data into a data struct. It returns <span class="tt">true</span> on success, or <span class="tt">false</span> on error.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">file_path</td><td>Path to the configuration file. </td></tr>
+    <tr><td class="paramname">parser</td><td>Pointer to the configuration file parser </td></tr>
+    <tr><td class="paramname">config</td><td>Pointer to the data struct storing the configuration file content. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>Pointer to the configuration parser, or 'NULL' if the function fails. </dd></dl>
 
 </div>
 </div>
@@ -307,7 +343,7 @@ Charlottesville, VA 22903 </dd>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Global instance of the configuration file struct. </p>
+<p><span class="tt">extern</span> declaration of configuration file struct instance to allow global access. </p>
 
 </div>
 </div>
