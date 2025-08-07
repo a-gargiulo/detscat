@@ -1,3 +1,5 @@
 build/
 lib/
 .clang-format
+docs/html/
+docs/latex/
