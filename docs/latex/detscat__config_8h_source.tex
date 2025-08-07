@@ -1,5 +1,5 @@
 \doxysection{detscat\+\_\+config.\+h}
-\hypertarget{detscat__config_8h_source}{}\label{detscat__config_8h_source}\index{C:/Users/bzc6rs/Documents/01\_Dev/detscat/include/detscat\_config.h@{C:/Users/bzc6rs/Documents/01\_Dev/detscat/include/detscat\_config.h}}
+\hypertarget{detscat__config_8h_source}{}\label{detscat__config_8h_source}\index{/Users/galdo/Documents/Dev/detscat/include/detscat\_config.h@{/Users/galdo/Documents/Dev/detscat/include/detscat\_config.h}}
 \mbox{\hyperlink{detscat__config_8h}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
 \DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ DETSCAT\_CONFIG\_H}}
@@ -10,61 +10,64 @@
 \DoxyCodeLine{00006\ }
 \DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}mymath.h"{}}}
 \DoxyCodeLine{00008\ }
-\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#define\ DETSCAT\_CONFIG\_LINE\_MAX\ 1024}\textcolor{preprocessor}{}}
-\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#define\ DETSCAT\_CONFIG\_PATH\_MAX\ 512}\textcolor{preprocessor}{}}
-\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#define\ DETSCAT\_CONFIG\_ERR\_MSG\_MAX\ 256}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ DETSCAT\_CONFIG\_LINE\_MAX\ 1024}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#define\ DETSCAT\_CONFIG\_PATH\_MAX\ 512}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#define\ DETSCAT\_CONFIG\_ERR\_MSG\_MAX\ 256}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\{}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \ \ \ \ ComplexVec3\ \mbox{\hyperlink{struct_det_scat_config_aa33044c75ca0c31fbca13d4d3b79dd5e}{polarization}};}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ \ \ \ \ Vec3\ \mbox{\hyperlink{struct_det_scat_config_a924c5395c0e91564f8eb52982f94dce8}{camera\_center\_position\_m}};}
+\DoxyCodeLine{00019\ \ \ \ \ Vec3\ \mbox{\hyperlink{struct_det_scat_config_a7d1f9c46ce7e50a942b4306c9ee6ee78}{camera\_sensor\_normal\_vector}};}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a07c836466ef41416766838b8b266816e}{beam\_diameter\_mm}};}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a57007d05ede4ebe9baa19377cc427fc9}{focal\_length\_mm}};}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a676a10143d0989e9ae29ad20de90686e}{sensor\_height\_mm}};}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a695264461a00b66936870f3c3b8793c9}{sensor\_width\_mm}};}
+\DoxyCodeLine{00025\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a3f61bc2eea2d2bec947905d71ab5b157}{pulse\_energy\_mj}};}
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a2930b20ed6ee9437bc168e61e531de75}{pulse\_width\_ns}};}
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a79412f1739c967b5ece0c55cf9aa6294}{wavelength\_nm}};}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{struct_det_scat_config_a1a14ce24f6f186892d309a6bae8c76b2}{camera\_resolution\_x\_px}};}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{struct_det_scat_config_aceae846cb54faeb41341f0bec2cfab73}{camera\_resolution\_y\_px}};}
 \DoxyCodeLine{00031\ }
-\DoxyCodeLine{00032\ }
-\DoxyCodeLine{00043\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\{}
-\DoxyCodeLine{00044\ }
-\DoxyCodeLine{00045\ \ \ \ \ \textcolor{comment}{//\ Incident\ light\ source\ -\/-\/\ pulsed\ laser}}
-\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{struct_det_scat_config_ae3d8fcd32e276c275efd45671a3c1fbb}{is\_polarized}};}
-\DoxyCodeLine{00055\ \ \ \ \ ComplexVec3\ \mbox{\hyperlink{struct_det_scat_config_aa33044c75ca0c31fbca13d4d3b79dd5e}{polarization}};}
-\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a79412f1739c967b5ece0c55cf9aa6294}{wavelength\_nm}};}
-\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a3f61bc2eea2d2bec947905d71ab5b157}{pulse\_energy\_mj}};}
-\DoxyCodeLine{00070\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a2930b20ed6ee9437bc168e61e531de75}{pulse\_width\_ns}};}
-\DoxyCodeLine{00075\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a07c836466ef41416766838b8b266816e}{beam\_diameter\_mm}};}
-\DoxyCodeLine{00076\ }
-\DoxyCodeLine{00077\ \ \ \ \ \textcolor{comment}{//\ Particles}}
-\DoxyCodeLine{00081\ \ \ \ \ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{struct_det_scat_config_ae062e1a8b9303512494033a9dc50246f}{particles\_definition\_file}}[\mbox{\hyperlink{detscat__config_8h_af4cdc14ce6155c6d9336dd23ae035afa}{DETSCAT\_CONFIG\_PATH\_MAX}}];}
-\DoxyCodeLine{00082\ }
-\DoxyCodeLine{00083\ \ \ \ \ \textcolor{comment}{//\ Camera}}
-\DoxyCodeLine{00088\ \ \ \ \ Vec3\ \mbox{\hyperlink{struct_det_scat_config_a924c5395c0e91564f8eb52982f94dce8}{camera\_center\_position\_m}};}
-\DoxyCodeLine{00094\ \ \ \ \ Vec3\ \mbox{\hyperlink{struct_det_scat_config_a7d1f9c46ce7e50a942b4306c9ee6ee78}{camera\_sensor\_normal\_vector}};}
-\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a695264461a00b66936870f3c3b8793c9}{sensor\_width\_mm}};}
-\DoxyCodeLine{00102\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a676a10143d0989e9ae29ad20de90686e}{sensor\_height\_mm}};}
-\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{struct_det_scat_config_a57007d05ede4ebe9baa19377cc427fc9}{focal\_length\_mm}};}
-\DoxyCodeLine{00110\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{struct_det_scat_config_a1a14ce24f6f186892d309a6bae8c76b2}{camera\_resolution\_x\_px}};}
-\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{struct_det_scat_config_aceae846cb54faeb41341f0bec2cfab73}{camera\_resolution\_y\_px}};}
-\DoxyCodeLine{00115\ }
-\DoxyCodeLine{00116\ \}\ \mbox{\hyperlink{struct_det_scat_config}{DetScatConfig}};}
-\DoxyCodeLine{00117\ }
-\DoxyCodeLine{00121\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_det_scat_config}{DetScatConfig}}\ \mbox{\hyperlink{detscat__config_8h_a39b2a0475df4e2f89a1a9727dba5f893}{config}};}
-\DoxyCodeLine{00122\ }
-\DoxyCodeLine{00128\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}\ \{}
-\DoxyCodeLine{00132\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e}{DETSCAT\_CONFIG\_PARSER\_OK}}\ =\ 0,}
-\DoxyCodeLine{00136\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576}{DETSCAT\_CONFIG\_PARSER\_ERR\_FORMAT}},}
-\DoxyCodeLine{00140\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079}{DETSCAT\_CONFIG\_PARSER\_ERR\_UNKNOWN\_KEY}},}
-\DoxyCodeLine{00144\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a2c16c5f5a8c5609a5cb1c8e2af4f316b}{DETSCAT\_CONFIG\_PARSER\_ERR\_VAL\_RANGE}}}
-\DoxyCodeLine{00145\ \}\ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4}{DetScatConfigParserStatus}};}
-\DoxyCodeLine{00146\ }
-\DoxyCodeLine{00152\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\{}
-\DoxyCodeLine{00156\ \ \ \ \ FILE\ *\mbox{\hyperlink{struct_det_scat_config_parser_a702945180aa732857b380a007a7e2a21}{file}};}
-\DoxyCodeLine{00161\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{struct_det_scat_config_parser_ada7b81cc6d5bbe25b92c0162697e0f58}{line\_number}};}
-\DoxyCodeLine{00165\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4}{DetScatConfigParserStatus}}\ \mbox{\hyperlink{struct_det_scat_config_parser_a5fa2f87445fc39badde0d2e52f10f8d3}{status}};}
-\DoxyCodeLine{00170\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{struct_det_scat_config_parser_a6c052602d1d43227768ad3807f7b7268}{eof}};}
-\DoxyCodeLine{00175\ \ \ \ \ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{struct_det_scat_config_parser_a30737bdb5fdeca973e220c8ee9a4d083}{line}}[\mbox{\hyperlink{detscat__config_8h_aaea7f13fd191ff52dfd122bbb44f8e74}{DETSCAT\_CONFIG\_LINE\_MAX}}];}
-\DoxyCodeLine{00180\ \ \ \ \ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{struct_det_scat_config_parser_acea659d58db3642a2698b3d164dbff6a}{err\_msg}}[\mbox{\hyperlink{detscat__config_8h_afb5e39a9a588a735ca5389b9570d146b}{DETSCAT\_CONFIG\_ERR\_MSG\_MAX}}];}
-\DoxyCodeLine{00181\ \}\ \mbox{\hyperlink{struct_det_scat_config_parser}{DetScatConfigParser}};}
-\DoxyCodeLine{00182\ }
-\DoxyCodeLine{00195\ \mbox{\hyperlink{struct_det_scat_config_parser}{DetScatConfigParser}}\ *\mbox{\hyperlink{detscat__config_8h_aedbb81c2175b2b2a068a647846ed64a3}{detscat\_config\_parser\_create}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *cfg\_file\_path);}
-\DoxyCodeLine{00196\ }
-\DoxyCodeLine{00209\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{detscat__config_8h_a7336e43cb6202ede03b4020264891ee1}{detscat\_config\_parser\_parse}}(\mbox{\hyperlink{struct_det_scat_config_parser}{DetScatConfigParser}}\ *parser,}
-\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{struct_det_scat_config}{DetScatConfig}}\ *\mbox{\hyperlink{detscat__config_8h_a39b2a0475df4e2f89a1a9727dba5f893}{config}});}
-\DoxyCodeLine{00211\ }
-\DoxyCodeLine{00221\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{detscat__config_8h_adf28b752954dd2a01c2fe7e6b603e9c1}{detscat\_config\_parser\_free}}(\mbox{\hyperlink{struct_det_scat_config_parser}{DetScatConfigParser}}\ *parser);}
-\DoxyCodeLine{00222\ }
-\DoxyCodeLine{00223\ \textcolor{preprocessor}{\#endif\ \ }\textcolor{comment}{//\ DETSCAT\_CONFIG\_H}}
-\DoxyCodeLine{00224\ }
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{struct_det_scat_config_ae3d8fcd32e276c275efd45671a3c1fbb}{is\_polarized}};}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{struct_det_scat_config_ae062e1a8b9303512494033a9dc50246f}{particles\_definition\_file}}[\mbox{\hyperlink{detscat__config_8h_af4cdc14ce6155c6d9336dd23ae035afa}{DETSCAT\_CONFIG\_PATH\_MAX}}];}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00036\ \}\ \mbox{\hyperlink{struct_det_scat_config}{DetScatConfig}};}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_det_scat_config}{DetScatConfig}}\ \mbox{\hyperlink{detscat__config_8h_a39b2a0475df4e2f89a1a9727dba5f893}{config}};}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}\ \{}
+\DoxyCodeLine{00043\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a6dbe87d414a6059171ad649553ec5e4e}{DETSCAT\_CONFIG\_PARSER\_OK}}\ =\ 0,}
+\DoxyCodeLine{00044\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4ace4f47aee15c39a5dd18af4b16dc4576}{DETSCAT\_CONFIG\_PARSER\_ERR\_FORMAT}},}
+\DoxyCodeLine{00045\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a88821ce57097b7a4d5e8285f6d31b079}{DETSCAT\_CONFIG\_PARSER\_ERR\_UNKNOWN\_KEY}},}
+\DoxyCodeLine{00046\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4a2c16c5f5a8c5609a5cb1c8e2af4f316b}{DETSCAT\_CONFIG\_PARSER\_ERR\_VAL\_RANGE}}}
+\DoxyCodeLine{00047\ \}\ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4}{DetScatConfigParserStatus}};}
+\DoxyCodeLine{00048\ }
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00050\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\{}
+\DoxyCodeLine{00051\ \ \ \ \ FILE\ *\mbox{\hyperlink{struct_det_scat_config_parser_a702945180aa732857b380a007a7e2a21}{file}};}
+\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{struct_det_scat_config_parser_ada7b81cc6d5bbe25b92c0162697e0f58}{line\_number}};}
+\DoxyCodeLine{00053\ \ \ \ \ \mbox{\hyperlink{detscat__config_8h_adff7ce6848949c65278c953c939e2db4}{DetScatConfigParserStatus}}\ \mbox{\hyperlink{struct_det_scat_config_parser_a5fa2f87445fc39badde0d2e52f10f8d3}{status}};}
+\DoxyCodeLine{00054\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{struct_det_scat_config_parser_a6c052602d1d43227768ad3807f7b7268}{eof}};}
+\DoxyCodeLine{00055\ \ \ \ \ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{struct_det_scat_config_parser_a30737bdb5fdeca973e220c8ee9a4d083}{line}}[\mbox{\hyperlink{detscat__config_8h_aaea7f13fd191ff52dfd122bbb44f8e74}{DETSCAT\_CONFIG\_LINE\_MAX}}];}
+\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{struct_det_scat_config_parser_acea659d58db3642a2698b3d164dbff6a}{err\_msg}}[\mbox{\hyperlink{detscat__config_8h_afb5e39a9a588a735ca5389b9570d146b}{DETSCAT\_CONFIG\_ERR\_MSG\_MAX}}];}
+\DoxyCodeLine{00057\ \}\ \mbox{\hyperlink{struct_det_scat_config_parser}{DetScatConfigParser}};}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00059\ }
+\DoxyCodeLine{00060\ \mbox{\hyperlink{struct_det_scat_config_parser}{DetScatConfigParser}}\ *\mbox{\hyperlink{detscat__config_8h_aedbb81c2175b2b2a068a647846ed64a3}{detscat\_config\_parser\_create}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *cfg\_file\_path);}
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00062\ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{detscat__config_8h_a7336e43cb6202ede03b4020264891ee1}{detscat\_config\_parser\_parse}}(\mbox{\hyperlink{struct_det_scat_config_parser}{DetScatConfigParser}}\ *parser,}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{struct_det_scat_config}{DetScatConfig}}\ *\mbox{\hyperlink{detscat__config_8h_a39b2a0475df4e2f89a1a9727dba5f893}{config}});}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{detscat__config_8h_adf28b752954dd2a01c2fe7e6b603e9c1}{detscat\_config\_parser\_free}}(\mbox{\hyperlink{struct_det_scat_config_parser}{DetScatConfigParser}}\ *parser);}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00067\ \textcolor{preprocessor}{\#endif\ \ }\textcolor{comment}{//\ DETSCAT\_CONFIG\_H}}
 
 \end{DoxyCode}
