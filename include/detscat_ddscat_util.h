@@ -10,6 +10,12 @@
 #define DETSCAT_DDSCAT_UTIL_COMP_MAX 512
 #define DETSCAT_DDSCAT_UTIL_PLANE_PARAMS 4
 
+typedef struct {
+    int w;  // Wavelength
+    int r;  // Target size
+    int k;  // Orientation
+} DdscatCaseId;
+
 typedef enum {
     DETSCAT_DDSCAT_UTIL_OK,
     DETSCAT_DDSCAT_UTIL_ERR_CANNOT_OPEN_FILE,

@@ -1,0 +1,11 @@
+/**
+ * @def DETSCAT_PARTICLES_LINE_MAX
+ *
+ * @brief Specifies the maximally allowed line length for the particles definition file.
+ */
+
+/**
+ * @def DETSCAT_PARTICLES_PARSER_ERR_MSG_MAX
+ *
+ * @brief Specifies the maximally allowed length for an error message of the particles definition file parser.
+ */
