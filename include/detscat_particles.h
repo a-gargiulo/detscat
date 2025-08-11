@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "detscat_ddscat_util.h"
+#include "detscat_ddscat.h"
 #include "mymath.h"
 
 #define DETSCAT_PARTICLES_LINE_MAX 1024
@@ -17,7 +17,7 @@ typedef struct {
 
     Vec3 position;
 
-    DdscatCaseId case_id;
+    DetScatDdscatCaseId case_id;
 
     char *type_id;
 

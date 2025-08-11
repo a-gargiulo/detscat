@@ -12,7 +12,7 @@
 #include "detscat_camera.h"
 #include "detscat_config.h"
 #include "detscat_const.h"
-#include "detscat_ddscat_util.h"
+#include "detscat_ddscat.h"
 #include "detscat_particles.h"
 
 static void detscat_print_banner(void) {
@@ -133,11 +133,9 @@ static void detscat_parse_config_file(const char *cfg_file_path,
                              "While parsing '%s': %s", cfg_file_path,
                              cfg_parser->err_msg);
         detscat_config_parser_free(cfg_parser);
-        cfg_parser = NULL;
         return;
     }
     detscat_config_parser_free(cfg_parser);
-    cfg_parser = NULL;
 
     detscat_info("Successfully parsed '%s'.", cfg_file_path);
     return;
@@ -175,13 +173,10 @@ static void detscat_parse_particles_file(DetScatParticlesData *pr_data,
             *diagnose, DETSCAT_ERR_FILE_PARSING, "While parsing '%s': %s",
             config->particles_definition_file, pr_parser->err_msg);
         detscat_particles_parser_free(pr_parser);
-        pr_parser = NULL;
         detscat_particles_data_free(pr_data);
-        pr_data = NULL;
         return;
     }
     detscat_particles_parser_free(pr_parser);
-    pr_parser = NULL;
 
     detscat_info("Successfully parsed '%s'.", config->particles_definition_file);
     return;
@@ -195,13 +190,13 @@ static int cmp_phi(const void *a, const void *b) {
 
 static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat,
                                       size_t **map,
-                                      DetScatParticlesData *particles_data,
+                                      DetScatParticlesData *pr_data,
                                       DetScatDiagnose *diagnose) {
-    assert(particles_data != NULL);
     assert(diagnose != NULL);
+    assert(pr_data != NULL);
 
-    assert(particles_data->n_particles > 0);
-    assert(particles_data->n_definitions > 0);
+    assert(pr_data->n_particles > 0);
+    assert(pr_data->n_types > 0);
 
     *fmat = malloc(particles_data->n_particles * sizeof(Fmat *));
     *map = malloc(particles_data->n_particles * sizeof(size_t));
@@ -398,9 +393,9 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_parse_particles_file(&pr_data, &config, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-    // detscat_fetch_ddscat_data(&par, &fmat, &fmat_to_par_map, &particles_data,
-    //                           diagnose);
-    // if (diagnose->status != DETSCAT_OK) return;
+    detscat_fetch_ddscat_data(&par, &fmat, &fmat_to_par_map, &particles_data,
+                              diagnose);
+    if (diagnose->status != DETSCAT_OK) return;
 
     // // MAIN LOOP
     // #pragma omp parallel for collapse(2)
