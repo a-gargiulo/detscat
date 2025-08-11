@@ -11,6 +11,8 @@
 #include "strutil.h"
 
 DetScatConfigParser *detscat_config_parser_create(const char *cfg_file_path) {
+    assert(cfg_file_path != NULL && cfg_file_path[0] != '\0');
+
     DetScatConfigParser *cfg_parser = malloc(sizeof(DetScatConfigParser));
     if (!cfg_parser) return NULL;
 
@@ -261,4 +263,5 @@ void detscat_config_cfg_parser_free(DetScatConfigParser *cfg_parser) {
     }
 
     free(cfg_parser);
+    return;
 }

@@ -133,52 +133,57 @@ static void detscat_parse_config_file(const char *cfg_file_path,
                              "While parsing '%s': %s", cfg_file_path,
                              cfg_parser->err_msg);
         detscat_config_parser_free(cfg_parser);
+        cfg_parser = NULL;
         return;
     }
     detscat_config_parser_free(cfg_parser);
+    cfg_parser = NULL;
 
     detscat_info("Successfully parsed '%s'.", cfg_file_path);
     return;
 }
 
-static void detscat_parse_particles_file(DetScatParticlesData *particles_data,
+static void detscat_parse_particles_file(DetScatParticlesData *pr_data,
                                          DetScatConfig *config,
                                          DetScatDiagnose *diagnose) {
-    assert(particles_data != NULL);
+    assert(pr_data != NULL);
     assert(config != NULL);
     assert(diagnose != NULL);
 
     errno = 0;
-    DetScatParticlesParser *particles_parser =
+    DetScatParticlesParser *pr_parser =
         detscat_particles_parser_create(config->particles_definition_file);
-    if (!particles_parser) {
+    if (!pr_parser) {
         if (errno != 0)
             DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
                                  "Could not initialize particles definition "
                                  "file parser from '%s': %s",
-                                 cfg->particles_definition_file,
+                                 config->particles_definition_file,
                                  strerror(errno));
         else
             DETSCAT_SET_DIAGNOSE(
                 *diagnose, DETSCAT_ERR_FILE_PARSING,
                 "Could not initialize particles definition file parser from "
                 "'%s': Failed to allocate parser.",
-                cfg->particles_definition_file);
+                config->particles_definition_file);
 
         return;
     }
 
-    if (!detscat_particles_parser_parse(particles_parser, particles_data)) {
+    if (!detscat_particles_parser_parse(pr_parser, pr_data)) {
         DETSCAT_SET_DIAGNOSE(
             *diagnose, DETSCAT_ERR_FILE_PARSING, "While parsing '%s': %s",
-            cfg->particles_definition_file, particles_parser->err_msg);
-        detscat_particles_parser_free(particles_parser);
-        detscat_particles_data_free(particles_data);
+            config->particles_definition_file, pr_parser->err_msg);
+        detscat_particles_parser_free(pr_parser);
+        pr_parser = NULL;
+        detscat_particles_data_free(pr_data);
+        pr_data = NULL;
         return;
     }
-    detscat_particles_parser_free(particles_parser);
+    detscat_particles_parser_free(pr_parser);
+    pr_parser = NULL;
 
-    detscat_info("Successfully parsed '%s'.", cfg->particles_definition_file);
+    detscat_info("Successfully parsed '%s'.", config->particles_definition_file);
     return;
 }
 
@@ -372,7 +377,7 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_info("DetScat initialized successfully.");
 
     DetScatConfig config = {0};
-    DetScatParticlesData particles_data = {0};
+    DetScatParticlesData pr_data = {0};
 
     DdscatPar **par = NULL;  // one parameter file per definition.
     Fmat **fmat = NULL;
@@ -390,12 +395,12 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_parse_config_file(config_file_path, &config, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-    detscat_parse_particles_file(&particles_data, &config, diagnose);
+    detscat_parse_particles_file(&pr_data, &config, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-    detscat_fetch_ddscat_data(&par, &fmat, &fmat_to_par_map, &particles_data,
-                              diagnose);
-    if (diagnose->status != DETSCAT_OK) return;
+    // detscat_fetch_ddscat_data(&par, &fmat, &fmat_to_par_map, &particles_data,
+    //                           diagnose);
+    // if (diagnose->status != DETSCAT_OK) return;
 
     // // MAIN LOOP
     // #pragma omp parallel for collapse(2)
@@ -446,7 +451,7 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     // }
 
     // detscat_ddscat_data_free(par, fmat, fmat_to_par_map, n_fmat, n_par);
-    // detscat_particles_free(&particles_data);
+    detscat_particles_data_free(&pr_data);
     return;
 }
 
