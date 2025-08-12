@@ -183,12 +183,13 @@ static void detscat_parse_particles_file(DetScatParticlesData *pr_data,
 }
 
 static int cmp_phi(const void *a, const void *b) {
-    const Fmat *fa = (const Fmat *)a;
-    const Fmat *fb = (const Fmat *)b;
+    const DetScatDdscatFmatrix *fa = (const DetScatDdscatFmatrix *)a;
+    const DetScatDdscatFmatrix *fb = (const DetScatDdscatFmatrix *)b;
     return (fa->phi > fb->phi) - (fa->phi < fb->phi);
 }
 
-static void detscat_fetch_ddscat_data(DdscatPar ***par, Fmat ***fmat,
+static void detscat_fetch_ddscat_data(DetScatDdscatParams ***par,
+                                      DetScatDdscatFmatrix ***fmat,
                                       size_t **map,
                                       DetScatParticlesData *pr_data,
                                       DetScatDiagnose *diagnose) {
@@ -374,8 +375,10 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     DetScatConfig config = {0};
     DetScatParticlesData pr_data = {0};
 
-    DdscatPar **par = NULL;  // one parameter file per definition.
-    Fmat **fmat = NULL;
+    
+    DetScatDdscatParams **par_data = NULL;
+    DetScatDdscatFmatrix **fml_data = NULL;
+
     size_t *fmat_to_par_map = NULL;
 
     // size_t n_par = particles_data.n_definitions;

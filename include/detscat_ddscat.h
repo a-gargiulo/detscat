@@ -22,7 +22,8 @@ typedef enum {
 
     DETSCAT_DDSCAT_PARSER_OK = 0,
     DETSCAT_DDSCAT_PARSER_ERR_ALLOC,
-    DETSCAT_DDSCAT_PARSER_ERR_FORMAT
+    DETSCAT_DDSCAT_PARSER_ERR_FORMAT,
+    DETSCAT_DDSCAT_PARSER_ERR_RESET
 
 } DetScatDdscatParserStatus;
 
@@ -53,28 +54,47 @@ typedef struct {
 } DetScatDdscatParams;
 
 typedef struct {
-    Complex *f11, *f21, *f12, *f22;
-
-    size_t n_theta;
-
-    double *theta;
     double phi;
 
+    size_t len;
+
+    Complex *f11, *f21, *f12, *f22;
+    double *theta;
+
 } DetScatDdscatFmatrix;
+
+typedef struct {
+
+    size_t n_fmats;
+
+    DetScatDdscatFmatrix *fmats;
+
+} DetScatDdscatFml;
+
+typedef struct {
+    size_t n_pars;
+    size_t n_fmls;
+
+    DetScatDdscatParams **pars;
+    DetScatDdscatFml **fmls;
+
+} DetScatDdscatData;
 
 
 DetScatDdscatParser *detscat_ddscat_parser_create(const char *ddscat_file_path);
 
 void detscat_ddscat_parser_free(DetScatDdscatParser *ddscat_parser);
 
+bool detscat_ddscat_parser_reset(DetScatDdscatParser *ddscat_parser, const char *ddscat_file_path);
+
 bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser, DetScatDdscatParams *par);
 
-bool detscat_ddscat_parser_parse_fml(const char *fml_file_path,
-                                     const DetScatDdscatParams *par,
-                                     DetScatDdscatFmatrix **fmat);
+bool detscat_ddscat_parser_parse_fml(DetScatDdscatParser *ddscat_parser,
+                                     DetScatDdscatFml *fml,
+                                     const DetScatDdscatParams *par);
 
 void detscat_ddscat_par_free(DetScatDdscatParams *par);
 
-void detscat_ddscat_fmat_free(DetScatDdscatFmatrix *fmat);
+void detscat_ddscat_fml_free(DetScatDdscatFmatrix *fml, size_t n_fml);
 
 #endif  // DETSCAT_DDSCAT_H

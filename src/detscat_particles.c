@@ -54,7 +54,7 @@ static void free_types(DetScatParticlesData *pr_data, size_t count) {
     }
 
     free(pr_data->types);
-    pr_data->types = NULL;
+    // pr_data->types = NULL;
 
     return;
 }
@@ -65,10 +65,13 @@ static void free_particles(DetScatParticlesData *pr_data, size_t count) {
     for (size_t i = 0; i < count; ++i) {
         free(pr_data->particles[i].type_id);
         pr_data->particles[i].type_id = NULL;
+
+        memset(&pr_data->particles[i].position, 0, sizeof(pr_data->particles[i].position));
+        memset(&pr_data->particles[i].case_id, 0, sizeof(pr_data->particles[i].case_id));
     }
 
     free(pr_data->particles);
-    pr_data->particles = NULL;
+    // pr_data->particles = NULL;
 
     return;
 }
@@ -292,7 +295,9 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *pr_parser,
 
             case STATE_ERROR:
                 free_types(pr_data, types_allocated);
+                pr_data->types = NULL;
                 free_particles(pr_data, particles_allocated);
+                pr_data->particles = NULL;
                 pr_data->n_types = 0;
                 pr_data->n_particles = 0;
                 return false;
@@ -306,7 +311,9 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *pr_parser,
         snprintf(pr_parser->err_msg, sizeof(pr_parser->err_msg),
                  "Unexpected end of file: missing $(EndDef)");
         free_types(pr_data, types_allocated);
+        pr_data->types = NULL;
         free_particles(pr_data, particles_allocated);
+        pr_data->particles = NULL;
         pr_data->n_types = 0;
         pr_data->n_particles = 0;
         return false;
@@ -317,7 +324,9 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *pr_parser,
         snprintf(pr_parser->err_msg, sizeof(pr_parser->err_msg),
                  "Unexpected end of file: missing $(EndParticles)");
         free_types(pr_data, types_allocated);
+        pr_data->types = NULL;
         free_particles(pr_data, particles_allocated);
+        pr_data->particles = NULL;
         pr_data->n_types = 0;
         pr_data->n_particles = 0;
         return false;
@@ -330,7 +339,9 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *pr_parser,
                  "Missing section: %s",
                  !parsed_types ? "$(StartDef)" : "$(StartParticles)");
         free_types(pr_data, types_allocated);
+        pr_data->types = NULL;
         free_particles(pr_data, particles_allocated);
+        pr_data->particles = NULL;
         pr_data->n_types = 0;
         pr_data->n_particles = 0;
         return false;
@@ -344,9 +355,13 @@ void detscat_particles_data_free(DetScatParticlesData *pr_data) {
     if (!pr_data) return;
 
     free_types(pr_data, pr_data->n_types);
+    pr_data->types = NULL;
+
     free_particles(pr_data, pr_data->n_particles);
+    pr_data->particles = NULL;
 
     pr_data->n_types = 0;
     pr_data->n_particles = 0;
+
     return;
 }
