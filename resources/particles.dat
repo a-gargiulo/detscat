@@ -1,16 +1,13 @@
 $(StartDef)
 #number of particle types
-2
+1
 #alias data_dir 
-sphere ./data/sphere
-ellipsoid ./data/ellipsoid
+sphere ../../ddscat/ELLIPSOID
 $(EndDef)
 $(StartParticles)
 #number of particles
-4
+2
 #alias wavelength_idx radius_idx orientation_idx x y z
 sphere 0 0 0 0 0 0
-ellipsoid 0 0 0 0 3 4
 sphere 0 0 0 0 1 2
-ellipsoid 0 0 1 0 5 4
 $(EndParticles)

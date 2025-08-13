@@ -86,8 +86,7 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
     enum DdscatParParseState {
         PARSE_INITIAL,
         PARSE_COMP,
-        PARSE_PLANES,
-        PARSE_POLARIZATION
+        PARSE_PLANES
     };
     enum DdscatParParseState state = PARSE_INITIAL;
 
@@ -153,7 +152,18 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
                     scat_planes_parsed = 0;
                     state = PARSE_PLANES;
                 } else if (strstr(trimmed, "Polarization state")) {
-                    state = PARSE_POLARIZATION;
+                    if (sscanf(trimmed, "(%lf, %lf) (%lf, %lf) (%lf, %lf)",
+                               &par->e01.x.re, &par->e01.x.im, &par->e01.y.re,
+                               &par->e01.y.im, &par->e01.z.re,
+                               &par->e01.z.im) != 6) {
+                        snprintf(ddscat_parser->err_msg,
+                                 sizeof(ddscat_parser->err_msg),
+                                 "Invalid format for polarization state at line %d",
+                                 ddscat_parser->line_number);
+                        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+                        goto cleanup;
+                    }
+                    state = PARSE_INITIAL;
                 }
                 break;
 
@@ -224,21 +234,6 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
                 if (scat_planes_parsed == par->n_scat_planes) {
                     state = PARSE_INITIAL;
                 }
-                break;
-
-            case PARSE_POLARIZATION:
-                if (sscanf(trimmed, "(%lf, %lf) (%lf, %lf) (%lf, %lf)",
-                           &par->e01.x.re, &par->e01.x.im, &par->e01.y.re,
-                           &par->e01.y.im, &par->e01.z.re,
-                           &par->e01.z.im) != 6) {
-                    snprintf(ddscat_parser->err_msg,
-                             sizeof(ddscat_parser->err_msg),
-                             "Invalid format for polarization state at line %d",
-                             ddscat_parser->line_number);
-                    ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
-                    goto cleanup;
-                }
-                state = PARSE_INITIAL;
                 break;
         }
     }

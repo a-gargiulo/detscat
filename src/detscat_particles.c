@@ -160,6 +160,15 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *pr_parser,
                 break;
 
             case STATE_PARSE_TYPES_DEF: {
+                if (strcmp(trimmed, "$(StartParticles)") == 0) {
+                    pr_parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
+                    snprintf(pr_parser->err_msg, sizeof(pr_parser->err_msg),
+                             "Missing $(EndDef) before $(StartParticles) at line %d",
+                             pr_parser->line_number);
+                    state = STATE_ERROR;
+                    break;
+                }
+
                 if (strcmp(trimmed, "$(EndDef)") == 0) {
                     if (types_allocated != pr_data->n_types) {
                         pr_parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
@@ -237,6 +246,15 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *pr_parser,
                 break;
 
             case STATE_PARSE_PARTICLES_DEF: {
+                if (strcmp(trimmed, "$(StartDef)") == 0) {
+                    pr_parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
+                    snprintf(pr_parser->err_msg, sizeof(pr_parser->err_msg),
+                             "Missing $(EndParticles) before $(StartDef) at line %d",
+                             pr_parser->line_number);
+                    state = STATE_ERROR;
+                    break;
+                }
+
                 if (strcmp(trimmed, "$(EndParticles)") == 0) {
                     if (particles_allocated != pr_data->n_particles) {
                         pr_parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
@@ -305,6 +323,17 @@ bool detscat_particles_parser_parse(DetScatParticlesParser *pr_parser,
     }  // while
 
     pr_parser->eof = true;
+
+    if (pr_parser->eof && state == STATE_ERROR)
+    {
+        free_types(pr_data, types_allocated);
+        pr_data->types = NULL;
+        free_particles(pr_data, particles_allocated);
+        pr_data->particles = NULL;
+        pr_data->n_types = 0;
+        pr_data->n_particles = 0;
+        return false;
+    }
 
     if (!parsed_types && state == STATE_PARSE_TYPES_DEF) {
         pr_parser->status = DETSCAT_PARTICLES_PARSER_ERR_FORMAT;
