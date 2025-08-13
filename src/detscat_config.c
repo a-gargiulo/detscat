@@ -124,7 +124,7 @@ static bool parse_bool(const char *value, bool *out,
     return true;
 }
 
-bool detscat_config_cfg_parser_parse(DetScatConfigParser *cfg_parser,
+bool detscat_config_parser_parse(DetScatConfigParser *cfg_parser,
                                      DetScatConfig *config) {
     assert(cfg_parser != NULL);
     assert(config != NULL);
@@ -254,7 +254,7 @@ bool detscat_config_cfg_parser_parse(DetScatConfigParser *cfg_parser,
     return true;
 }
 
-void detscat_config_cfg_parser_free(DetScatConfigParser *cfg_parser) {
+void detscat_config_parser_free(DetScatConfigParser *cfg_parser) {
     if (!cfg_parser) return;
 
     if (cfg_parser->file) {

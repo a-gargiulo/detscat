@@ -56,7 +56,7 @@ typedef struct {
 typedef struct {
     double phi;
 
-    size_t len;
+    size_t n;
 
     Complex *f11, *f21, *f12, *f22;
     double *theta;
@@ -74,9 +74,12 @@ typedef struct {
 typedef struct {
     size_t n_pars;
     size_t n_fmls;
+    size_t n_par_idx;
 
-    DetScatDdscatParams **pars;
-    DetScatDdscatFml **fmls;
+    DetScatDdscatParams *pars;
+    DetScatDdscatFml *fmls;
+
+    size_t *par_idx;
 
 } DetScatDdscatData;
 
@@ -91,10 +94,12 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser, DetScat
 
 bool detscat_ddscat_parser_parse_fml(DetScatDdscatParser *ddscat_parser,
                                      DetScatDdscatFml *fml,
-                                     const DetScatDdscatParams *par);
+                                     DetScatDdscatParams *par);
 
 void detscat_ddscat_par_free(DetScatDdscatParams *par);
 
-void detscat_ddscat_fml_free(DetScatDdscatFmatrix *fml, size_t n_fml);
+void detscat_ddscat_fml_free(DetScatDdscatFml *fml);
+
+void detscat_ddscat_data_free(DetScatDdscatData *ddscat);
 
 #endif  // DETSCAT_DDSCAT_H

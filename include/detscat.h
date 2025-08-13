@@ -4,7 +4,7 @@
 #include <stdarg.h>
 
 #define DETSCAT_ERR_MSG_MAX 256
-#define DETSCAT_PATH_MAX 2048
+#define DETSCAT_PATH_MAX 1024 
 
 #define DETSCAT_SET_DIAGNOSE(diag, status_val, msg_fmt, ...)                        \
     do {                                                                            \

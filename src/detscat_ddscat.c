@@ -282,18 +282,19 @@ cleanup:
     return false;
 }
 
-bool detscat_ddscat_util_parse_fml_file(DetScatDdscatParser *ddscat_parser,
-                                        DetScatDdscatFmatrix **fml,
-                                        const DetScatDdscatParams *par) {
+bool detscat_ddscat_parser_parse_fml(DetScatDdscatParser *ddscat_parser,
+                                     DetScatDdscatFml *fml,
+                                     DetScatDdscatParams *par) {
     assert(ddscat_parser != NULL);
     assert(fml != NULL);
 
-    size_t n_fml = par->n_scat_planes;
-    if (!(n_fml > 0)) {
+    fml->n_fmats = par->n_scat_planes;
+
+    if (!(fml->n_fmats > 0)) {
         snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
                  "Number of scattering planes must be larger than zero, "
                  "received %zu.",
-                 n_fml);
+                 fml->n_fmats);
         ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
         goto cleanup;
     }
@@ -318,8 +319,8 @@ bool detscat_ddscat_util_parse_fml_file(DetScatDdscatParser *ddscat_parser,
         goto cleanup;
     }
 
-    *fml = calloc(n_fml, sizeof(DetScatDdscatFmatrix));
-    if (!*fml) {
+    fml->fmats = calloc(fml->n_fmats, sizeof(DetScatDdscatFmatrix));
+    if (!fml->fmats) {
         snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
                  "Failed allocation for f matrices at line number %d.",
                  ddscat_parser->line_number);
@@ -327,7 +328,7 @@ bool detscat_ddscat_util_parse_fml_file(DetScatDdscatParser *ddscat_parser,
         goto cleanup;
     }
 
-    for (size_t i = 0; i < n_fml; ++i) {
+    for (size_t i = 0; i < fml->n_fmats; ++i) {
         size_t n_theta;
 
         double range = par->scat_planes[i][2] - par->scat_planes[i][1];
@@ -351,18 +352,19 @@ bool detscat_ddscat_util_parse_fml_file(DetScatDdscatParser *ddscat_parser,
             n_theta = (size_t)(range / step) + 1;
         }
 
-        (*fml)[i].phi = par->scat_planes[i][0];
-        (*fml)[i].n_theta = n_theta;
+        fml->fmats[i].n = n_theta;
 
-        (*fml)[i].theta = calloc(n_theta, sizeof(double));
-        (*fml)[i].f11 = calloc(n_theta, sizeof(Complex));
-        (*fml)[i].f12 = calloc(n_theta, sizeof(Complex));
-        (*fml)[i].f21 = calloc(n_theta, sizeof(Complex));
-        (*fml)[i].f22 = calloc(n_theta, sizeof(Complex));
+        fml->fmats[i].phi = par->scat_planes[i][0];
 
-        if (!(*fml)[i].theta || !(*fml)[i].f11 ||
-            !(*fml)[i].f12 || !(*fml)[i].f21 ||
-            !(*fml)[i].f22) {
+        fml->fmats[i].theta = calloc(n_theta, sizeof(double));
+        fml->fmats[i].f11 = calloc(n_theta, sizeof(Complex));
+        fml->fmats[i].f12 = calloc(n_theta, sizeof(Complex));
+        fml->fmats[i].f21 = calloc(n_theta, sizeof(Complex));
+        fml->fmats[i].f22 = calloc(n_theta, sizeof(Complex));
+
+        if (!fml->fmats[i].theta || !fml->fmats[i].f11 ||
+            !fml->fmats[i].f12 || !fml->fmats[i].f21 ||
+            !fml->fmats[i].f22) {
             snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
                      "Failed allocation of f matrix elements for scattering "
                      "plane %zu.",
@@ -384,11 +386,11 @@ bool detscat_ddscat_util_parse_fml_file(DetScatDdscatParser *ddscat_parser,
 
             char *trimmed = strutil_trim(ddscat_parser->line);
             if (sscanf(trimmed, "%lf %*f %lf %lf %lf %lf %lf %lf %lf %lf",
-                       &(*fml)[i].theta[j], &(*fml)[i].f11[j].re,
-                       &(*fml)[i].f11[j].im, &(*fml)[i].f21[j].re,
-                       &(*fml)[i].f21[j].im, &(*fml)[i].f12[j].re,
-                       &(*fml)[i].f12[j].im, &(*fml)[i].f22[j].re,
-                       &(*fml)[i].f22[j].im) != 9) {
+                       &fml->fmats[i].theta[j], &fml->fmats[i].f11[j].re,
+                       &fml->fmats[i].f11[j].im, &fml->fmats[i].f21[j].re,
+                       &fml->fmats[i].f21[j].im, &fml->fmats[i].f12[j].re,
+                       &fml->fmats[i].f12[j].im, &fml->fmats[i].f22[j].re,
+                       &fml->fmats[i].f22[j].im) != 9) {
                 snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
                          "Could not parse line %d.",
                          ddscat_parser->line_number);
@@ -408,21 +410,27 @@ bool detscat_ddscat_util_parse_fml_file(DetScatDdscatParser *ddscat_parser,
     return true;
 
 cleanup:
-    if (*fml) {
+    if (fml->fmats) {
         for (size_t i = 0; i < matrices_allocated; ++i) {
-            free((*fml)[i].theta);
-            free((*fml)[i].f11);
-            free((*fml)[i].f21);
-            free((*fml)[i].f12);
-            free((*fml)[i].f22);
-            (*fml)[i].theta = NULL;
-            (*fml)[i].f11 = NULL;
-            (*fml)[i].f21 = NULL;
-            (*fml)[i].f12 = NULL;
-            (*fml)[i].f22 = NULL;
+            free(fml->fmats[i].theta);
+            free(fml->fmats[i].f11);
+            free(fml->fmats[i].f21);
+            free(fml->fmats[i].f12);
+            free(fml->fmats[i].f22);
+            fml->fmats[i].theta = NULL;
+            fml->fmats[i].f11 = NULL;
+            fml->fmats[i].f21 = NULL;
+            fml->fmats[i].f12 = NULL;
+            fml->fmats[i].f22 = NULL;
+
+            fml->fmats[i].phi = 0;
+            fml->fmats[i].n = 0;
         }
-        free(*fml);
-        *fml= NULL;
+
+        free(fml->fmats);
+        fml->fmats = NULL;
+
+        fml->n_fmats = 0;
     }
 
     return false;
@@ -440,8 +448,10 @@ void detscat_ddscat_par_free(DetScatDdscatParams *par) {
         par->components = NULL;
     }
 
-    free(par->scat_planes);
-    par->scat_planes = NULL;
+    if (par->scat_planes) {
+        free(par->scat_planes);
+        par->scat_planes = NULL;
+    }
 
     par->n_components = 0;
     par->n_scat_planes = 0;
@@ -450,26 +460,63 @@ void detscat_ddscat_par_free(DetScatDdscatParams *par) {
     return;
 }
 
-void detscat_ddscat_fmat_free(DetScatDdscatFmatrix *fml, size_t n_fml) {
+void detscat_ddscat_fml_free(DetScatDdscatFml *fml) {
     if (!fml) return;
 
-    for (size_t i = 0; i < n_fml; ++i) {
-        free(fml[i].f11);
-        free(fml[i].f21);
-        free(fml[i].f12);
-        free(fml[i].f22);
-        free(fml[i].theta);
+    if (fml->fmats) {
+        for (size_t i = 0; i < fml->n_fmats; ++i) {
+            free(fml->fmats[i].f11);
+            free(fml->fmats[i].f21);
+            free(fml->fmats[i].f12);
+            free(fml->fmats[i].f22);
+            free(fml->fmats[i].theta);
 
-        fml[i].f11 = NULL;
-        fml[i].f21 = NULL;
-        fml[i].f12 = NULL;
-        fml[i].f22 = NULL;
-        fml[i].theta = NULL;
+            fml->fmats[i].f11 = NULL;
+            fml->fmats[i].f21 = NULL;
+            fml->fmats[i].f12 = NULL;
+            fml->fmats[i].f22 = NULL;
+            fml->fmats[i].theta = NULL;
 
-        fml[i].phi = 0;
-        fml[i].n_theta = 0;
+            fml->fmats[i].phi = 0;
+            fml->fmats[i].n = 0;
+        }
+        free(fml->fmats);
+        fml->fmats = NULL;
     }
 
-    free(fml);
+    fml->n_fmats = 0;
+
+    return;
+}
+
+void detscat_ddscat_data_free(DetScatDdscatData *ddscat) {
+    if (!ddscat) return;
+
+    if (ddscat->pars) {
+        for (size_t i = 0; i < ddscat->n_pars; ++i) {
+            detscat_ddscat_par_free(&ddscat->pars[i]);
+        }
+        free(ddscat->pars);
+        ddscat->pars = NULL;
+    }
+
+    if (ddscat->fmls) {
+
+        for (size_t i = 0; i < ddscat->n_fmls; ++i) {
+            detscat_ddscat_fml_free(&ddscat->fmls[i]);
+        }
+        free(ddscat->fmls);
+        ddscat->fmls = NULL;
+    }
+
+    if (ddscat->par_idx) {
+        free(ddscat->par_idx);
+        ddscat->par_idx = NULL;
+    }
+
+    ddscat->n_pars = 0;
+    ddscat->n_fmls = 0;
+    ddscat->n_par_idx = 0;
+
     return;
 }
