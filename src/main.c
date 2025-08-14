@@ -10,6 +10,5 @@ int main(int argc, char **argv) {
     }
 
     detscat_info("DetScat shut down successfully.");
-
     return 0;
 }

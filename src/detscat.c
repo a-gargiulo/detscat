@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
-#include <omp.h>
+//#include <omp.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -347,6 +347,7 @@ static void detscat_fetch_ddscat_data(DetScatDdscatData *ddscat,
         }
     }
 
+    detscat_ddscat_parser_free(ddscat_parser);
     detscat_info("Successfully fetched all DDSCAT data.");
     return;
 }

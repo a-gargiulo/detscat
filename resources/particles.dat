@@ -2,7 +2,7 @@ $(StartDef)
 #number of particle types
 1
 #alias data_dir 
-sphere ../../ddscat/ELLIPSOID
+sphere /Users/galdo/Downloads/ddscat/ELLIPSOID
 $(EndDef)
 $(StartParticles)
 #number of particles
