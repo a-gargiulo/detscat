@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
-//#include <omp.h>
+#include <omp.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -110,6 +110,8 @@ static void detscat_parse_config_file(const char *cfg_file_path,
     assert(cfg_file_path != NULL && cfg_file_path[0] != '\0');
     assert(config != NULL);
     assert(diagnose != NULL);
+
+    diagnose->status = DETSCAT_OK;
 
     errno = 0;
     DetScatConfigParser *cfg_parser =
@@ -352,6 +354,43 @@ static void detscat_fetch_ddscat_data(DetScatDdscatData *ddscat,
     return;
 }
 
+static void detscat_get_camera_and_image(DetScatCamera *camera,
+                                         DetScatImage *image,
+                                         DetScatConfig *config,
+                                         DetScatDiagnose *diagnose) {
+    assert(camera != NULL);
+    assert(image != NULL);
+    assert(config != NULL);
+    assert(diagnose != NULL);
+
+    detscat_camera_camera_create(camera, config);
+    int img_gen_status = detscat_camera_image_create(image, camera->width, camera->height); 
+    if (img_gen_status != 0) {
+        switch (img_gen_status) {
+            case -1:
+                DETSCAT_SET_DIAGNOSE(
+                    *diagnose, DETSCAT_ERR_INVALID_ARG,
+                    "Specified image size %d x %d is invalid.",
+                    camera->width, camera->height);
+                return;
+            case -2:
+                DETSCAT_SET_DIAGNOSE(
+                    *diagnose, DETSCAT_ERR_OVERFLOW,
+                    "%s",
+                    "Image size too large - overflow.");
+                return;
+            case -3:
+                DETSCAT_SET_DIAGNOSE(
+                    *diagnose, DETSCAT_ERR_ALLOC,
+                    "%s",
+                    "Image allocation failed.");
+                return;
+        }
+    }
+
+    return;
+} 
+
 void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     assert(diagnose != NULL);
 
@@ -370,10 +409,10 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     DetScatConfig config = {0};
     DetScatParticlesData pr = {0};
     DetScatDdscatData ddscat = {0};
-    
-    // Camera *camera = detscat_camera_create(&config);
-    // Image *image = detscat_camera_image_create(camera->width,
-    // camera->height);
+    DetScatCamera camera = {0};
+    DetScatImage image = {0};
+
+
 
     const char *config_file_path = argv[1];
     detscat_parse_config_file(config_file_path, &config, diagnose);
@@ -385,10 +424,13 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_fetch_ddscat_data(&ddscat, &pr, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-    // // MAIN LOOP
-    // #pragma omp parallel for collapse(2)
-    // for (int u = 0; u < image->width; ++u) {
-    //     for (int v = 0; v < image->height; ++v) {
+    detscat_get_camera_and_image(&camera, &image, &config, diagnose);
+    if (diagnose->status != DETSCAT_OK) return;
+
+    // MAIN LOOP
+    #pragma omp parallel for collapse(2)
+    for (int u = 0; u < image->width; ++u) {
+        for (int v = 0; v < image->height; ++v) {
     //         int pxl_idx = detscat_camera_get_image_index(image, u, v);
     //         Vec3 x_pxl_w;
     //         detscat_camera_pixel_coordinate_to_world(camera, &x_pxl_w, u, v);
@@ -430,8 +472,8 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     //             // Interpolate between fmat[p][idx_low] and fmat[p][idx_high]
     //             for each theta
     //         }
-    //     }
-    // }
+        }
+    }
 
     detscat_ddscat_data_free(&ddscat);
     detscat_particles_data_free(&pr);

@@ -16,23 +16,23 @@ typedef struct {
     int height;         // Number of pixels vertically
     double c_x;         // Principal point x (usually (width - 1) / 2) in px
     double c_y;         // Principal point y (usually (height - 1) / 2) in px
-} Camera;
+} DetScatCamera;
 
 typedef struct {
     int width;
     int height;
     float *pixels; // Grayscale floats
-} Image;
+} DetScatImage;
 
 
-Camera *detscat_camera_create(DetScatConfig *cfg);
+void detscat_camera_camera_create(DetScatCamera *camera, DetScatConfig *cfg);
 
-Image *detscat_camera_image_create(int w, int h);
+int detscat_camera_image_create(DetScatImage *image, int w, int h);
 
-int detscat_camera_get_image_index(Image* img, int u, int v);
+int detscat_camera_get_image_index(DetScatImage* img, int u, int v);
 
-void detscat_camera_pixel_coordinate_to_world(const Camera *camera, Vec3 *p, int u, int v);
+void detscat_camera_pixel_coordinate_to_world(const DetScatCamera *camera, Vec3 *p, int u, int v);
 
-void detscat_camera_pixel_observation_direction(const Camera* camera, Vec3 *d, int u, int v);
+void detscat_camera_pixel_observation_direction(const DetScatCamera* camera, Vec3 *d, int u, int v);
 
 #endif  // DETSCAT_CAMERA_H

@@ -12,9 +12,11 @@ add_executable(detscat ${SRCS})
 
 target_include_directories(
     detscat
-    PUBLIC "${PROJECT_SOURCE_DIR}/include" 
+    PRIVATE "${PROJECT_SOURCE_DIR}/include" 
 )
 
 target_compile_options(detscat PRIVATE -Wall -Wextra -pedantic)
 
-target_compile_options(detscat PRIVATE $<$<CONFIG:Debug>:-O0 -g>)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(detscat PRIVATE -O0 -g)
+endif()

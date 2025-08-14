@@ -1,5 +1,6 @@
 #include "detscat_camera.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 
@@ -7,7 +8,7 @@
 #include "detscat_const.h"
 #include "mymath.h"
 
-void detscat_camera_pixel_coordinate_to_world(const Camera *camera, Vec3 *p, int u, int v) {
+void detscat_camera_pixel_coordinate_to_world(const DetScatCamera *camera, Vec3 *p, int u, int v) {
     p->x = camera->p_x * (u - camera->c_x) * camera->r.x +
            camera->p_y * (v - camera->c_y) * camera->u.x +
            camera->f * camera->n.x +
@@ -23,7 +24,7 @@ void detscat_camera_pixel_coordinate_to_world(const Camera *camera, Vec3 *p, int
 }
 
 
-void detscat_camera_pixel_observation_direction(const Camera *camera, Vec3 *d, int u, int v) {
+void detscat_camera_pixel_observation_direction(const DetScatCamera *camera, Vec3 *d, int u, int v) {
     Vec3 dir;
 
     dir.x = camera->p_x * (u - camera->c_x) * camera->r.x +
@@ -46,76 +47,72 @@ void detscat_camera_pixel_observation_direction(const Camera *camera, Vec3 *d, i
 
 // TODO: Add robustness with checks for config variables and for norms
 // TODO: Add a more generic / safe choice for yref
-Camera *detscat_camera_create(DetScatConfig *cfg) {
-    Camera *cam = malloc(sizeof(Camera));
-    if (!cam) return NULL;
+void detscat_camera_camera_create(DetScatCamera *camera, DetScatConfig *cfg) {
+    assert(camera != NULL);
+    assert(cfg != NULL);
 
     double tmp_norm;
 
-    cam->C = cfg->camera_center_position_m;
+    camera->C = cfg->camera_center_position_m;
 
     tmp_norm = mymath_vec3_abs(&cfg->camera_sensor_normal_vector);
-    cam->n.x = cfg->camera_sensor_normal_vector.x / tmp_norm; 
-    cam->n.y = cfg->camera_sensor_normal_vector.y / tmp_norm; 
-    cam->n.z = cfg->camera_sensor_normal_vector.z / tmp_norm; 
+    camera->n.x = cfg->camera_sensor_normal_vector.x / tmp_norm; 
+    camera->n.y = cfg->camera_sensor_normal_vector.y / tmp_norm; 
+    camera->n.z = cfg->camera_sensor_normal_vector.z / tmp_norm; 
 
     Vec3 yref = {0, -1, 0};
     Vec3 tmp_r;
-    mymath_vec3_cross(&tmp_r, &yref, &cam->n);
+    mymath_vec3_cross(&tmp_r, &yref, &camera->n);
     tmp_norm = mymath_vec3_abs(&tmp_r);
-    cam->r.x = tmp_r.x / tmp_norm;
-    cam->r.y = tmp_r.y / tmp_norm;
-    cam->r.z = tmp_r.z / tmp_norm;
+    camera->r.x = tmp_r.x / tmp_norm;
+    camera->r.y = tmp_r.y / tmp_norm;
+    camera->r.z = tmp_r.z / tmp_norm;
 
     Vec3 tmp_u;
-    mymath_vec3_cross(&tmp_u, &cam->n, &cam->r);
+    mymath_vec3_cross(&tmp_u, &camera->n, &camera->r);
     tmp_norm = mymath_vec3_abs(&tmp_u);
-    cam->u.x = tmp_u.x / tmp_norm;
-    cam->u.y = tmp_u.y / tmp_norm;
-    cam->u.z = tmp_u.z / tmp_norm;
+    camera->u.x = tmp_u.x / tmp_norm;
+    camera->u.y = tmp_u.y / tmp_norm;
+    camera->u.z = tmp_u.z / tmp_norm;
 
 
-    cam->f = cfg->focal_length_mm * DETSCAT_CONST_MM2M;
-    cam->p_x = cfg->sensor_width_mm * DETSCAT_CONST_MM2M / cfg->camera_resolution_x_px;
-    cam->p_y = cfg->sensor_height_mm * DETSCAT_CONST_MM2M / cfg->camera_resolution_y_px;
-    cam->width = cfg->camera_resolution_x_px;
-    cam->height= cfg->camera_resolution_y_px;
+    camera->f = cfg->focal_length_mm * DETSCAT_CONST_MM2M;
+    camera->p_x = cfg->sensor_width_mm * DETSCAT_CONST_MM2M / cfg->camera_resolution_x_px;
+    camera->p_y = cfg->sensor_height_mm * DETSCAT_CONST_MM2M / cfg->camera_resolution_y_px;
+    camera->width = cfg->camera_resolution_x_px;
+    camera->height= cfg->camera_resolution_y_px;
 
-    cam->c_x = (cam->width - 1.0) / 2.0;
-    cam->c_y = (cam->height - 1.0) / 2.0;
+    camera->c_x = (camera->width - 1.0) / 2.0;
+    camera->c_y = (camera->height - 1.0) / 2.0;
 
-    return cam;
+    return;
 }
 
 
-Image *detscat_camera_image_create(int w, int h)
+int detscat_camera_image_create(DetScatImage *image, int w, int h)
 {
-    if (w <= 0 || h <= 0) return NULL;
+    assert(image != NULL);
 
-    Image *img = malloc(sizeof(Image));
-    if (!img) return NULL;
+    if (w <= 0 || h <= 0) return -1;
 
     size_t size = (size_t)w * (size_t)h;
     // Check for overflow
     if (size / (size_t)w != (size_t)h) {
-        free(img);
-        return NULL;
+        return -2;
     }
 
-    img->width = w;
-    img->height = h;
+    image->width = w;
+    image->height = h;
 
-    img->pixels = calloc(size, sizeof(float));
-
-    if (!img->pixels) {
-        free(img);
-        return NULL;
+    image->pixels = calloc(size, sizeof(float));
+    if (!image->pixels) {
+        return -3;
     }
 
-    return img;
+    return 0;
 }
 
-int detscat_camera_get_image_index(Image* img, int u, int v) {
+int detscat_camera_get_image_index(DetScatImage* img, int u, int v) {
     // Row-major
     return v * img->width + u;
 }
