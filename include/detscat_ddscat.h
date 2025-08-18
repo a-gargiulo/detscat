@@ -21,7 +21,7 @@
 /** Expected maximum length of a parser error message.
  *  @warning Lines longer than this will be truncated.
  */
-#define DETSCAT_DDSCAT_PARSER_ERR_MSG_MAX 256
+#define DETSCAT_DDSCAT_ERRMSG_MAX 256
 
 /** Expected maximum component name length in a DDSCAT .par file.
  *  @warning Lines longer than this will be truncated.
@@ -64,13 +64,12 @@ typedef enum {
  * handle.
  */
 typedef struct {
-    FILE *file;                          /**< File handle */
-    int line_number;                     /**< Current line number */
-    DetScatDdscatParserStatus status;    /**< Last parser status */
-    bool eof;                            /**< End-of-file flag */
-    char line[DETSCAT_DDSCAT_LINE_MAX];  /**< Current line buffer */
-    /** Error message buffer */
-    char err_msg[DETSCAT_DDSCAT_PARSER_ERR_MSG_MAX];
+    FILE *file;                              /**< File handle */
+    int line_number;                         /**< Current line number */
+    DetScatDdscatParserStatus status;        /**< Last parser status */
+    bool eof;                                /**< End-of-file flag */
+    char line[DETSCAT_DDSCAT_LINE_MAX];      /**< Current line buffer */
+    char errmsg[DETSCAT_DDSCAT_ERRMSG_MAX];  /**< Error message buffer */
 } DetScatDdscatParser;
 
 /**
@@ -132,12 +131,13 @@ typedef struct {
 } DetScatDdscatData;
 
 
-DetScatDdscatParser *detscat_ddscat_parser_create(const char *ddscat_file_path);
+bool detscat_ddscat_parser_init(DetScatDdscatParser *parser, 
+                                const char *file_path);
 
-void detscat_ddscat_parser_free(DetScatDdscatParser *ddscat_parser);
+bool detscat_ddscat_parser_reset(DetScatDdscatParser *parser,
+                                 const char *file_path);
 
-bool detscat_ddscat_parser_reset(DetScatDdscatParser *ddscat_parser,
-                                 const char *ddscat_file_path);
+void detscat_ddscat_parser_close(DetScatDdscatParser *parser);
 
 /**
  * @brief Parse a DDSCAT `.par` parameter file.
@@ -149,8 +149,8 @@ bool detscat_ddscat_parser_reset(DetScatDdscatParser *ddscat_parser,
  * @param par Output `.par` file structure.
  * @return `true` on success, `false` on failure.
  */
-bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
-                                     DetScatDdscatParams *par);
+bool detscat_ddscat_parser_load_par(DetScatDdscatParser *parser,
+                                    DetScatDdscatParams *par);
 
 /**
  * @brief Parse a `.fml` scattering matrix file.
@@ -163,9 +163,9 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
  * @param par Associated `.par` file parameters.
  * @return `true` on success, `false` on failure.
  */
-bool detscat_ddscat_parser_parse_fml(DetScatDdscatParser *ddscat_parser,
-                                     DetScatDdscatFml *fml,
-                                     DetScatDdscatParams *par);
+bool detscat_ddscat_parser_load_fml(DetScatDdscatParser *parser,
+                                    DetScatDdscatFml *fml,
+                                    DetScatDdscatParams *par);
 
 /**
  * @brief Free memory for a DDSCAT parameter structure.
@@ -178,6 +178,6 @@ void detscat_ddscat_par_free(DetScatDdscatParams *par);
 
 void detscat_ddscat_fml_free(DetScatDdscatFml *fml);
 
-void detscat_ddscat_data_free(DetScatDdscatData *ddscat);
+void detscat_ddscat_free(DetScatDdscatData *ddscat);
 
 #endif  // DETSCAT_DDSCAT_H

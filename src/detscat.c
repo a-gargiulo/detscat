@@ -104,9 +104,9 @@ void detscat_info(const char *frmt, ...) {
     return;
 }
 
-static void detscat_parse_cfg_file(const char *file_path,
-                                  DetScatCfg *cfg,
-                                  DetScatDiagnose *diagnose) {
+static void detscat_cfg_load(const char *file_path,
+                             DetScatCfg *cfg,
+                             DetScatDiagnose *diagnose) {
     assert(file_path != NULL && file_path[0] != '\0');
     assert(cfg != NULL);
     assert(diagnose != NULL);
@@ -135,44 +135,34 @@ static void detscat_parse_cfg_file(const char *file_path,
     return;
 }
 
-static void detscat_parse_particles_file(DetScatParticlesData *pr_data,
-                                         DetScatConfig *config,
-                                         DetScatDiagnose *diagnose) {
-    assert(pr_data != NULL);
-    assert(config != NULL);
+static void detscat_prt_load(const char* file_path,
+                             DetScatPrtData *prt,
+                             DetScatDiagnose *diagnose) {
+    assert(file_path != NULL && file_path[0] != '\0');
+    assert(prt != NULL);
     assert(diagnose != NULL);
 
+    diagnose->status = DETSCAT_OK;
+
+    DetScatPrtParser parser = {0};
     errno = 0;
-    DetScatParticlesParser *pr_parser =
-        detscat_particles_parser_create(config->particles_definition_file);
-    if (!pr_parser) {
-        if (errno != 0)
-            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not initialize particles definition "
-                                 "file parser from '%s': %s",
-                                 config->particles_definition_file,
-                                 strerror(errno));
-        else
-            DETSCAT_SET_DIAGNOSE(
-                *diagnose, DETSCAT_ERR_FILE_PARSING,
-                "Could not initialize particles definition file parser from "
-                "'%s': Failed to allocate parser.",
-                config->particles_definition_file);
-
+    if (!detscat_prt_parser_init(&parser, file_path)) {
+        DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_PARSING,
+                             "Could not open '%s': %s",
+                             file_path, strerror(errno));
         return;
     }
 
-    if (!detscat_particles_parser_parse(pr_parser, pr_data)) {
-        DETSCAT_SET_DIAGNOSE(
-            *diagnose, DETSCAT_ERR_FILE_PARSING, "While parsing '%s': %s",
-            config->particles_definition_file, pr_parser->err_msg);
-        detscat_particles_parser_free(pr_parser);
-        detscat_particles_data_free(pr_data);
+    if (!detscat_prt_parser_load(&parser, prt)) {
+        DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_PARSING,
+                             "While parsing '%s': %s",
+                             file_path, parser.errmsg);
+        detscat_prt_parser_close(&parser);
         return;
     }
-    detscat_particles_parser_free(pr_parser);
+    detscat_prt_parser_close(&parser);
 
-    detscat_info("Successfully parsed '%s'.", config->particles_definition_file);
+    detscat_info("Successfully parsed '%s'.", file_path);
     return;
 }
 
@@ -399,7 +389,8 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_info("DetScat initialized successfully");
 
     DetScatCfg cfg = {0};
-    DetScatParticlesData pr = {0};
+    DetScatParticlesData prt = {0};
+
     DetScatDdscatData ddscat = {0};
     DetScatCamera camera = {0};
     DetScatImage image = {0};
@@ -407,13 +398,13 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
 
 
     const char *cfg_file_path = argv[1];
-    detscat_parse_cfg_file(cfg_file_path, &cfg, diagnose);
+    detscat_cfg_load(cfg_file_path, &cfg, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-    detscat_parse_particles_file(&pr, &config, diagnose);
+    detscat_prt_load(cfg.particles_file, &prt, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-    detscat_fetch_ddscat_data(&ddscat, &pr, diagnose);
+    detscat_ddscat_load(&ddscat, &pr, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
     detscat_get_camera_and_image(&camera, &image, &config, diagnose);
@@ -468,7 +459,7 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     }
 
     detscat_ddscat_data_free(&ddscat);
-    detscat_particles_data_free(&pr);
+    detscat_prt_free(&prt);
     return;
 }
 

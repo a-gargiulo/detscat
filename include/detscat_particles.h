@@ -9,9 +9,17 @@
 
 #include "mymath.h"
 
+// The prt file line will be truncated if it's too large,
+// which will lead to failure later in the program execution.
 #define DETSCAT_PRT_LINE_MAX 1024
+// warning: string will be truncated through 'sscanf'
+// --> will eventually fail during parsing 
 #define DETSCAT_PRT_TYPEID_MAX 128 
+// warning: string will be truncated through 'sscanf'
+// --> will eventually lead to failure due to wrong path
 #define DETSCAT_PRT_DATADIR_MAX 512
+// Error messages will be truncated if they are too large, as
+// the error message buffers are strictly filled using 'snprintf'
 #define DETSCAT_PRT_ERRMSG_MAX 256
 
 typedef struct {

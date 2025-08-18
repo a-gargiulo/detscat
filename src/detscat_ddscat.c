@@ -12,66 +12,66 @@
 #include "mymath.h"
 #include "strutil.h"
 
-DetScatDdscatParser *detscat_ddscat_parser_create(
-    const char *ddscat_file_path) {
-    assert(ddscat_file_path != NULL && ddscat_file_path[0] != '\0');
+bool detscat_ddscat_parser_init(DetScatDdscatParser *parser,
+                                const char *file_path) {
+    assert(parser != NULL);
+    assert(file_path != NULL && file_path[0] != '\0');
 
-    DetScatDdscatParser *ddscat_parser = malloc(sizeof(DetScatDdscatParser));
-    if (!ddscat_parser) return NULL;
+    parser->file = fopen(file_path, "r");
+    if (!parser->file) return false;
 
-    ddscat_parser->file = fopen(ddscat_file_path, "r");
-    if (!ddscat_parser->file) {
-        free(ddscat_parser);
-        return NULL;
-    }
+    parser->line_number = 0;
+    parser->eof = false;
+    parser->status = DETSCAT_DDSCAT_PARSER_OK;
+    parser->line[0] = '\0';
+    parser->errmsg[0] = '\0';
 
-    ddscat_parser->line_number = 0;
-    ddscat_parser->eof = false;
-    ddscat_parser->status = DETSCAT_DDSCAT_PARSER_OK;
-    ddscat_parser->line[0] = '\0';
-    ddscat_parser->err_msg[0] = '\0';
-
-    return ddscat_parser;
+    return true;
 }
 
-void detscat_ddscat_parser_free(DetScatDdscatParser *ddscat_parser) {
-    if (!ddscat_parser) return;
+void detscat_ddscat_parser_close(DetScatDdscatParser *parser) {
+    assert(parser != NULL);
 
-    if (ddscat_parser->file) {
-        fclose(ddscat_parser->file);
-        ddscat_parser->file = NULL;
+    if (parser->file) {
+        fclose(parser->file);
+        parser->file = NULL;
     }
 
-    free(ddscat_parser);
-    return;
+    parser->line_number = 0;
+    parser->status = DETSCAT_DDSCAT_PARSER_OK;
+    parser->eof = false;
+    parser->line[0] = '\0';
+    parser->errmsg[0] = '\0';
 }
 
-bool detscat_ddscat_parser_reset(DetScatDdscatParser *ddscat_parser,
-                                 const char *ddscat_file_path) {
-    assert(ddscat_parser != NULL);
+bool detscat_ddscat_parser_reset(DetScatDdscatParser *parser,
+                                 const char *file_path) {
+    assert(parser != NULL);
+    assert(file_path != NULL && file_path[0] != '\0');
 
-    if (ddscat_parser->file) {
-        fclose(ddscat_parser->file);
-        ddscat_parser->file = NULL;
+    if (parser->file) {
+        fclose(parser->file);
+        parser->file = NULL;
     }
 
-    ddscat_parser->file = fopen(ddscat_file_path, "r");
-    if (!ddscat_parser->file) {
-        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_RESET;
-        ddscat_parser->line_number = 0;
-        ddscat_parser->eof = false;
-        ddscat_parser->line[0] = '\0';
-        snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
-                 "Parser reset failed. Could not open file: %s",
-                 ddscat_file_path);
+    parser->file = fopen(file_path, "r");
+    if (!parser->file) {
+        parser->status = DETSCAT_DDSCAT_PARSER_ERR_RESET;
+        parser->line_number = 0;
+        parser->eof = false;
+        parser->line[0] = '\0';
+        snprintf(parser->errmsg, sizeof(parser->errmsg),
+                 "Could not reset parser from %s",
+                 file_path);
         return false;
     }
 
-    ddscat_parser->line_number = 0;
-    ddscat_parser->status = DETSCAT_DDSCAT_PARSER_OK;
-    ddscat_parser->eof = false;
-    ddscat_parser->line[0] = '\0';
-    ddscat_parser->err_msg[0] = '\0';
+    parser->line_number = 0;
+    parser->status = DETSCAT_DDSCAT_PARSER_OK;
+    parser->eof = false;
+    parser->line[0] = '\0';
+    parser->errmsg[0] = '\0';
+    
     return true;
 }
 

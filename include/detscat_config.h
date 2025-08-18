@@ -6,8 +6,14 @@
 
 #include "mymath.h"
 
+// The cfg file line will be truncated if it's too large,
+// which will lead to failure later in the program execution.
 #define DETSCAT_CFG_LINE_MAX 1024
+// Bound check implemented for cfg paths.
+// The program will fail immediately if the path is too long
 #define DETSCAT_CFG_PATH_MAX 512
+// Error messages will be truncated if they are too large, as
+// the error message buffers are strictly filled using 'snprintf'
 #define DETSCAT_CFG_ERRMSG_MAX 256
 
 typedef struct {

@@ -171,9 +171,12 @@ bool detscat_prt_parser_load(DetScatPrtParser *parser, DetScatPrtData *prt) {
                     break;
                 }
 
-                char typeid[DETSCAT_PRT_TYPEID_MAX];
-                char datadir[DETSCAT_PRT_DATADIR_MAX];
+                char typeid[DETSCAT_PRT_TYPEID_MAX];    //size 128
+                char datadir[DETSCAT_PRT_DATADIR_MAX];  //size 512
 
+                // truncates string in case of buffer overflow
+                // 127 = 128 - 1 (null terminator) 
+                // 511 = 512 - 1 (null terminator) 
                 if (sscanf(trimmed, " %127s %511s ", typeid, datadir) != 2) {
                     parser->status = DETSCAT_PRT_PARSER_ERR_FORMAT;
                     snprintf(parser->errmsg, sizeof(parser->errmsg),
@@ -261,6 +264,8 @@ bool detscat_prt_parser_load(DetScatPrtParser *parser, DetScatPrtData *prt) {
                 double x, y, z;
                 int w, r, k;
 
+                // truncates string in case of buffer overflow
+                // 127 = 128 - 1 (null terminator) 
                 if (sscanf(trimmed, " %127s %d %d %d %lf %lf %lf ", typeid, &w,
                            &r, &k, &x, &y, &z) != 7) {
                     parser->status = DETSCAT_PRT_PARSER_ERR_FORMAT;
@@ -379,6 +384,4 @@ void detscat_prt_free(DetScatPrtData *prt) {
 
     prt->n_types = 0;
     prt->n_particles = 0;
-
-    return;
 }
