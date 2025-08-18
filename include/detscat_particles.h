@@ -6,71 +6,51 @@
 #include <stdio.h>
 
 #include "detscat_ddscat.h"
+
 #include "mymath.h"
 
-#define DETSCAT_PARTICLES_LINE_MAX 1024
-#define DETSCAT_PARTICLES_TYPE_ID_MAX 128 
-#define DETSCAT_PARTICLES_DATA_DIR_MAX 512
-#define DETSCAT_PARTICLES_PARSER_ERR_MSG_MAX 256
+#define DETSCAT_PRT_LINE_MAX 1024
+#define DETSCAT_PRT_TYPEID_MAX 128 
+#define DETSCAT_PRT_DATADIR_MAX 512
+#define DETSCAT_PRT_ERRMSG_MAX 256
 
 typedef struct {
-
     Vec3 position;
-
-    DetScatDdscatCaseId case_id;
-
-    char *type_id;
-
-} DetScatParticleDef;
+    DetScatDdscatCaseId caseid;
+    char *typeid;
+} DetScatPrtDef;
 
 typedef struct {
-
-    char *type_id;
-    char *data_dir;
-
-} DetScatParticleTypeDef;
+    char *typeid;
+    char *datadir;
+} DetScatPrtTypeDef;
 
 typedef struct {
-
     size_t n_types;
     size_t n_particles;
-
-    DetScatParticleTypeDef *types;
-    DetScatParticleDef *particles;
-
-} DetScatParticlesData;
+    DetScatPrtTypeDef *types;
+    DetScatPrtDef *particles;
+} DetScatPrtData;
 
 typedef enum {
-
-    DETSCAT_PARTICLES_PARSER_OK = 0,
-    DETSCAT_PARTICLES_PARSER_ERR_FORMAT,
-    DETSCAT_PARTICLES_PARSER_ERR_ALLOC,
-    DETSCAT_PARTICLES_PARSER_ERR_INVALID_INPUT
-
-} DetScatParticlesParserStatus;
+    DETSCAT_PRT_PARSER_OK = 0,
+    DETSCAT_PRT_PARSER_ERR_FORMAT,
+    DETSCAT_PRT_PARSER_ERR_ALLOC,
+    DETSCAT_PRT_PARSER_ERR_INPUT
+} DetScatPrtParserStatus;
 
 typedef struct {
     FILE *file;
-
     int line_number;
-
-    DetScatParticlesParserStatus status;
-
+    DetScatPrtParserStatus status;
     bool eof;
+    char line[DETSCAT_PRT_LINE_MAX];
+    char errmsg[DETSCAT_PRT_ERRMSG_MAX];
+} DetScatPrtParser;
 
-    char line[DETSCAT_PARTICLES_LINE_MAX];
-    char err_msg[DETSCAT_PARTICLES_PARSER_ERR_MSG_MAX];
-
-} DetScatParticlesParser;
-
-DetScatParticlesParser *detscat_particles_parser_create(
-    const char *particles_def_file_path);
-
-bool detscat_particles_parser_parse(DetScatParticlesParser *pr_parser,
-                                    DetScatParticlesData *pr_data);
-
-void detscat_particles_parser_free(DetScatParticlesParser *pr_parser);
-
-void detscat_particles_data_free(DetScatParticlesData *pr_data);
+bool detscat_prt_parser_init(DetScatPrtParser *parser, const char *file_path);
+bool detscat_prt_parser_load(DetScatPrtParser *parser, DetScatPrtData *prt);
+void detscat_prt_parser_close(DetScatPrtParser *parser);
+void detscat_prt_free(DetScatPrtData *prt);
 
 #endif  // DETSCAT_PARTICLES_H

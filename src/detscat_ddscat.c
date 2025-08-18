@@ -347,7 +347,7 @@ bool detscat_ddscat_parser_parse_fml(DetScatDdscatParser *ddscat_parser,
             n_theta = (size_t)(range / step) + 1;
         }
 
-        fml->fmats[i].n = n_theta;
+        fml->fmats[i].n_theta = n_theta;
 
         fml->fmats[i].phi = par->scat_planes[i][0];
 
@@ -419,7 +419,7 @@ cleanup:
             fml->fmats[i].f22 = NULL;
 
             fml->fmats[i].phi = 0;
-            fml->fmats[i].n = 0;
+            fml->fmats[i].n_theta = 0;
         }
 
         free(fml->fmats);
@@ -473,7 +473,7 @@ void detscat_ddscat_fml_free(DetScatDdscatFml *fml) {
             fml->fmats[i].theta = NULL;
 
             fml->fmats[i].phi = 0;
-            fml->fmats[i].n = 0;
+            fml->fmats[i].n_theta = 0;
         }
         free(fml->fmats);
         fml->fmats = NULL;

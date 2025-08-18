@@ -104,42 +104,34 @@ void detscat_info(const char *frmt, ...) {
     return;
 }
 
-static void detscat_parse_config_file(const char *cfg_file_path,
-                                      DetScatConfig *config,
-                                      DetScatDiagnose *diagnose) {
-    assert(cfg_file_path != NULL && cfg_file_path[0] != '\0');
-    assert(config != NULL);
+static void detscat_parse_cfg_file(const char *file_path,
+                                  DetScatCfg *cfg,
+                                  DetScatDiagnose *diagnose) {
+    assert(file_path != NULL && file_path[0] != '\0');
+    assert(cfg != NULL);
     assert(diagnose != NULL);
 
     diagnose->status = DETSCAT_OK;
 
+    DetScatCfgParser parser = {0};
     errno = 0;
-    DetScatConfigParser *cfg_parser =
-        detscat_config_parser_create(cfg_file_path);
-    if (!cfg_parser) {
-        if (errno != 0)
-            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not initialize the configuration file "
-                                 "parser from '%s': %s",
-                                 cfg_file_path, strerror(errno));
-        else
-            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not initialize configuration file "
-                                 "parser from '%s': Failed to allocate parser.",
-                                 cfg_file_path);
+    if (!detscat_cfg_parser_init(&parser, file_path)) {
+        DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_PARSING,
+                             "Could not open '%s': %s",
+                             file_path, strerror(errno));
         return;
     }
 
-    if (!detscat_config_parser_parse(cfg_parser, config)) {
-        DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                             "While parsing '%s': %s", cfg_file_path,
-                             cfg_parser->err_msg);
-        detscat_config_parser_free(cfg_parser);
+    if (!detscat_cfg_parser_load(&parser, cfg)) {
+        DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_PARSING,
+                             "While parsing '%s': %s",
+                             file_path, parser.errmsg);
+        detscat_cfg_parser_close(&parser);
         return;
     }
-    detscat_config_parser_free(cfg_parser);
+    detscat_cfg_parser_close(&parser);
 
-    detscat_info("Successfully parsed '%s'.", cfg_file_path);
+    detscat_info("Successfully parsed '%s'", file_path);
     return;
 }
 
@@ -363,7 +355,7 @@ static void detscat_get_camera_and_image(DetScatCamera *camera,
     assert(config != NULL);
     assert(diagnose != NULL);
 
-    detscat_camera_camera_create(camera, config);
+    detscat_camera_init(camera, config);
     int img_gen_status = detscat_camera_image_create(image, camera->width, camera->height); 
     if (img_gen_status != 0) {
         switch (img_gen_status) {
@@ -404,9 +396,9 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
             argv[0]);
         return;
     }
-    detscat_info("DetScat initialized successfully.");
+    detscat_info("DetScat initialized successfully");
 
-    DetScatConfig config = {0};
+    DetScatCfg cfg = {0};
     DetScatParticlesData pr = {0};
     DetScatDdscatData ddscat = {0};
     DetScatCamera camera = {0};
@@ -414,8 +406,8 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
 
 
 
-    const char *config_file_path = argv[1];
-    detscat_parse_config_file(config_file_path, &config, diagnose);
+    const char *cfg_file_path = argv[1];
+    detscat_parse_cfg_file(cfg_file_path, &cfg, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
     detscat_parse_particles_file(&pr, &config, diagnose);

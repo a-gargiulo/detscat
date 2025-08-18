@@ -6,17 +6,14 @@
 
 #include "mymath.h"
 
-#define DETSCAT_CONFIG_LINE_MAX 1024
-#define DETSCAT_CONFIG_PATH_MAX 512
-#define DETSCAT_CONFIG_ERR_MSG_MAX 256
+#define DETSCAT_CFG_LINE_MAX 1024
+#define DETSCAT_CFG_PATH_MAX 512
+#define DETSCAT_CFG_ERRMSG_MAX 256
 
 typedef struct {
-
     ComplexVec3 polarization;
-
-    Vec3 camera_center_position_m;
-    Vec3 camera_sensor_normal_vector;
-
+    Vec3 camera_center_pos_m;
+    Vec3 camera_sensor_normal;
     double beam_diameter_mm;
     double focal_length_mm;
     double sensor_height_mm;
@@ -24,47 +21,32 @@ typedef struct {
     double pulse_energy_mj;
     double pulse_width_ns;
     double wavelength_nm;
-
-    int camera_resolution_x_px;
-    int camera_resolution_y_px;
-
+    int camera_res_x_px;
+    int camera_res_y_px;
     bool is_polarized;
+    char particles_file[DETSCAT_CFG_PATH_MAX];
+} DetScatCfg;
 
-    char particles_definition_file[DETSCAT_CONFIG_PATH_MAX];
-
-} DetScatConfig;
-
-extern DetScatConfig config;
+extern DetScatCfg cfg;
 
 typedef enum {
-
-    DETSCAT_CONFIG_PARSER_OK = 0,
-    DETSCAT_CONFIG_PARSER_ERR_FORMAT,
-    DETSCAT_CONFIG_PARSER_ERR_UNKNOWN_KEY,
-    DETSCAT_CONFIG_PARSER_ERR_VAL_RANGE
-
-} DetScatConfigParserStatus;
+    DETSCAT_CFG_PARSER_OK = 0,
+    DETSCAT_CFG_PARSER_ERR_FORMAT,
+    DETSCAT_CFG_PARSER_ERR_UNKNOWN_KEY,
+    DETSCAT_CFG_PARSER_ERR_RANGE,
+} DetScatCfgParserStatus;
 
 typedef struct {
-
     FILE *file;
-
     int line_number;
-
-    DetScatConfigParserStatus status;
-
+    DetScatCfgParserStatus status;
     bool eof;
+    char line[DETSCAT_CFG_LINE_MAX];
+    char errmsg[DETSCAT_CFG_ERRMSG_MAX];
+} DetScatCfgParser;
 
-    char line[DETSCAT_CONFIG_LINE_MAX];
-    char err_msg[DETSCAT_CONFIG_ERR_MSG_MAX];
-
-} DetScatConfigParser;
-
-DetScatConfigParser *detscat_config_parser_create(const char *cfg_file_path);
-
-bool detscat_config_parser_parse(DetScatConfigParser *cfg_parser,
-                                 DetScatConfig *config);
-
-void detscat_config_parser_free(DetScatConfigParser *cfg_parser);
+bool detscat_cfg_parser_init(DetScatCfgParser *parser, const char *file_path);
+bool detscat_cfg_parser_load(DetScatCfgParser *parser, DetScatCfg *cfg);
+void detscat_cfg_parser_close(DetScatCfgParser *parser);
 
 #endif  // DETSCAT_CONFIG_H
