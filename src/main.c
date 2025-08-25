@@ -1,14 +1,14 @@
+#define DETSCAT_ENABLE_LOGGING
 #include "detscat.h"
 
 int main(int argc, char **argv) {
-    DetScatDiagnose diagnose = {0};
+    DetScatDiagnose diag = {0};
 
-    detscat_run(argc, argv, &diagnose);
-    if (diagnose.status != DETSCAT_OK) {
-        detscat_error(diagnose.func, diagnose.line, diagnose.file, diagnose.err_msg);
+    if (detscat_run(argc, argv, &diag) != DETSCAT_OK) {
+        detscat_log_error_diagnose(&diag);
         return 1;
     }
 
-    detscat_info("DetScat shut down successfully.");
+    detscat_log_info("Program finished successfully");
     return 0;
 }

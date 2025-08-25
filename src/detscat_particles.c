@@ -41,11 +41,11 @@ static void types_free(DetScatPrtData *prt, size_t count) {
     if (!prt || !prt->types) return;
 
     for (size_t i = 0; i < count; ++i) {
-        free(prt->types[i].typeid);
-        prt->types[i].typeid = NULL;
+        free(prt->types[i].type_id);
+        prt->types[i].type_id = NULL;
 
-        free(prt->types[i].datadir);
-        prt->types[i].datadir = NULL;
+        free(prt->types[i].data_dir);
+        prt->types[i].data_dir = NULL;
     }
 
     free(prt->types);
@@ -55,11 +55,11 @@ static void particles_free(DetScatPrtData *prt, size_t count) {
     if (!prt || !prt->particles) return;
 
     for (size_t i = 0; i < count; ++i) {
-        free(prt->particles[i].typeid);
-        prt->particles[i].typeid = NULL;
+        free(prt->particles[i].type_id);
+        prt->particles[i].type_id = NULL;
 
         memset(&prt->particles[i].position, 0, sizeof(prt->particles[i].position));
-        memset(&prt->particles[i].caseid, 0, sizeof(prt->particles[i].caseid));
+        memset(&prt->particles[i].case_id, 0, sizeof(prt->particles[i].case_id));
     }
 
     free(prt->particles);
@@ -171,13 +171,13 @@ bool detscat_prt_parser_load(DetScatPrtParser *parser, DetScatPrtData *prt) {
                     break;
                 }
 
-                char typeid[DETSCAT_PRT_TYPEID_MAX];    //size 128
-                char datadir[DETSCAT_PRT_DATADIR_MAX];  //size 512
+                char type_id[DETSCAT_PRT_TYPEID_MAX];    //size 128
+                char data_dir[DETSCAT_PRT_DATADIR_MAX];  //size 512
 
                 // truncates string in case of buffer overflow
                 // 127 = 128 - 1 (null terminator) 
                 // 511 = 512 - 1 (null terminator) 
-                if (sscanf(trimmed, " %127s %511s ", typeid, datadir) != 2) {
+                if (sscanf(trimmed, " %127s %511s ", type_id, data_dir) != 2) {
                     parser->status = DETSCAT_PRT_PARSER_ERR_FORMAT;
                     snprintf(parser->errmsg, sizeof(parser->errmsg),
                              "Invalid particle definition at line %d",
@@ -196,11 +196,11 @@ bool detscat_prt_parser_load(DetScatPrtParser *parser, DetScatPrtData *prt) {
                     break;
                 }
 
-                prt->types[types_allocated].typeid = strutil_strdup(typeid);
-                prt->types[types_allocated].datadir = strutil_strdup(strutil_normpath(datadir));
+                prt->types[types_allocated].type_id = strutil_strdup(type_id);
+                prt->types[types_allocated].data_dir = strutil_strdup(strutil_normpath(data_dir));
 
-                if (!prt->types[types_allocated].typeid ||
-                    !prt->types[types_allocated].datadir) {
+                if (!prt->types[types_allocated].type_id ||
+                    !prt->types[types_allocated].data_dir) {
                     parser->status = DETSCAT_PRT_PARSER_ERR_ALLOC;
                     snprintf(parser->errmsg, sizeof(parser->errmsg),
                             "Memory allocation failed for particle type "
@@ -260,13 +260,13 @@ bool detscat_prt_parser_load(DetScatPrtParser *parser, DetScatPrtData *prt) {
                     break;
                 }
 
-                char typeid[DETSCAT_PRT_TYPEID_MAX];
+                char type_id[DETSCAT_PRT_TYPEID_MAX];
                 double x, y, z;
                 int w, r, k;
 
                 // truncates string in case of buffer overflow
                 // 127 = 128 - 1 (null terminator) 
-                if (sscanf(trimmed, " %127s %d %d %d %lf %lf %lf ", typeid, &w,
+                if (sscanf(trimmed, " %127s %d %d %d %lf %lf %lf ", type_id, &w,
                            &r, &k, &x, &y, &z) != 7) {
                     parser->status = DETSCAT_PRT_PARSER_ERR_FORMAT;
                     snprintf(parser->errmsg, sizeof(parser->errmsg),
@@ -285,14 +285,14 @@ bool detscat_prt_parser_load(DetScatPrtParser *parser, DetScatPrtData *prt) {
                     break;
                 }
                 DetScatPrtDef *p = &prt->particles[particles_allocated];
-                p->typeid = strutil_strdup(typeid);
-                p->caseid.w = w;
-                p->caseid.r = r;
-                p->caseid.k = k;
+                p->type_id = strutil_strdup(type_id);
+                p->case_id.w = w;
+                p->case_id.r = r;
+                p->case_id.k = k;
                 p->position.x = x;
                 p->position.y = y;
                 p->position.z = z;
-                if (!p->typeid) {
+                if (!p->type_id) {
                     parser->status = DETSCAT_PRT_PARSER_ERR_ALLOC;
                     snprintf(parser->errmsg, sizeof(parser->errmsg),
                              "Memory allocation failed for particle at line %d",

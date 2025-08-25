@@ -5,31 +5,26 @@
 #include "mymath.h"
 
 typedef struct {
-    Vec3 C;  // Camera center position in world coordinates
-    Vec3 r;  // Right (unit) vector (local x-dimension) in world coordinates
-    Vec3 u;  // Up (unit) vector (local y-dimension) in world coordinates
-    Vec3 n;  // Optical axis (unit) vector (local z-dimension) in world
-             // coordinates. Pointing from camera towards scene.
-
-    double f;    // Camera focal length (meters)
-    double p_x;  // Camera sensor pixel size in x (meters)
-    double p_y;  // Camera sensor pixel size in y (meters)
-    double
-        c_x;  // Camera sensor principal point x (usually (width - 1) / 2) in px
-    double c_y;  // Camera sensor principal point y (usually (height - 1) / 2)
-                 // in px
-                 //
-    int width;   // Camera sensor number of pixels horizontally
-    int height;  // Camera sensor number of pixels vertically
+    Vec3 C;      /**< Camera center position (world) */
+    Vec3 r;      /**< Camera 'right' x-direction (world)  */
+    Vec3 u;      /**< Camera 'up' y-direction (world) */ 
+    Vec3 n;      /**< Camera 'normal' z-direction (world) */
+    double f;    /**< Camera focal length [m] */
+    double p_x;  /**< Camera sensor pixel size in x [m] */
+    double p_y;  /**< Camera sensor pixel size in y [m] */
+    double c_x;  /**< Camera sensor principal point x [px] (image) */
+    double c_y;  /**< Camera sensor principal point y [px] (image) */
+    int width;   /**< Camera sensor number of pixels in x (image) */
+    int height;  /**< Camera sensor number of pixels in y (image) */
 } DetScatCamera;
 
 typedef struct {
-    int width;
-    int height;
-    float *pixels;  // Grayscale floats
+    int width;      /**< Image width [px] */
+    int height;     /**< Image height [px] */
+    float *pixels;  /**< Pixel data as grayscale floats */
 } DetScatImage;
 
-void detscat_camera_init(DetScatCamera *camera, DetScatConfig *cfg);
+void detscat_camera_init(DetScatCamera *cam, DetScatCfg *cfg);
 
 int detscat_camera_image_create(DetScatImage *image, int w, int h);
 

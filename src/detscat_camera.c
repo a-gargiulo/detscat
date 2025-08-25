@@ -1,6 +1,7 @@
 #include "detscat_camera.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdlib.h>
 
 
@@ -47,18 +48,28 @@ void detscat_camera_pixel_observation_direction(const DetScatCamera *camera, Vec
 
 // TODO: Add robustness with checks for config variables and for norms
 // TODO: Add a more generic / safe choice for yref
-void detscat_camera_camera_create(DetScatCamera *camera, DetScatConfig *cfg) {
-    assert(camera != NULL);
+void detscat_camera_init(DetScatCamera *cam, DetScatCfg *cfg) {
+    assert(cam != NULL);
     assert(cfg != NULL);
 
-    double tmp_norm;
 
-    camera->C = cfg->camera_center_position_m;
+    Vec3 xaxis = {1, 0, 0};
+    Vec3 yaxis = {0, 1, 0};
+    Vec3 zaxis = {0, 0, 1};
+    Vec3 ref;
 
-    tmp_norm = mymath_vec3_abs(&cfg->camera_sensor_normal_vector);
-    camera->n.x = cfg->camera_sensor_normal_vector.x / tmp_norm; 
-    camera->n.y = cfg->camera_sensor_normal_vector.y / tmp_norm; 
-    camera->n.z = cfg->camera_sensor_normal_vector.z / tmp_norm; 
+    cam->C = cfg->camera_center_pos_m;
+
+    mymath_vec3_normalize(&cam->n, &cfg->camera_sensor_normal,
+                          mymath_vec3_abs(&cfg->camera_sensor_normal));
+
+    if (fabs(cam->n.x) < fabs(cam->n.y) && fabs(cam->n.x) < fabs(cam->n.z))
+        ref = xaxis;
+    else if (fabs(cam->n.y) < fabs(cam->n.z))
+        ref = yaxis;
+    else
+        ref = zaxis;
+
 
     Vec3 yref = {0, -1, 0};
     Vec3 tmp_r;

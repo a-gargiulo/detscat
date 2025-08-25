@@ -24,13 +24,13 @@
 
 typedef struct {
     Vec3 position;
-    DetScatDdscatCaseId caseid;
-    char *typeid;
+    DetScatDdscatCaseId case_id;
+    char *type_id;
 } DetScatPrtDef;
 
 typedef struct {
-    char *typeid;
-    char *datadir;
+    char *type_id;
+    char *data_dir;
 } DetScatPrtTypeDef;
 
 typedef struct {

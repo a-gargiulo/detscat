@@ -1,5 +1,9 @@
 #include "detscat_config.h"
 
+#include "detscat_diag.h"
+#include "detscat_log.h"
+#include "detscat_parser.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -8,7 +12,52 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "strutil.h"
+#include "str.h"
+
+
+bool detscat_cfg_load(const char *file_path, DetScatCfg *cfg, DetScatDiagnose *diag) {
+    assert(cfg != NULL);
+    assert(diag != NULL);
+
+    if (!file_path || file_path[0] == '\0') {
+        DETSCAT_SET_DIAGNOSE(*diag, DETSCAT_ERR_INVALID_ARG,
+                             "%s", "configuration file path provided is empty");
+    }
+
+    DetScatParser parser;
+    if (!detscat_parser_init(&parser, file_path)) {
+        DETSCAT_SET_DIAGNOSE(*diag, DETSCAT_ERR_PARSING,
+                             "%s",
+                             parser.errmsg);
+        return false;
+    }
+
+    while (detscat_parser_next_line(&parser)) {
+    //     if (!detscat_cfg_parse_line(&parser, cfg, diag)) {
+    //         detscat_parser_free(&parser);
+    //         return false;
+    //     }
+    }
+
+    // detscat_parser_free(&parser);
+    // return true;
+
+
+
+
+    
+}
+
+
+
+
+
+
+
+
+
+
+
 
 bool detscat_cfg_parser_init(DetScatCfgParser *parser, const char *file_path) {
     assert(parser != NULL);

@@ -34,6 +34,16 @@
 #define DETSCAT_DDSCAT_SCAT_PLANE_PARAMS 4
 
 /**
+ * wxxxryyykzzz.fml - 16 bytes
+ */
+#define DETSCAT_DDSCAT_FML_FILENAME_LEN 16
+
+/**
+ * ddscat.par - 10 bytes
+ */
+#define DETSCAT_DDSCAT_PAR_FILENAME_LEN 10 
+
+/**
  * @brief Identifier for a DDSCAT case
  *
  * A DDSCAT simulation case is defined by:
@@ -124,10 +134,10 @@ typedef struct {
 typedef struct {
     size_t n_pars;
     size_t n_fmls;
-    size_t n_par_idx;
+    size_t n_par_idxs;
     DetScatDdscatParams *pars;
     DetScatDdscatFml *fmls;
-    size_t *par_idx;
+    size_t *par_idxs;
 } DetScatDdscatData;
 
 
@@ -149,7 +159,7 @@ void detscat_ddscat_parser_close(DetScatDdscatParser *parser);
  * @param par Output `.par` file structure.
  * @return `true` on success, `false` on failure.
  */
-bool detscat_ddscat_parser_load_par(DetScatDdscatParser *parser,
+bool detscat_ddscat_parser_par_load(DetScatDdscatParser *parser,
                                     DetScatDdscatParams *par);
 
 /**
@@ -163,7 +173,7 @@ bool detscat_ddscat_parser_load_par(DetScatDdscatParser *parser,
  * @param par Associated `.par` file parameters.
  * @return `true` on success, `false` on failure.
  */
-bool detscat_ddscat_parser_load_fml(DetScatDdscatParser *parser,
+bool detscat_ddscat_parser_fml_load(DetScatDdscatParser *parser,
                                     DetScatDdscatFml *fml,
                                     DetScatDdscatParams *par);
 
@@ -177,6 +187,11 @@ bool detscat_ddscat_parser_load_fml(DetScatDdscatParser *parser,
 void detscat_ddscat_par_free(DetScatDdscatParams *par);
 
 void detscat_ddscat_fml_free(DetScatDdscatFml *fml);
+
+bool detscat_ddscat_init(DetScatDdscatData *ddscat,
+                          size_t n_pars,
+                          size_t n_fmls,
+                          size_t n_par_idxs);
 
 void detscat_ddscat_free(DetScatDdscatData *ddscat);
 

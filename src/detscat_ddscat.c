@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -60,9 +59,7 @@ bool detscat_ddscat_parser_reset(DetScatDdscatParser *parser,
         parser->line_number = 0;
         parser->eof = false;
         parser->line[0] = '\0';
-        snprintf(parser->errmsg, sizeof(parser->errmsg),
-                 "Could not reset parser from %s",
-                 file_path);
+        parser->errmsg[0] = '\0';
         return false;
     }
 
@@ -75,9 +72,40 @@ bool detscat_ddscat_parser_reset(DetScatDdscatParser *parser,
     return true;
 }
 
-bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
-                                     DetScatDdscatParams *par) {
-    assert(ddscat_parser != NULL);
+bool detscat_ddscat_init(DetScatDdscatData *ddscat,
+                         size_t n_pars,
+                         size_t n_fmls,
+                         size_t n_par_idxs) {
+
+    ddscat->pars = n_pars ? calloc(n_pars, sizeof(*ddscat->pars)) : NULL;
+    ddscat->fmls = n_fmls ? calloc(n_fmls, sizeof(*ddscat->fmls)) : NULL;
+    ddscat->par_idxs = n_par_idxs ? calloc(n_par_idxs, sizeof(*ddscat->par_idxs)) : NULL;
+
+    ddscat->n_pars = n_pars;
+    ddscat->n_fmls = n_fmls;
+    ddscat->n_par_idxs = n_par_idxs;
+
+    if ((n_pars && !ddscat->pars) ||
+        (n_fmls && !ddscat->fmls) ||
+        (n_par_idxs && !ddscat->par_idxs)) 
+    {
+        free(ddscat->pars);
+        free(ddscat->fmls);
+        free(ddscat->par_idxs);
+        ddscat->pars = NULL;
+        ddscat->fmls = NULL;
+        ddscat->par_idxs = NULL;
+        ddscat->n_pars = ddscat->n_fmls = ddscat->n_par_idxs = 0;
+        return false;
+    }
+
+    return true;
+
+}
+
+bool detscat_ddscat_parser_par_load(DetScatDdscatParser *parser,
+                                    DetScatDdscatParams *par) {
+    assert(parser != NULL);
     assert(par != NULL);
 
     size_t components_allocated = 0;
@@ -90,10 +118,9 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
     };
     enum DdscatParParseState state = PARSE_INITIAL;
 
-    while (fgets(ddscat_parser->line, DETSCAT_DDSCAT_LINE_MAX,
-                 ddscat_parser->file)) {
-        ddscat_parser->line_number++;
-        char *trimmed = strutil_trim(ddscat_parser->line);
+    while (fgets(parser->line, DETSCAT_DDSCAT_LINE_MAX, parser->file)) {
+        parser->line_number++;
+        char *trimmed = strutil_trim(parser->line);
 
         switch (state) {
             case PARSE_INITIAL:
@@ -101,23 +128,19 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
                     size_t n_components;
                     if (sscanf(trimmed, "%zu", &n_components) != 1 ||
                         n_components == 0) {
-                        snprintf(ddscat_parser->err_msg,
-                                 sizeof(ddscat_parser->err_msg),
-                                 "Invalid format or zero NCOMP at line %d",
-                                 ddscat_parser->line_number);
-                        ddscat_parser->status =
-                            DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+                        snprintf(parser->errmsg, sizeof(parser->errmsg),
+                                 "Invalid NCOMP format at line %d",
+                                 parser->line_number);
+                        parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
                         goto cleanup;
                     }
 
                     par->n_components = n_components;
                     par->components = calloc(n_components, sizeof(char *));
                     if (!par->components) {
-                        snprintf(ddscat_parser->err_msg,
-                                 sizeof(ddscat_parser->err_msg),
-                                 "Failed allocation at line %d",
-                                 ddscat_parser->line_number);
-                        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
+                        snprintf(parser->errmsg, sizeof(parser->errmsg),
+                                 "Memory allocation for components failed");
+                        parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
                         goto cleanup;
                     }
 
@@ -127,12 +150,10 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
                     size_t n_scat_planes;
                     if (sscanf(trimmed, "%zu", &n_scat_planes) != 1 ||
                         n_scat_planes == 0) {
-                        snprintf(ddscat_parser->err_msg,
-                                 sizeof(ddscat_parser->err_msg),
-                                 "Invalid format or zero NPLANES at line %d",
-                                 ddscat_parser->line_number);
-                        ddscat_parser->status =
-                            DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+                        snprintf(parser->errmsg, sizeof(parser->errmsg),
+                                 "Invalid NPLANES format at line %d",
+                                 parser->line_number);
+                        parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
                         goto cleanup;
                     }
 
@@ -141,11 +162,10 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
                         n_scat_planes,
                         sizeof(double[DETSCAT_DDSCAT_SCAT_PLANE_PARAMS]));
                     if (!par->scat_planes) {
-                        snprintf(ddscat_parser->err_msg,
-                                 sizeof(ddscat_parser->err_msg),
-                                 "Failed allocation at line %d",
-                                 ddscat_parser->line_number);
-                        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
+                        snprintf(parser->errmsg, sizeof(parser->errmsg),
+                                "Memory allocation for scattering planes "
+                                "failed");
+                        parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
                         goto cleanup;
                     }
 
@@ -156,11 +176,10 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
                                &par->e01.x.re, &par->e01.x.im, &par->e01.y.re,
                                &par->e01.y.im, &par->e01.z.re,
                                &par->e01.z.im) != 6) {
-                        snprintf(ddscat_parser->err_msg,
-                                 sizeof(ddscat_parser->err_msg),
+                        snprintf(parser->errmsg, sizeof(parser->errmsg),
                                  "Invalid format for polarization state at line %d",
-                                 ddscat_parser->line_number);
-                        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+                                 parser->line_number);
+                        parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
                         goto cleanup;
                     }
                     state = PARSE_INITIAL;
@@ -169,33 +188,30 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
 
             case PARSE_COMP:
                 if (components_allocated >= par->n_components) {
-                    snprintf(ddscat_parser->err_msg,
-                             sizeof(ddscat_parser->err_msg),
+                    snprintf(parser->errmsg, sizeof(parser->errmsg),
                              "Too many components provided (expected %zu) at "
                              "line %d",
-                             par->n_components, ddscat_parser->line_number);
-                    ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+                             par->n_components, parser->line_number);
+                    parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
                     goto cleanup;
                 }
 
                 char component[DETSCAT_DDSCAT_COMPONENTS_MAX];
 
                 if (sscanf(trimmed, "'%[^']'", component) != 1) {
-                    snprintf(ddscat_parser->err_msg,
-                             sizeof(ddscat_parser->err_msg),
+                    snprintf(parser->errmsg, sizeof(parser->errmsg),
                              "Invalid format for component at line %d",
-                             ddscat_parser->line_number);
-                    ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+                             parser->line_number);
+                    parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
                     goto cleanup;
                 }
 
-                par->components[components_allocated] = strdup(component);
+                par->components[components_allocated] = strutil_strdup(component);
                 if (!par->components[components_allocated]) {
-                    snprintf(ddscat_parser->err_msg,
-                             sizeof(ddscat_parser->err_msg),
+                    snprintf(parser->errmsg, sizeof(parser->errmsg),
                              "Failed component allocation at line %d",
-                             ddscat_parser->line_number);
-                    ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
+                             parser->line_number);
+                    parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
                     goto cleanup;
                 }
 
@@ -207,12 +223,11 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
 
             case PARSE_PLANES:
                 if (scat_planes_parsed >= par->n_scat_planes) {
-                    snprintf(ddscat_parser->err_msg,
-                             sizeof(ddscat_parser->err_msg),
+                    snprintf(parser->errmsg, sizeof(parser->errmsg),
                              "Too many scattering planes provided (expected "
                              "%zu) at line %d",
-                             par->n_scat_planes, ddscat_parser->line_number);
-                    ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+                             par->n_scat_planes, parser->line_number);
+                    parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
                     goto cleanup;
                 }
 
@@ -222,11 +237,10 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
                            &par->scat_planes[scat_planes_parsed][2],
                            &par->scat_planes[scat_planes_parsed][3]) !=
                     DETSCAT_DDSCAT_SCAT_PLANE_PARAMS) {
-                    snprintf(ddscat_parser->err_msg,
-                             sizeof(ddscat_parser->err_msg),
+                    snprintf(parser->errmsg, sizeof(parser->errmsg),
                              "Invalid format for scattering plane at line %d",
-                             ddscat_parser->line_number);
-                    ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+                             parser->line_number);
+                    parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
                     goto cleanup;
                 }
 
@@ -239,21 +253,21 @@ bool detscat_ddscat_parser_parse_par(DetScatDdscatParser *ddscat_parser,
     }
 
     if (components_allocated != par->n_components) {
-        snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
-                 "Expected %zu components but got %zu", par->n_components,
-                 components_allocated);
-        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+        snprintf(parser->errmsg, sizeof(parser->errmsg),
+                 "Expected %zu components but got %zu",
+                 par->n_components, components_allocated);
+        parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
         goto cleanup;
     }
     if (scat_planes_parsed != par->n_scat_planes) {
-        snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
+        snprintf(parser->errmsg, sizeof(parser->errmsg),
                  "Expected %zu scattering planes but got %zu",
                  par->n_scat_planes, scat_planes_parsed);
-        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+        parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
         goto cleanup;
     }
 
-    ddscat_parser->eof = true;
+    parser->eof = true;
     return true;
 
 cleanup:
@@ -273,34 +287,35 @@ cleanup:
 
     par->n_components = 0;
     par->n_scat_planes = 0;
+    memset(&par->e01, 0, sizeof(par->e01));
 
     return false;
 }
 
-bool detscat_ddscat_parser_parse_fml(DetScatDdscatParser *ddscat_parser,
-                                     DetScatDdscatFml *fml,
-                                     DetScatDdscatParams *par) {
-    assert(ddscat_parser != NULL);
+bool detscat_ddscat_parser_fml_load(DetScatDdscatParser *parser,
+                                    DetScatDdscatFml *fml,
+                                    DetScatDdscatParams *par) {
+    assert(parser != NULL);
     assert(fml != NULL);
-
-    fml->n_fmats = par->n_scat_planes;
-
-    if (!(fml->n_fmats > 0)) {
-        snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
-                 "Number of scattering planes must be larger than zero, "
-                 "received %zu.",
-                 fml->n_fmats);
-        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
-        goto cleanup;
-    }
+    assert(par != NULL);
 
     size_t matrices_allocated = 0;
 
+    fml->n_fmats = par->n_scat_planes;
+
+    if (fml->n_fmats <= 0) {
+        snprintf(parser->errmsg, sizeof(parser->errmsg),
+                 "Number of scattering planes must be larger than zero, "
+                 "got %zu",
+                 fml->n_fmats);
+        parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+        goto cleanup;
+    }
+
     bool data_header_found = false;
-    while (fgets(ddscat_parser->line, DETSCAT_DDSCAT_LINE_MAX,
-                 ddscat_parser->file)) {
-        ddscat_parser->line_number++;
-        char *trimmed = strutil_trim(ddscat_parser->line);
+    while (fgets(parser->line, DETSCAT_DDSCAT_LINE_MAX, parser->file)) {
+        parser->line_number++;
+        char *trimmed = strutil_trim(parser->line);
 
         if (strstr(trimmed, "Re")) {
             data_header_found = true;
@@ -308,18 +323,18 @@ bool detscat_ddscat_parser_parse_fml(DetScatDdscatParser *ddscat_parser,
         }
     }
     if (!data_header_found) {
-        snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
+        snprintf(parser->errmsg, sizeof(parser->errmsg),
                  "Reached EOF. Did not find any data header.");
-        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+        parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
         goto cleanup;
     }
 
     fml->fmats = calloc(fml->n_fmats, sizeof(DetScatDdscatFmatrix));
     if (!fml->fmats) {
-        snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
-                 "Failed allocation for f matrices at line number %d.",
-                 ddscat_parser->line_number);
-        ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
+        snprintf(parser->errmsg, sizeof(parser->errmsg),
+                 "Memory allocation failed for f matrices at line number %d",
+                 parser->line_number);
+        parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
         goto cleanup;
     }
 
@@ -330,18 +345,18 @@ bool detscat_ddscat_parser_parse_fml(DetScatDdscatParser *ddscat_parser,
         double step = par->scat_planes[i][3];
 
         if (step <= 0.0) {
-            snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
+            snprintf(parser->errmsg, sizeof(parser->errmsg),
                      "Division by zero encountered while calculating n_theta "
-                     "for scattering plane %zu.",
+                     "for scattering plane %zu",
                      i + 1);
-            ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+            parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
             goto cleanup;
         } else if (range < 0.0) {
-            snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
+            snprintf(parser->errmsg, sizeof(parser->errmsg),
                      "Invalid range encountered while calculating n_theta for "
                      "scattering plane %zu.",
                      i + 1);
-            ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+            parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
             goto cleanup;
         } else {
             n_theta = (size_t)(range / step) + 1;
@@ -360,48 +375,47 @@ bool detscat_ddscat_parser_parse_fml(DetScatDdscatParser *ddscat_parser,
         if (!fml->fmats[i].theta || !fml->fmats[i].f11 ||
             !fml->fmats[i].f12 || !fml->fmats[i].f21 ||
             !fml->fmats[i].f22) {
-            snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
-                     "Failed allocation of f matrix elements for scattering "
-                     "plane %zu.",
+            snprintf(parser->errmsg, sizeof(parser->errmsg),
+                     "Memory allocation failed for f matrix elements for scattering "
+                     "plane %zu",
                      i + 1);
-            ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
+            parser->status = DETSCAT_DDSCAT_PARSER_ERR_ALLOC;
             goto cleanup;
         }
 
         for (size_t j = 0; j < n_theta; ++j) {
-            ddscat_parser->line_number++;
+            parser->line_number++;
 
-            if (!fgets(ddscat_parser->line, DETSCAT_DDSCAT_LINE_MAX,
-                       ddscat_parser->file)) {
-                snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
-                         "Could not read line %d.", ddscat_parser->line_number);
-                ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+            if (!fgets(parser->line, DETSCAT_DDSCAT_LINE_MAX, parser->file)) {
+                snprintf(parser->errmsg, sizeof(parser->errmsg),
+                         "Could not read line %d",
+                         parser->line_number);
+                parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
                 goto cleanup;
             }
 
-            char *trimmed = strutil_trim(ddscat_parser->line);
+            char *trimmed = strutil_trim(parser->line);
             if (sscanf(trimmed, "%lf %*f %lf %lf %lf %lf %lf %lf %lf %lf",
                        &fml->fmats[i].theta[j], &fml->fmats[i].f11[j].re,
                        &fml->fmats[i].f11[j].im, &fml->fmats[i].f21[j].re,
                        &fml->fmats[i].f21[j].im, &fml->fmats[i].f12[j].re,
                        &fml->fmats[i].f12[j].im, &fml->fmats[i].f22[j].re,
                        &fml->fmats[i].f22[j].im) != 9) {
-                snprintf(ddscat_parser->err_msg, sizeof(ddscat_parser->err_msg),
-                         "Could not parse line %d.",
-                         ddscat_parser->line_number);
-                ddscat_parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
+                snprintf(parser->errmsg, sizeof(parser->errmsg),
+                         "Could not parse line %d",
+                         parser->line_number);
+                parser->status = DETSCAT_DDSCAT_PARSER_ERR_FORMAT;
                 goto cleanup;
             }
         }
 
         matrices_allocated++;
     }
-    while (fgets(ddscat_parser->line, DETSCAT_DDSCAT_LINE_MAX,
-                 ddscat_parser->file)) {
+    while (fgets(parser->line, DETSCAT_DDSCAT_LINE_MAX, parser->file)) {
         continue;
     }
-    ddscat_parser->eof = true;
-    ddscat_parser->status = DETSCAT_DDSCAT_PARSER_OK;
+    parser->eof = true;
+    parser->status = DETSCAT_DDSCAT_PARSER_OK;
     return true;
 
 cleanup:
@@ -451,8 +465,6 @@ void detscat_ddscat_par_free(DetScatDdscatParams *par) {
     par->n_components = 0;
     par->n_scat_planes = 0;
     memset(&par->e01, 0, sizeof(par->e01));
-
-    return;
 }
 
 void detscat_ddscat_fml_free(DetScatDdscatFml *fml) {
@@ -480,11 +492,9 @@ void detscat_ddscat_fml_free(DetScatDdscatFml *fml) {
     }
 
     fml->n_fmats = 0;
-
-    return;
 }
 
-void detscat_ddscat_data_free(DetScatDdscatData *ddscat) {
+void detscat_ddscat_free(DetScatDdscatData *ddscat) {
     if (!ddscat) return;
 
     if (ddscat->pars) {
@@ -504,14 +514,12 @@ void detscat_ddscat_data_free(DetScatDdscatData *ddscat) {
         ddscat->fmls = NULL;
     }
 
-    if (ddscat->par_idx) {
-        free(ddscat->par_idx);
-        ddscat->par_idx = NULL;
+    if (ddscat->par_idxs) {
+        free(ddscat->par_idxs);
+        ddscat->par_idxs = NULL;
     }
 
     ddscat->n_pars = 0;
     ddscat->n_fmls = 0;
-    ddscat->n_par_idx = 0;
-
-    return;
+    ddscat->n_par_idxs = 0;
 }

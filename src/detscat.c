@@ -2,7 +2,7 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <math.h>
+// #include <math.h>
 #include <omp.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -11,7 +11,7 @@
 
 #include "detscat_camera.h"
 #include "detscat_config.h"
-#include "detscat_const.h"
+// #include "detscat_const.h"
 #include "detscat_ddscat.h"
 #include "detscat_particles.h"
 
@@ -32,77 +32,6 @@ static void detscat_print_banner(void) {
     return;
 }
 
-static void detscat_vprint(const char *frmt, va_list args) {
-    while (*frmt) {
-        if (*frmt == '%' && *(frmt + 1)) {
-            frmt++;
-            switch (*frmt) {
-                case 'd':
-                    printf("%d", va_arg(args, int));
-                    break;
-                case 'c':
-                    putchar((char)va_arg(args, int));
-                    break;
-                case 'f':
-                    printf("%f", va_arg(args, double));
-                    break;
-                case 's':
-                    printf("%s", va_arg(args, const char *));
-                    break;
-                case 'l':
-                    if (*(frmt + 1) == 'f') {
-                        frmt += 2;
-                        printf("%lf", va_arg(args, double));
-                        continue;
-                    } else if (*(frmt + 1) == 'd') {
-                        frmt += 2;
-                        printf("%ld", va_arg(args, long int));
-                        continue;
-                    }
-                    putchar('%');
-                    putchar('l');
-                    break;
-                case 'z':
-                    if (*(frmt + 1) == 'u') {
-                        frmt += 2;
-                        printf("%zu", va_arg(args, size_t));
-                        continue;
-                    }
-                    putchar('%');
-                    putchar('z');
-                    break;
-                default:
-                    putchar('%');
-                    putchar(*frmt);
-            }
-        } else {
-            putchar(*frmt);
-        }
-        frmt++;
-    }
-}
-
-void detscat_error(const char *fnct, int line, const char *file,
-                   const char *frmt, ...) {
-    printf("[\033[91mERROR\033[0m]: \033[95m\"%s\", line %d, in %s()\033[0m: ",
-           file, line, fnct);
-    va_list args;
-    va_start(args, frmt);
-    detscat_vprint(frmt, args);
-    putchar('\n');
-    va_end(args);
-    return;
-}
-
-void detscat_info(const char *frmt, ...) {
-    printf("[\033[94mINFO\033[0m]: ");
-    va_list args;
-    va_start(args, frmt);
-    detscat_vprint(frmt, args);
-    putchar('\n');
-    va_end(args);
-    return;
-}
 
 static void detscat_cfg_load(const char *file_path,
                              DetScatCfg *cfg,
@@ -172,166 +101,157 @@ static int cmp_phi(const void *a, const void *b) {
     return (fa->phi > fb->phi) - (fa->phi < fb->phi);
 }
 
-static void detscat_fetch_ddscat_data(DetScatDdscatData *ddscat,
-                                      DetScatParticlesData *pr_data,
-                                      DetScatDiagnose *diagnose) {
+static bool find_type_index(const DetScatPrtData *prt, const char *type_id, size_t *out_idx) {
+    for (size_t j = 0; j < prt->n_types; ++j) {
+        if (strcmp(type_id, prt->types[j].type_id) == 0) {
+            *out_idx = j;
+            return true;
+        }
+    }
+    return false;
+}
+
+static void detscat_ddscat_load(DetScatDdscatData *ddscat,
+                                DetScatPrtData *prt,
+                                DetScatDiagnose *diagnose) {
     assert(ddscat != NULL);
+    assert(prt != NULL);
+    assert(prt->n_particles > 0);
+    assert(prt->n_types > 0);
     assert(diagnose != NULL);
-    assert(pr_data != NULL);
 
-    assert(pr_data->n_particles > 0);
-    assert(pr_data->n_types > 0);
+    diagnose->status = DETSCAT_OK;
 
-    DetScatDdscatParser *ddscat_parser = NULL;
+    bool parser_init = false;
+    DetScatDdscatParser parser = {0};
 
-    ddscat->n_pars = pr_data->n_types;
-    ddscat->pars = calloc(ddscat->n_pars, sizeof(DetScatDdscatParams));
-
-    ddscat->n_fmls = pr_data->n_particles;
-    ddscat->fmls = calloc(ddscat->n_fmls, sizeof(DetScatDdscatFml));
-
-    ddscat->n_par_idx = pr_data->n_particles; 
-    ddscat->par_idx = calloc(ddscat->n_par_idx, sizeof(size_t));
-
-    if (!ddscat->pars || !ddscat->fmls || !ddscat->par_idx) {
-        detscat_ddscat_data_free(ddscat);
-        detscat_particles_data_free(pr_data);
-        DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_ALLOC, "%s",
-                             "Could not allocate DDSCAT data container.");
+    if (!detscat_ddscat_init(ddscat, prt->n_types, prt->n_particles, prt->n_particles)) {
+        detscat_prt_free(prt);
+        DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_ALLOC,
+                             "%s",
+                             "Initialization of DDSCAT data failed.");
         return;
     }
 
-    // PAR LOOP
-    bool par_parser_created = false;
-    for (size_t i = 0; i < pr_data->n_types; ++i) {
+    // PAR
+    for (size_t i = 0; i < prt->n_types; ++i) {
         char par_file_path[DETSCAT_PATH_MAX];
 
-        strcpy(par_file_path, pr_data->types[i].data_dir);
+        const char *par_dir = prt->types[i].data_dir;
+        const char *tid = prt->types[i].type_id;
 
-        if (par_file_path[strlen(par_file_path) - 1] == '/')
-            strcat(par_file_path, "ddscat.par");
-        else
-            strcat(par_file_path, "/ddscat.par");
+        size_t len = strlen(par_dir);
+        size_t extra = DETSCAT_DDSCAT_PAR_FILENAME_LEN;  // ddscat.par - 10 bytes (characters)
+        if (len > 0 && par_dir[len - 1] != '/') extra++;  // add 1 for '/'
 
-        if (!par_parser_created) {
-            errno = 0;
-            ddscat_parser = detscat_ddscat_parser_create(par_file_path);
-            if (!ddscat_parser) {
-                if (errno != 0)
-                    DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                         "Could not initialize the par file "
-                                         "parser from '%s': %s",
-                                         par_file_path, strerror(errno));
-                else
-                    DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                         "Could not initialize par file "
-                                         "parser from '%s': Failed to allocate parser.",
-                                         par_file_path);
-                
-                detscat_ddscat_data_free(ddscat);
-                detscat_particles_data_free(pr_data);
-                return;
-            }
-        } else {
-            assert(ddscat_parser != NULL);
-            if (!detscat_ddscat_parser_reset(ddscat_parser, par_file_path)) {
-                DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                     "Could not reset par file "
-                                     "parser: %s",
-                                     ddscat_parser->err_msg);
-                detscat_ddscat_data_free(ddscat);
-                detscat_particles_data_free(pr_data);
-                detscat_ddscat_parser_free(ddscat_parser);
-                return;
-            }
+        if (len + extra > DETSCAT_PATH_MAX - 1) {
+            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_PARSING,
+                                 "%s",
+                                 "Path to .par file is too large");
+            return;
         }
 
-        if (!detscat_ddscat_parser_parse_par(ddscat_parser, &ddscat->pars[i])) {
-            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
+        snprintf(par_file_path, DETSCAT_PATH_MAX, 
+                 "%s%s%s",
+                 par_dir,
+                 (len > 0 && par_dir[len - 1] != '/') ? "/" : "",
+                 "ddscat.par");
+
+        errno = 0;
+        bool success;
+        const char *errmsg = NULL;
+
+        if (!parser_init) {
+            success = detscat_ddscat_parser_init(&parser, par_file_path); 
+            errmsg = "Could not initialize ddscat parser from";
+        } 
+        else {
+            success = detscat_ddscat_parser_reset(&parser, par_file_path); 
+            errmsg = "Could not reset ddscat parser from";
+        }
+
+        if (!success) {
+            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_PARSING,
+                                 "%s '%s': %s",
+                                 errmsg,
+                                 par_file_path,
+                                 strerror(errno));
+            if (parser_init) detscat_ddscat_parser_close(&parser);
+            return;
+        }
+
+        parser_init = true;
+
+        if (!detscat_ddscat_parser_par_load(&parser, &ddscat->pars[i])) {
+            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_PARSING,
                                  "Could not parse the DDSCAT parameter file "
                                  "'%s' for particle type "
                                  "'%s'.",
                                  par_file_path,
-                                 pr_data->types[i].type_id);
-            detscat_ddscat_data_free(ddscat);
-            detscat_particles_data_free(pr_data);
-            detscat_ddscat_parser_free(ddscat_parser);
+                                 tid);
+            detscat_ddscat_parser_close(&parser);
             return;
         }
     }
 
-    // FML LOOP
-    for (size_t i = 0; i < pr_data->n_particles; ++i) {
-        // note: fml files are named w000r000k000.fml, where
-        // w = wavelength,
-        // r = radius,
-        // k = orientation.
-
-        // TODO: Could implement a hash table for faster lookup
-        // -----
-        size_t idx = (size_t)(-1);
-        for (size_t j = 0; j < pr_data->n_types; ++j) {
-            if (strcmp(pr_data->particles[i].type_id, pr_data->types[j].type_id) == 0) {
-                idx = j;
-                break;
-            }
-        }
-
-        if (idx == (size_t)(-1)) {
+    // FML
+    for (size_t i = 0; i < prt->n_particles; ++i) {
+        size_t idx;
+        if (!find_type_index(prt, prt->particles[i].type_id, &idx)) {
             DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_LOOKUP,
                                  "Particle type '%s' not found in definitions.",
-                                 pr_data->particles[i].type_id);
-            detscat_ddscat_data_free(ddscat);
-            detscat_particles_data_free(pr_data);
-            detscat_ddscat_parser_free(ddscat_parser);
+                                 prt->particles[i].type_id);
+            detscat_ddscat_parser_close(&parser);
             return;
         }
-        ddscat->par_idx[i] = idx;
-        // -----
+        ddscat->par_idxs[i] = idx;
+
+        const char* fml_dir = prt->types[idx].data_dir;
+        size_t len = strlen(fml_dir);
+        size_t extra = DETSCAT_DDSCAT_FML_FILENAME_LEN;  // wxxxryyykzzz.fml - 16 bytes (characters)
 
         char fml_file_path[DETSCAT_PATH_MAX];
-        char fml_name[64];
-        strcpy(fml_file_path, pr_data->types[idx].data_dir);
-        if (fml_file_path[strlen(fml_file_path) - 1] == '/') {
-            sprintf(fml_name, "w%03dr%03dk%03d.fml",
-                    pr_data->particles[i].case_id.w, 
-                    pr_data->particles[i].case_id.r,
-                    pr_data->particles[i].case_id.k);
-            strcat(fml_file_path, fml_name);
-        } else {
-            sprintf(fml_name, "/w%03dr%03dk%03d.fml",
-                    pr_data->particles[i].case_id.w,
-                    pr_data->particles[i].case_id.r,
-                    pr_data->particles[i].case_id.k);
-            strcat(fml_file_path, fml_name);
-        }
 
-        assert(ddscat_parser != NULL);
-        if (!detscat_ddscat_parser_reset(ddscat_parser, fml_file_path)) {
-            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_FILE_PARSING,
-                                 "Could not reset fml file "
-                                 "parser: %s",
-                                 ddscat_parser->err_msg);
-            detscat_ddscat_data_free(ddscat);
-            detscat_particles_data_free(pr_data);
-            detscat_ddscat_parser_free(ddscat_parser);
+        if (len > 0 && fml_dir[len - 1] != '/') extra++;  // add 1 for '/'
+
+        if (len + extra > DETSCAT_PATH_MAX - 1) {
+            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_PARSING,
+                                 "%s",
+                                 "Path to .fml file is too large");
+            detscat_ddscat_parser_close(&parser);
             return;
         }
 
-        if (!detscat_ddscat_parser_parse_fml(ddscat_parser, &ddscat->fmls[i], &ddscat->pars[idx])) {
+        snprintf(fml_file_path, DETSCAT_PATH_MAX, 
+                 "%s%sw%03dr%03dk%03d.fml",
+                 fml_dir,
+                 (len > 0 && fml_dir[len - 1] != '/') ? "/" : "",
+                 prt->particles[i].case_id.w,
+                 prt->particles[i].case_id.r,
+                 prt->particles[i].case_id.k);
+
+        errno = 0;
+        if (!detscat_ddscat_parser_reset(&parser, fml_file_path)) {
+            DETSCAT_SET_DIAGNOSE(*diagnose, DETSCAT_ERR_PARSING,
+                                 "Could not reset ddscat parser from '%s': %s",
+                                 fml_file_path,
+                                 strerror(errno));
+            detscat_ddscat_parser_close(&parser);
+            return;
+        }
+
+        if (!detscat_ddscat_parser_fml_load(&parser, &ddscat->fmls[i], &ddscat->pars[idx])) {
             DETSCAT_SET_DIAGNOSE(
-                *diagnose, DETSCAT_ERR_FILE_PARSING,
+                *diagnose, DETSCAT_ERR_PARSING,
                 "Could not parse the DDSCAT fml file '%s' for particle number "
                 "'%zu'.",
                 fml_file_path, i + 1);
-            detscat_ddscat_data_free(ddscat);
-            detscat_particles_data_free(pr_data);
-            detscat_ddscat_parser_free(ddscat_parser);
+            detscat_ddscat_parser_close(&parser);
             return;
         }
     }
 
-    detscat_ddscat_parser_free(ddscat_parser);
+    detscat_ddscat_parser_close(&parser);
     detscat_info("Successfully fetched all DDSCAT data.");
     return;
 }
@@ -373,7 +293,7 @@ static void detscat_get_camera_and_image(DetScatCamera *camera,
     return;
 } 
 
-void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
+int detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     assert(diagnose != NULL);
 
     detscat_print_banner();
@@ -389,12 +309,11 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_info("DetScat initialized successfully");
 
     DetScatCfg cfg = {0};
-    DetScatParticlesData prt = {0};
-
+    DetScatPrtData prt = {0};
     DetScatDdscatData ddscat = {0};
+
     DetScatCamera camera = {0};
     DetScatImage image = {0};
-
 
 
     const char *cfg_file_path = argv[1];
@@ -404,8 +323,8 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
     detscat_prt_load(cfg.particles_file, &prt, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
 
-    detscat_ddscat_load(&ddscat, &pr, diagnose);
-    if (diagnose->status != DETSCAT_OK) return;
+    detscat_ddscat_load(&ddscat, &prt, diagnose);
+    if (diagnose->status != DETSCAT_OK) goto cleanup_ddscat;
 
     detscat_get_camera_and_image(&camera, &image, &config, diagnose);
     if (diagnose->status != DETSCAT_OK) return;
@@ -458,8 +377,13 @@ void detscat_run(int argc, char **argv, DetScatDiagnose *diagnose) {
         }
     }
 
-    detscat_ddscat_data_free(&ddscat);
     detscat_prt_free(&prt);
+    detscat_ddscat_free(&ddscat);
+    return;
+    
+cleanup_ddscat:
+    detscat_prt_free(&prt);
+    detscat_ddscat_free(&ddscat);
     return;
 }
 
