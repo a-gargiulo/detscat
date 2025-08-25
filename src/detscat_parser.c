@@ -8,6 +8,9 @@
 
 #include "str.h"
 
+static const size_t DETSCAT_PARSER_LINE_INIT = 1024;
+static const size_t DETSCAT_PARSER_LINE_MAX = 65536;  // 64kB
+
 bool detscat_parser_init(DetScatParser *parser, const char *file_path) {
     assert(parser != NULL);
 
@@ -15,7 +18,7 @@ bool detscat_parser_init(DetScatParser *parser, const char *file_path) {
 
     if (!file_path || file_path[0] == '\0') {
         parser->status = DETSCAT_PARSER_ERR_INVALID_ARG;
-        snprintf(parser->errmsg, sizeof(parser->errmsg), "Invalid file path.");
+        snprintf(parser->errmsg, sizeof(parser->errmsg), "Function argument 'file_path' is invalid");
         return false;
     }
 
@@ -33,7 +36,7 @@ bool detscat_parser_init(DetScatParser *parser, const char *file_path) {
         parser->stream = NULL;
         parser->status = DETSCAT_PARSER_ERR_ALLOC;
         snprintf(parser->errmsg, sizeof(parser->errmsg),
-                 "Memory allocation for line buffer failed");
+                 "Memory allocation for parser line buffer failed");
         return false;
     }
 
@@ -43,7 +46,7 @@ bool detscat_parser_init(DetScatParser *parser, const char *file_path) {
         parser->stream = NULL;
         parser->status = DETSCAT_PARSER_ERR_ALLOC;
         snprintf(parser->errmsg, sizeof(parser->errmsg),
-                 "Memory allocation (reserve) for line buffer failed");
+                 "Reserving memory for parser line buffer failed");
         return false;
     }
 
@@ -92,7 +95,7 @@ bool detscat_parser_next_line(DetScatParser *parser) {
         if (parser->line.length >= DETSCAT_PARSER_LINE_MAX) {
             parser->status = DETSCAT_PARSER_ERR_OVERFLOW;
             snprintf(parser->errmsg, sizeof(parser->errmsg),
-                     "Line exceeds maximum allowed length (%d bytes)",
+                     "Line exceeds maximum allowed length (%zu bytes)",
                      DETSCAT_PARSER_LINE_MAX);
             return false;
         }

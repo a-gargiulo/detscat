@@ -6,7 +6,6 @@
 
 #include "detscat_diag.h"
 #include "detscat_parser.h"
-
 #include "mymath.h"
 #include "str.h"
 
@@ -29,7 +28,10 @@ typedef struct {
 
 extern DetScatCfg cfg;
 
+bool detscat_cfg_init(DetScatCfg *cfg, DetScatDiagnose *diag);
+
+void detscat_cfg_free(DetScatCfg *cfg);
+
 bool detscat_cfg_load(const char *file_path, DetScatCfg *cfg, DetScatDiagnose *diag);
-bool detscat_cfg_parse_line(DetScatParser *parser, DetScatCfg *cfg, DetScatDiagnose *diag);
 
 #endif  // DETSCAT_CONFIG_H
