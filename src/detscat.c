@@ -54,17 +54,17 @@ bool detscat_load_data(const char *config_path, DetScat* detscat, DetScatDiagnos
 
     if (!detscat_cfg_load(config_path, detscat->cfg, diag)) goto cleanup_cfg;
 
-    if (!detscat_prt_create(&detscat->prt, diag)) goto cleanup_cfg;
+    // if (!detscat_prt_create(&detscat->prt, diag)) goto cleanup_cfg;
 
-    const char *particles_path = detscat->cfg->particles_file_path.data;
-    if (!detscat_prt_load(particles_path, detscat->prt, diag)) goto cleanup_prt;
+    // const char *particles_path = detscat->cfg->particles_file_path.data;
+    // if (!detscat_prt_load(particles_path, detscat->prt, diag)) goto cleanup_prt;
 
 
 
 
     goto success;
-cleanup_prt:
-    detscat_prt_destroy(&detscat->prt);
+// cleanup_prt:
+    // detscat_prt_destroy(&detscat->prt);
 cleanup_cfg:
     detscat_cfg_destroy(&detscat->cfg);
     return false;

@@ -7,24 +7,37 @@
 
 #include <stdbool.h>
 
+//------------------------------------------------------------------------------
+// Data structures 
+//------------------------------------------------------------------------------
+
 typedef struct DetScatConfig {
-    Str             particles_file_path;
 
-    ComplexVec3     polarization;
-    double          wavelength_nm;
-    double          pulse_energy_mj;
-    double          pulse_width_ns;
-    double          beam_diameter_mm;
-    bool            is_polarized;
+    // I/O parameters 
+    Str            particles_file_path;
 
-    Vec3            camera_center_position_m;
-    Vec3            camera_sensor_normal;
-    double          focal_length_mm;
-    double          sensor_width_mm;
-    double          sensor_height_mm;
-    int             camera_resolution_x_px;
-    int             camera_resolution_y_px;
+    // Laser parameters
+    ComplexVec3    polarization;
+    double         wavelength_nm;
+    double         pulse_energy_mj;
+    double         pulse_width_ns;
+    double         beam_diameter_mm;
+    bool           is_polarized;
+
+    // Camera parameters
+    Vec3           camera_center_position_m;
+    Vec3           camera_sensor_normal;
+    double         focal_length_mm;
+    double         sensor_width_mm;
+    double         sensor_height_mm;
+    int            camera_resolution_x_px;
+    int            camera_resolution_y_px;
+
 } DetScatConfig;
+
+//------------------------------------------------------------------------------
+// Public API 
+//------------------------------------------------------------------------------
 
 bool detscat_cfg_create(DetScatConfig **cfg, DetScatDiagnose *diag);
 void detscat_cfg_destroy(DetScatConfig **cfg);
