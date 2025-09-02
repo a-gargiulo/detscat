@@ -1,10 +1,10 @@
-$(StartDef)
+$(StartTypes)
 #number of particle types
 1
 #alias data_dir 
 #sphere /Users/galdo/Downloads/ddscat/ELLIPSOID
 sphere ../../ddscat/ELLIPSOID
-$(EndDef)
+$(EndTypes)
 $(StartParticles)
 #number of particles
 2
