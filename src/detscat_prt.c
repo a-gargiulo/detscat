@@ -43,7 +43,6 @@ static void detscat_prt_clear_particles(DetScatPrt *prt, size_t count) {
 DetScatPrt *detscat_prt_create(DetScatError *err) {
     DetScatPrt *prt = calloc(1, sizeof(*prt));
     if (!prt) {
-        free(prt);
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
                           "Failed to allocate memory for prt data");
         return NULL;

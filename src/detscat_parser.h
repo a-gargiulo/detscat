@@ -3,6 +3,7 @@
 
 #include "detscat_cfg.h"
 #include "detscat_prt.h"
+#include "detscat_ddscat.h"
 #include "detscat_str.h"
 
 #include <stdbool.h>
@@ -12,11 +13,13 @@
 
 #define DETSCAT_CFG_MAGIC 0x43464778  // CFGx
 #define DETSCAT_PRT_MAGIC 0x50525478  // PRTx
+#define DETSCAT_PAR_MAGIC 0x50415278  // PARx
 
 
-#define DETSCAT_PARSER_TYPE_LIST \
+#define DETSCAT_PARSER_TYPE_LIST        \
     X(CFG, "CFG parser type")           \
-    X(PRT, "PRT parser type")
+    X(PRT, "PRT parser type")           \
+    X(PAR, "PAR parser type")
 
 typedef enum {
 #define X(name, str) DETSCAT_##name,
@@ -79,6 +82,18 @@ typedef struct {
     bool types_parsed;
     bool particles_parsed;
 } DetScatParserPrtContext;
+
+typedef enum {
+    PAR_INITIAL = 0,
+    PAR_COMP,
+    PAR_PLANES
+} DetScatParserParState;
+
+typedef struct {
+   uint32_t magic; 
+   DetScatDdscatParams *par;
+   DetScatParserParState state;
+} DetScatParserParContext;
 
 
 DetScatParser *detscat_parser_create(DetScatParserType type);

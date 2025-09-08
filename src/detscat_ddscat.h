@@ -58,20 +58,17 @@ typedef struct {
     size_t *par_idxs;
 } DetScatDdscat;
 
-bool detscat_ddscat_init(DetScatDdscat *ddscat, size_t n_pars,
-                         size_t n_fmls, size_t n_par_idxs);
+DetScatDdscat *detscat_ddscat_create(size_t n_pars, size_t n_fmls, size_t n_par_idxs, DetScatError *err);
 
-bool detscat_ddscat_load(DetScatDdscat *ddscat, struct DetScatPrt *prt, DetScatError *err);
+void detscat_ddscat_destroy(DetScatDdscat **ddscat);
+void detscat_ddscat_par_clear(DetScatDdscatParams *par);
+void detscat_ddscat_fml_clear(DetScatDdscatFml *fml);
 
-
-bool detscat_ddscat_par_load(const char *file_path, DetScatDdscatParams *par,
+bool detscat_ddscat_par_load(const char *par_file_path, DetScatDdscatParams *par,
                              DetScatError *err);
 
-bool detscat_ddscat_fml_load(const char *file_path, DetScatDdscatFml *fml,
+bool detscat_ddscat_fml_load(const char *fml_file_path, DetScatDdscatFml *fml,
                              DetScatDdscatParams *par, DetScatError *err);
 
-void detscat_ddscat_free(DetScatDdscat *ddscat);
-void detscat_ddscat_par_free(DetScatDdscatParams *par);
-void detscat_ddscat_fml_free(DetScatDdscatFml *fml);
 
 #endif  // DETSCAT_DDSCAT_H

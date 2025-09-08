@@ -30,16 +30,26 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
+    if (!detscat_load_data(detscat, err)) {
+        detscat_log_error(err);
+        exit_code = 1;
+        goto cleanup;
+    }
+
     // TODO: continue here
+    #pragma omp parallel
+    {
+
+    }
 
 
 cleanup:
     detscat_destroy(&detscat);
     detscat_error_destroy(&err);
-    detscat_shutdown();
 
     if (exit_code == 0)
         detscat_log(DETSCAT_INFO, "DetScat terminated successfully");
 
+    detscat_shutdown();
     return exit_code;
 }

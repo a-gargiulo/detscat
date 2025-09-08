@@ -36,6 +36,9 @@ typedef enum {
 // --- DetScat ---
 DetScat *detscat_create(const char* cfg_file_path, DetScatError *err);
 void detscat_destroy(DetScat **detscat);
+bool detscat_load_data(DetScat* detscat, DetScatError* err);
+
+void detscat_print_cfg(const DetScat *detscat);
 
 // --- System ---
 bool detscat_init(DetScatError *err);
@@ -52,10 +55,8 @@ void detscat_log(DetScatLogLevel level, const char *fmt, ...);
 void detscat_log_error(const DetScatError *err);
 
 
-// bool detscat_load_data(const char *config_path, DetScat* detscat, DetScatDiagnose* diag);
 
 // void detscat_data_free(DetScat *detscat);
 
-// void detscat_print_cfg(const DetScatConfig *cfg);
 
 #endif  //  DETSCAT_H

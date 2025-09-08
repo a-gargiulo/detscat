@@ -834,7 +834,164 @@ error_cleanup:
     return false;
 }
 
+static bool detscat_parser_initial_par(const char *line,
+                                       DetScatParserParContext *ctx,
+                                       DetScatParser *parser) {
+    assert(parser && ctx);
 
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Received an empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+
+
+    if (strstr(trimmed, "NCOMP")) {
+        size_t n_components;
+        if (sscanf(trimmed, "%zu", &n_components) != 1 ||
+            n_components == 0) {
+            snprintf(parser->errmsg, sizeof(parser->errmsg),
+                     "Invalid NCOMP format at line %d",
+                     parser->lineno);
+            parser->status = DETSCAT_PARSER_ERR_FORMAT;
+            goto error_cleanup;
+        }
+
+        par->n_components = n_components;
+        par->components = calloc(n_components,
+                                 sizeof(*par->components));
+        if (!par->components) {
+            snprintf(parser->errmsg, sizeof(parser->errmsg),
+                     "Memory allocation for components failed");
+            parser->status = DETSCAT_PARSER_ERR_ALLOC;
+            goto error_cleanup;
+        }
+
+        ctx->state = PARSE_COMP;
+    } else if (strstr(trimmed, "NPLANES")) {
+        size_t n_scat_planes;
+        if (sscanf(trimmed, "%zu", &n_scat_planes) != 1 ||
+            n_scat_planes == 0) {
+            snprintf(parser->errmsg, sizeof(parser->errmsg),
+                     "Invalid NPLANES format at line %d",
+                     parser->lineno);
+            parser->status = DETSCAT_PARSER_ERR_FORMAT;
+            goto error_cleanup;
+        }
+
+        par->n_scat_planes = n_scat_planes;
+        par->scat_planes = calloc(n_scat_planes,
+                sizeof(double[DETSCAT_DDSCAT_SCAT_PLANE_PARAMS]));
+        if (!par->scat_planes) {
+            snprintf(parser->errmsg, sizeof(parser->errmsg),
+                     "Memory allocation for scattering planes "
+                     "failed");
+            parser->status = DETSCAT_PARSER_ERR_ALLOC;
+            goto error_cleanup;
+        }
+
+        ctx->state = PARSE_PLANES;
+    } else if (strstr(trimmed, "Polarization state")) {
+        if (sscanf(trimmed, "(%lf, %lf) (%lf, %lf) (%lf, %lf)",
+                   &par->e01.x.re, &par->e01.x.im, &par->e01.y.re,
+                   &par->e01.y.im, &par->e01.z.re,
+                   &par->e01.z.im) != 6) {
+            snprintf(
+                parser->errmsg, sizeof(parser->errmsg),
+                "Invalid format for polarization state at line %d",
+                parser->lineno);
+            parser->status = DETSCAT_PARSER_ERR_FORMAT;
+            goto error_cleanup;
+        }
+        ctx->state = PARSE_INITIAL;
+    }
+    return true;
+
+}
+
+
+
+
+
+static bool detscat_ddscat_parse_par_line(DetScatParser *parser,
+                                          DetScatParserParContext *ctx) { 
+    assert(parser && ctx);
+
+    char *trimmed = detscat_str_raw_trim(parser->current_line.data);
+
+    switch (ctx->state) {
+        case PAR_INITIAL:
+            if (!detscat_parser_initial_par(trimmed, ctx, parser))
+                goto error_cleanup;
+
+        case PARSE_COMP:
+            if (ctx->components_allocated >= par->n_components) {
+                snprintf(parser->errmsg, sizeof(parser->errmsg),
+                         "Too many components provided (expected %zu) at "
+                         "line %d",
+                         par->n_components, parser->lineno);
+                parser->status = DETSCAT_PARSER_ERR_FORMAT;
+                goto error_cleanup;
+            }
+
+            if (!str_init(&par->components[ctx->components_allocated]) ||
+                !str_reserve(&par->components[ctx->components_allocated],
+                             DETSCAT_DDSCAT_PATH_INIT)) {
+                parser->status = DETSCAT_PARSER_ERR_ALLOC;
+                snprintf(parser->errmsg, sizeof(parser->errmsg),
+                         "Memory allocation failed for component path "
+                         "at line %d",
+                         parser->lineno);
+                goto error_cleanup;
+            }
+
+            if (!detscat_ddscat_parse_par_component(
+                    parser, &par->components[ctx->components_allocated], trimmed)) {
+                goto error_cleanup;
+            }
+
+            ctx->components_allocated++;
+            if (ctx->components_allocated == par->n_components) {
+                ctx->state = PARSE_INITIAL;
+            }
+            return true;
+
+        case PARSE_PLANES:
+            if (ctx->scat_planes_parsed >= par->n_scat_planes) {
+                snprintf(parser->errmsg, sizeof(parser->errmsg),
+                         "Too many scattering planes provided (expected "
+                         "%zu) at line %d",
+                         par->n_scat_planes, parser->lineno);
+                parser->status = DETSCAT_PARSER_ERR_FORMAT;
+                goto error_cleanup;
+            }
+
+            if (sscanf(trimmed, "%lf %lf %lf %lf",
+                       &par->scat_planes[ctx->scat_planes_parsed][0],
+                       &par->scat_planes[ctx->scat_planes_parsed][1],
+                       &par->scat_planes[ctx->scat_planes_parsed][2],
+                       &par->scat_planes[ctx->scat_planes_parsed][3]) !=
+                DETSCAT_DDSCAT_SCAT_PLANE_PARAMS) {
+                snprintf(parser->errmsg, sizeof(parser->errmsg),
+                         "Invalid format for scattering plane at line %d",
+                         parser->lineno);
+                parser->status = DETSCAT_PARSER_ERR_FORMAT;
+                goto error_cleanup;
+            }
+
+            ctx->scat_planes_parsed++;
+            if (ctx->scat_planes_parsed == par->n_scat_planes) {
+                ctx->state = PARSE_INITIAL;
+            }
+            return true;
+    }
+
+error_cleanup:
+    detscat_ddscat_par_free_count(par, ctx->components_allocated);
+    return false;
+}
 
 
 
@@ -982,7 +1139,7 @@ bool detscat_parser_next_line(DetScatParser *parser) {
     }
 
     if (!parser->context ||
-        expected_magic[DETSCAT_CFG] != *(uint32_t *)parser->context) {
+        expected_magic[parser->type] != *(uint32_t *)parser->context) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_CONTEXT, "Invalid context");
         return false;
     }

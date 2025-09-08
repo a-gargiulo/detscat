@@ -1,6 +1,7 @@
 #include "detscat.h"
 
 #include "detscat_cfg.h"
+#include "detscat_ddscat.h"
 #include "detscat_error.h"
 #include "detscat_parser.h"
 #include "detscat_prt.h"
@@ -109,11 +110,11 @@ bool detscat_cfg_load(const char *cfg_file_path, DetScatConfig *cfg,
     return true;
 }
 
-bool detscat_prt_load(const char *file_path, DetScatPrt *prt,
+bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
                       DetScatError *err) {
     assert(prt);
 
-    if (!file_path || !*file_path) {
+    if (!prt_file_path || !*prt_file_path) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG,
                          "Invalid particles file path");
         return false;
@@ -136,7 +137,7 @@ bool detscat_prt_load(const char *file_path, DetScatPrt *prt,
         .particles_parsed = false
     };
 
-    if (!detscat_parser_init(parser, file_path, &ctx)) {
+    if (!detscat_parser_init(parser, prt_file_path, &ctx)) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
                           "Could not initialize particles file parser: %s",
                           parser->error_message);
@@ -147,7 +148,7 @@ bool detscat_prt_load(const char *file_path, DetScatPrt *prt,
     while (detscat_parser_next_line(parser)) {
         if (!detscat_parser_parse_line(parser)) {
             DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
-                             "Could not parse '%s': %s", file_path,
+                             "Could not parse '%s': %s", prt_file_path,
                              parser->error_message);
             detscat_parser_destroy(&parser);
             return false;
@@ -155,20 +156,120 @@ bool detscat_prt_load(const char *file_path, DetScatPrt *prt,
     }
 
     if (!parser->eof) {
-        detscat_handle_stream_error(parser, file_path, err);
+        detscat_handle_stream_error(parser, prt_file_path, err);
         detscat_parser_destroy(&parser);
         return false;
     }
 
-    if (!detscat_parser_check_final_state_prt(parser, file_path, &ctx)) {
+    if (!detscat_parser_check_final_state_prt(parser, prt_file_path, &ctx)) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE, "Could not parse '%s': %s",
-                         file_path, parser->error_message);
+                         prt_file_path, parser->error_message);
         detscat_parser_destroy(&parser);
         return false;
     }
 
     detscat_parser_destroy(&parser);
 
-    detscat_log(DETSCAT_INFO, "Successfully parsed '%s'", file_path);
+    detscat_log(DETSCAT_INFO, "Successfully parsed '%s'", prt_file_path);
     return true;
 }
+
+bool detscat_ddscat_par_load(const char *par_file_path, DetScatDdscatParams *par, DetScatError *err) {
+    assert(par);
+
+    if (!par_file_path || !*par_file_path) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG, "%s",
+                          "Invalid .par file path");
+        return false;
+    }
+
+    DetScatParser *parser = detscat_parser_create(DETSCAT_DDSCAT_PAR);
+    if (!parser) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                        "Could not create particles file parser");
+        return false;
+    }
+
+    DetScatParserPrtContext ctx = {
+        .magic = DETSCAT_PRT_MAGIC,
+        .prt = prt,
+        .types_allocated = 0,
+        .particles_allocated = 0,
+        .state = STATE_INITIAL,
+        .types_parsed = false,
+        .particles_parsed = false
+    };
+
+    if (!detscat_parser_init(parser, prt_file_path, &ctx)) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
+                          "Could not initialize particles file parser: %s",
+                          parser->error_message);
+        detscat_parser_destroy(&parser);
+        return false;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    DetScatParser parser;
+    if (!detscat_parser_init(&parser, file_path)) {
+        DETSCAT_SET_DIAGNOSE(diag, DETSCAT_ERR_PARSING,
+                             "Could not initialize parser: %s", parser.errmsg);
+        return false;
+    }
+
+
+    DdscatParParserContext ctx = {0};
+    while (detscat_parser_next_line(&parser)) {
+        if (!detscat_ddscat_parse_par_line(&parser, par, &ctx)) {
+            detscat_parser_free(&parser);
+            DETSCAT_SET_DIAGNOSE(diag, DETSCAT_ERR_PARSING,
+                                 "Could not parse '%s': %s", file_path,
+                                 parser.errmsg);
+            return false;
+        }
+    }
+
+    if (!parser.eof) {
+        detscat_parser_free(&parser);
+        detscat_parser_handle_stream_error(&parser, file_path, diag);
+        return false;
+    }
+
+    if (ctx.components_allocated != par->n_components) {
+        snprintf(parser.errmsg, sizeof(parser.errmsg),
+                 "Expected %zu components but got %zu", par->n_components,
+                 ctx.components_allocated);
+        parser.status = DETSCAT_PARSER_ERR_FORMAT;
+        detscat_ddscat_par_free_count(par, ctx.components_allocated);
+        detscat_parser_free(&parser);
+        return false;
+    }
+    if (ctx.scat_planes_parsed != par->n_scat_planes) {
+        snprintf(parser.errmsg, sizeof(parser.errmsg),
+                 "Expected %zu scattering planes but got %zu",
+                 par->n_scat_planes, ctx.scat_planes_parsed);
+        parser.status = DETSCAT_PARSER_ERR_FORMAT;
+        detscat_ddscat_par_free_count(par, ctx.components_allocated);
+        detscat_parser_free(&parser);
+        return false;
+    }
+
+    detscat_parser_free(&parser);
+    return true;
+}
+
+
+

@@ -1,11 +1,14 @@
 #include "detscat.h"
 
 #include "detscat_cfg.h"
+#include "detscat_prt.h"
+#include "detscat_ddscat.h"
 #include "detscat_error.h"
 #include "detscat_log.h"
-// #include "detscat_prt.h"
+#include "detscat_prt.h"
 
 // #include <stdbool.h>
+#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +17,8 @@
 struct DetScat {
     const char *cfg_file_path;
     DetScatConfig *cfg;
-    // DetScatPrt *prt;
+    DetScatPrt *prt;
+    DetScatDdscat *ddscat;
 };
 
 
@@ -42,6 +46,20 @@ static void detscat_banner_print(FILE *out) {
         __DATE__, __TIME__, __VERSION__);
 }
 
+static void vec3_print(const Vec3 *v) {
+    printf("[%10.6f, %10.6f, %10.6f ]", v->x, v->y, v->z);
+}
+
+static void complexvec3_print(const ComplexVec3 *v) {
+    printf("[%.6f+%.6fi, %.6f+%.6fi, %.6f+%.6fi]",
+           v->x.re, v->x.im,
+           v->y.re, v->y.im,
+           v->z.re, v->z.im);
+}
+
+static void str_print(const Str *s) {
+    printf("\"%s\"", s->data);
+}
 
 
 
@@ -64,127 +82,11 @@ static void detscat_banner_print(FILE *out) {
 //}
 
 
-//bool detscat_load_data(const char *config_path, DetScat* detscat, DetScatDiagnose* diag) {
 
-//    if (!detscat_cfg_create(&detscat->cfg, diag)) return false;
-
-//    if (!detscat_cfg_load(config_path, detscat->cfg, diag)) goto cleanup_cfg;
-
-//    // if (!detscat_prt_create(&detscat->prt, diag)) goto cleanup_cfg;
-
-//    // const char *particles_path = detscat->cfg->particles_file_path.data;
-//    // if (!detscat_prt_load(particles_path, detscat->prt, diag)) goto cleanup_prt;
-
-
-
-
-//    goto success;
-//// cleanup_prt:
-//    // detscat_prt_destroy(&detscat->prt);
-//cleanup_cfg:
-//    detscat_cfg_destroy(&detscat->cfg);
-//    return false;
-//success:
-//    return true;
-//}
-
-//static void vec3_print(const Vec3 *v) {
-//    printf("[%10.6f, %10.6f, %10.6f ]", v->x, v->y, v->z);
-//}
-
-//static void complexvec3_print(const ComplexVec3 *v) {
-//    printf("[%.6f+%.6fi, %.6f+%.6fi, %.6f+%.6fi]",
-//           v->x.re, v->x.im,
-//           v->y.re, v->y.im,
-//           v->z.re, v->z.im);
-//}
-
-//static void str_print(const Str *s) {
-//    printf("\"%s\"", s->data);
-//}
-
-//void detscat_print_cfg(const DetScatConfig *cfg) {
-//    if (!cfg) {
-//        printf("<null config>\n");
-//        return;
-//    }
-
-
-//    printf("\n");
-
-//   // For strings, use         %-25s to left-align within 25 chars
-//    printf("        %-25s: \"%s\"\n", "particles_file_path", cfg->particles_file_path.data);
-
-//    // For ComplexVec3, align the label
-//    printf("        %-25s: ", "polarization"); complexvec3_print(&cfg->polarization); printf("\n");
-
-//    // Align doubles
-//    printf("        %-25s: %10.6f\n", "wavelength_nm", cfg->wavelength_nm);
-//    printf("        %-25s: %10.6f\n", "pulse_energy_mj", cfg->pulse_energy_mj);
-//    printf("        %-25s: %10.6f\n", "pulse_width_ns", cfg->pulse_width_ns);
-//    printf("        %-25s: %10.6f\n", "beam_diameter_mm", cfg->beam_diameter_mm);
-
-//    // Bool as string
-//    printf("        %-25s: %s\n", "is_polarized", cfg->is_polarized ? "true" : "false");
-
-//    // Vec3
-//    printf("        %-25s: ", "camera_center_position_m"); vec3_print(&cfg->camera_center_position_m); printf("\n");
-//    printf("        %-25s: ", "camera_sensor_normal"); vec3_print(&cfg->camera_sensor_normal); printf("\n");
-
-//    // More doubles
-//    printf("        %-25s: %10.6f\n", "focal_length_mm", cfg->focal_length_mm);
-//    printf("        %-25s: %10.6f\n", "sensor_width_mm", cfg->sensor_width_mm);
-//    printf("        %-25s: %10.6f\n", "sensor_height_mm", cfg->sensor_height_mm);
-
-//    // Integers
-//    printf("        %-25s: %6d\n", "camera_resolution_x_px", cfg->camera_resolution_x_px);
-//    printf("        %-25s: %6d\n", "camera_resolution_y_px", cfg->camera_resolution_y_px);
-
-//    printf("\n");
-
-
-
-//}
  
 
 
 
-
-////////////////////////////////
-//// // #include <assert.h>
-//// // #include <stdio.h>
-
-//// // #include <errno.h>
-//// // #include <math.h>
-//// // #include <omp.h>
-//// // #include <stdarg.h>
-//// // #include <stdlib.h>
-//// // #include <string.h>
-
-//// // #include "detscat_camera.h"
-//// // #include "detscat_config.h"
-//// // #include "detscat_log.h"
-//// // #include "detscat_particles.h"
-//// // #include "detscat_const.h"
-//// // #include "detscat_ddscat.h"
-
-
-//// static void detscat_print_banner(void) {
-////     printf(
-////         "****************************************\n"
-////         "  _____       _    _____           _    \n"
-////         " |  __ \\     | |  / ____|         | |   \n"
-////         " | |  | | ___| |_| (___   ___ __ _| |_  \n"
-////         " | |  | |/ _ \\ __|\\___ \\ / __/ _` | __| \n"
-////         " | |__| |  __/ |_ ____) | (_| (_| | |_  \n"
-////         " |_____/ \\___|\\__|_____/ \\___\\__,_|\\__| \n"
-////         "                                        \n"
-////         "                                        \n"
-////         "(C) Aldo Gargiulo 2025                  \n"
-////         "                                        \n"
-////         "****************************************\n");
-////     return;
-//// }
 
 //// // static int cmp_phi(const void *a, const void *b) {
 //// //     const DetScatDdscatFmatrix *fa = (const DetScatDdscatFmatrix *)a;
@@ -521,7 +423,7 @@ bool detscat_init(DetScatError *err) {
     return true;
 }
 
-void detscat_terminate(void) {
+void detscat_shutdown(void) {
     detscat_log_destroy_lock();
 }
 
@@ -562,4 +464,104 @@ void detscat_destroy(DetScat **detscat) {
     free(*detscat);
     *detscat = NULL;
 }
+
+
+bool detscat_load_data(DetScat* detscat, DetScatError* err) {
+    assert(detscat && detscat->cfg);
+
+    if (!detscat || !detscat->cfg) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG,
+                          "DetScat object is empty or corrupted");
+        return false;
+    }
+
+    if (!detscat->cfg->particles_file_path.data ||
+        !*detscat->cfg->particles_file_path.data)  {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG,
+                          "Invalid particles file path");
+        return false;
+    }
+    const char *prt_file_path = detscat->cfg->particles_file_path.data;
+
+    // PRT 
+    detscat->prt = detscat_prt_create(err);
+    if (!detscat->prt) goto cleanup_prt; 
+
+    if (!detscat_prt_load(prt_file_path, detscat->prt, err)) goto cleanup_prt;
+
+    // DDSCAT
+    size_t n_pars = detscat->prt->n_types;
+    size_t n_fmls = detscat->prt->n_particles;
+    size_t n_par_idxs = detscat->prt->n_particles;
+    detscat->ddscat = detscat_ddscat_create(n_pars, n_fmls, n_par_idxs, err);
+
+    // PAR
+    for (size_t i = 0; i < n_pars; ++i) {
+
+    }
+    
+    // FML
+    
+
+    return true;
+cleanup_prt:
+    detscat_prt_destroy(&detscat->prt);
+    return false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+void detscat_print_cfg(const DetScat *detscat) {
+    if (!detscat || !detscat->cfg) {
+        printf("<null config>\n");
+        return;
+    }
+
+
+    printf("\n");
+    printf("        Parsed CFG Data:\n");
+    printf("        ----------------\n");
+
+   // For strings, use         %-25s to left-align within 25 chars
+    printf("        %-25s: \"%s\"\n", "particles_file_path", detscat->cfg->particles_file_path.data);
+
+    // For ComplexVec3, align the label
+    printf("        %-25s: ", "polarization"); complexvec3_print(&detscat->cfg->polarization); printf("\n");
+
+    // Align doubles
+    printf("        %-25s: %10.6f\n", "wavelength_nm", detscat->cfg->wavelength_nm);
+    printf("        %-25s: %10.6f\n", "pulse_energy_mj", detscat->cfg->pulse_energy_mj);
+    printf("        %-25s: %10.6f\n", "pulse_width_ns", detscat->cfg->pulse_width_ns);
+    printf("        %-25s: %10.6f\n", "beam_diameter_mm", detscat->cfg->beam_diameter_mm);
+
+    // Bool as string
+    printf("        %-25s: %s\n", "is_polarized", detscat->cfg->is_polarized ? "true" : "false");
+
+    // Vec3
+    printf("        %-25s: ", "camera_center_position_m"); vec3_print(&detscat->cfg->camera_center_position_m); printf("\n");
+    printf("        %-25s: ", "camera_sensor_normal"); vec3_print(&detscat->cfg->camera_sensor_normal); printf("\n");
+
+    // More doubles
+    printf("        %-25s: %10.6f\n", "focal_length_mm", detscat->cfg->focal_length_mm);
+    printf("        %-25s: %10.6f\n", "sensor_width_mm", detscat->cfg->sensor_width_mm);
+    printf("        %-25s: %10.6f\n", "sensor_height_mm", detscat->cfg->sensor_height_mm);
+
+    // Integers
+    printf("        %-25s: %6d\n", "camera_resolution_x_px", detscat->cfg->camera_resolution_x_px);
+    printf("        %-25s: %6d\n", "camera_resolution_y_px", detscat->cfg->camera_resolution_y_px);
+
+    printf("\n");
+}
+
+
 
