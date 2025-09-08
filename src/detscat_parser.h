@@ -1,6 +1,10 @@
 #ifndef DETSCAT_PARSER_H
 #define DETSCAT_PARSER_H
 
+#include "detscat_cfg.h"
+#include "detscat_prt.h"
+#include "detscat_str.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -10,25 +14,21 @@
 #define DETSCAT_PRT_MAGIC 0x50525478  // PRTx
 
 
-//------------------------------------------------------------------------------
-// Data structures
-//------------------------------------------------------------------------------
-typedef struct DetScatConfig DetScatConfig;  // forward
+#define DETSCAT_PARSER_TYPE_LIST \
+    X(CFG, "CFG parser type")           \
+    X(PRT, "PRT parser type")
 
-typedef struct DetScatPrt DetScatPrt;        // forward
- 
-typedef struct DetScatParser DetScatParser;  // opaque
- 
 typedef enum {
-    DETSCAT_CFG,
-    DETSCAT_PRT,
-    DETSCAT_PARSER_TYPE_COUNT
+#define X(name, str) DETSCAT_##name,
+    DETSCAT_PARSER_TYPE_LIST
+#undef X
+        DETSCAT_PARSER_TYPE_COUNT
 } DetScatParserType;
 
 typedef enum {
     DETSCAT_PARSER_OK = 0,
     DETSCAT_PARSER_EOF,
-    DETSCAT_PARSER_ERR_ARGUMENT,
+    DETSCAT_PARSER_ERR_INVALID_ARG,
     DETSCAT_PARSER_ERR_CONTEXT,
     DETSCAT_PARSER_ERR_FILE,
     DETSCAT_PARSER_ERR_FORMAT,
@@ -37,11 +37,23 @@ typedef enum {
     DETSCAT_PARSER_ERR_RANGE,
     DETSCAT_PARSER_ERR_STREAM,
     DETSCAT_PARSER_ERR_SYNTAX,
+    DETSCAT_PARSER_ERR_TYPE,
     DETSCAT_PARSER_ERR_UNDERFLOW,
     DETSCAT_PARSER_ERR_UNKNOWN_KEY,
     DETSCAT_PARSER_ERR_UNKNOWN,
     DETSCAT_PARSER_STATUS_COUNT
 } DetScatParserStatus;
+
+typedef struct {
+    FILE *stream;
+    void *context;
+    Str current_line;
+    int line_number;
+    DetScatParserStatus status;
+    DetScatParserType type;
+    bool eof;
+    char error_message[256];
+} DetScatParser;
 
 typedef struct {
     uint32_t magic;
@@ -69,39 +81,23 @@ typedef struct {
 } DetScatParserPrtContext;
 
 
-//------------------------------------------------------------------------------
-// Public API
-//------------------------------------------------------------------------------
-
-// Setup
 DetScatParser *detscat_parser_create(DetScatParserType type);
 void detscat_parser_destroy(DetScatParser **parser);
+
 bool detscat_parser_init(DetScatParser *parser, const char *file_path,
                          void *context);
 bool detscat_parser_reset(DetScatParser *parser, const char *file_path,
                           void *context);
 
-// Parsing
 bool detscat_parser_next_line(DetScatParser *parser);
 bool detscat_parser_parse_line(DetScatParser *parser);
 
-// Getters
-const char *detscat_parser_error_message(const DetScatParser *parser);
-char *detscat_parser_line_buffer(const DetScatParser *parser);
-bool detscat_parser_eof(const DetScatParser *parser);
-DetScatParserStatus detscat_parser_status(const DetScatParser *parser);
-FILE *detscat_parser_stream(const DetScatParser *parser);
+const char *detscat_parser_type_repr(DetScatParserType type);
 
-// Setters
-void detscat_parser_set_status(DetScatParser *parser,
-                               DetScatParserStatus status);
+bool detscat_parser_check_final_state_prt(DetScatParser *parser,
+                                          const char *file_path,
+                                          void *context);
 
-bool detscat_parser_set_error_message(DetScatParser *parser,
-                                      const char *error_message);
-
-//------------------------------------------------------------------------------
-// MACROS 
-//------------------------------------------------------------------------------
 #define PARSER_SET_ERROR(parser, sts, fmt, ...)                            \
     do {                                                                   \
         (parser)->status = (sts);                                          \

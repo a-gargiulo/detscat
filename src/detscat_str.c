@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STR_INIT_CAP 16
-#define STR_MAX_CAP (1UL << 30)
 
 char *detscat_str_raw_trim(char *s) {
     if (s == NULL) return NULL;
@@ -111,6 +109,7 @@ static bool detscat_str_grow(Str *s, size_t min_capacity) {
 
     s->data = new_data;
     s->capacity = new_cap;
+
     return true;
 }
 
@@ -150,5 +149,13 @@ bool detscat_str_append_char(Str *s, char c) {
     if (!detscat_str_grow(s, s->length + 2)) return false;
     s->data[s->length++] = c;
     s->data[s->length] = '\0';
+    return true;
+}
+
+bool detscat_str_is_valid(const Str *s) {
+    if (!s || !s->data) return false;
+    if (s->capacity == 0 || s->length > s->capacity) return false;
+    if (s->capacity > STR_MAX_CAP) return false;
+    if (s->data[s->length] != '\0') return false;
     return true;
 }

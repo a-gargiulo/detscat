@@ -11,14 +11,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 # add_executable(detscat ${SRCS})
 add_executable(detscat 
     "${PROJECT_SOURCE_DIR}/main.c" 
-    "${PROJECT_SOURCE_DIR}/src/detscat.c" 
-    "${PROJECT_SOURCE_DIR}/src/detscat_diag.c" 
-    "${PROJECT_SOURCE_DIR}/src/detscat_parser.c" 
-    "${PROJECT_SOURCE_DIR}/src/detscat_str.c" 
-    "${PROJECT_SOURCE_DIR}/src/detscat_math.c" 
+    "${PROJECT_SOURCE_DIR}/src/detscat_core.c" 
+    "${PROJECT_SOURCE_DIR}/src/detscat_error.c" 
+    # "${PROJECT_SOURCE_DIR}/src/detscat_parser.c" 
+    # "${PROJECT_SOURCE_DIR}/src/detscat_str.c" 
+    # "${PROJECT_SOURCE_DIR}/src/detscat_math.c" 
     "${PROJECT_SOURCE_DIR}/src/detscat_log.c" 
-    "${PROJECT_SOURCE_DIR}/src/detscat_cfg.c" 
-    "${PROJECT_SOURCE_DIR}/src/detscat_prt.c" 
+    # "${PROJECT_SOURCE_DIR}/src/detscat_cfg.c" 
+    # "${PROJECT_SOURCE_DIR}/src/detscat_prt.c" 
 )
 
 

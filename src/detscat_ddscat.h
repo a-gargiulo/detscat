@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "detscat_diag.h"
+#include "detscat.h"
 #include "detscat_math.h"
 #include "detscat_str.h"
 
@@ -21,13 +21,8 @@
  */
 #define DETSCAT_DDSCAT_PAR_FILENAME_LEN 10
 
-typedef struct DetScatPrt DetScatPrt;
+struct DetScatPrt;
 
-typedef struct DetScatDdscatCaseId {
-    int w;  // Wavelength index
-    int r;  // Target size index
-    int k;  // Target orientation index
-} DetScatDdscatCaseId;
 
 typedef double Plane[4];
 
@@ -66,14 +61,14 @@ typedef struct {
 bool detscat_ddscat_init(DetScatDdscat *ddscat, size_t n_pars,
                          size_t n_fmls, size_t n_par_idxs);
 
-bool detscat_ddscat_load(DetScatDdscat *ddscat, DetScatPrt *prt, DetScatDiagnose *diag);
+bool detscat_ddscat_load(DetScatDdscat *ddscat, struct DetScatPrt *prt, DetScatError *err);
 
 
 bool detscat_ddscat_par_load(const char *file_path, DetScatDdscatParams *par,
-                             DetScatDiagnose *diag);
+                             DetScatError *err);
 
 bool detscat_ddscat_fml_load(const char *file_path, DetScatDdscatFml *fml,
-                             DetScatDdscatParams *par, DetScatDiagnose *diag);
+                             DetScatDdscatParams *par, DetScatError *err);
 
 void detscat_ddscat_free(DetScatDdscat *ddscat);
 void detscat_ddscat_par_free(DetScatDdscatParams *par);

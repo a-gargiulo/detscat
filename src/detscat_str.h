@@ -1,8 +1,12 @@
 #ifndef DETSCAT_STR_H
 #define DETSCAT_STR_H
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
+
+#define STR_INIT_CAP 16
+#define STR_MAX_CAP (1UL << 30)
 
 typedef struct {
     char *data;
@@ -22,5 +26,18 @@ bool detscat_str_set(Str *s, const char *src);
 bool detscat_str_copy(Str *dst, const Str *src);
 bool detscat_str_append(Str *s, const char *suffix);
 bool detscat_str_append_char(Str *s, char c);
+bool detscat_str_is_valid(const Str *s);
+
+#define STR_ASSERT_VALID(s) do { \
+    assert((s) != NULL); \
+    assert((s)->capacity > 0); \
+    assert((s)->capacity <= STR_MAX_CAP); \
+    assert((s)->length < (s)->capacity); \
+    assert((s)->data != NULL); \
+    assert((s)->data[(s)->length] == '\0'); \
+} while (0)
+
+
+
 
 #endif  // DETSCAT_STR_H

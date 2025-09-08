@@ -1,34 +1,45 @@
-#define DETSCAT_ENABLE_LOGGING
-#include "detscat.h"
-
 #include <stdio.h>
 
+#include "detscat.h"
 
 int main(int argc, char **argv) {
-    if (argc < 2 || argv[1][0] == '\0') {
-        printf("[ERROR]: Missing or empty configuration file path. "
-               "Usage: %s <path_to_configuration_file>\n",
-               argv[0]);
+    int exit_code = 0;
+
+    if (argc < 2 || !*argv[1]) {
+        printf("[\033[91mERROR\033[0m]: "
+                "\033[93mUsage\033[0m: "
+                "\033[90m%s <path_to_cfg_file>\033[0m\n", argv[0]);
         return 1;
     }
-    const char *config_path = argv[1];
+    const char *cfg_file_path = argv[1];
 
-    DetScatDiagnose diag = {0};
+    DetScatError *err = detscat_error_create();
+    DetScat *detscat = NULL;
 
-    detscat_init();
-    detscat_log_info("DetScat initialized successfully");
-
-    DetScat detscat = {0};
-    if (!detscat_load_data(config_path, &detscat, &diag)) {
-        detscat_log_error_diagnose(&diag);
-        return 1;
+    if (!detscat_init(err)) {
+        detscat_log_error(err);
+        exit_code = 1;
+        goto cleanup;
     }
-    detscat_log_debug("Parsed configuration data:");
-    detscat_print_cfg(detscat.cfg);
+    detscat_log(DETSCAT_INFO, "DetScat initialized successfully");
+
+    detscat = detscat_create(cfg_file_path, err);
+    if (!detscat) {
+        detscat_log_error(err);
+        exit_code = 1;
+        goto cleanup;
+    }
+
+    // TODO: continue here
 
 
-    detscat_data_free(&detscat);
-    detscat_terminate();
-    detscat_log_info("DetScat terminated successfully");
-    return 0;
+cleanup:
+    detscat_destroy(&detscat);
+    detscat_error_destroy(&err);
+    detscat_shutdown();
+
+    if (exit_code == 0)
+        detscat_log(DETSCAT_INFO, "DetScat terminated successfully");
+
+    return exit_code;
 }

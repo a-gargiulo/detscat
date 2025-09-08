@@ -1,21 +1,24 @@
-#ifndef DETSCAT_PARTICLES_H
-#define DETSCAT_PARTICLES_H
+#ifndef DETSCAT_PRT_H
+#define DETSCAT_PRT_H
 
-#include "detscat_diag.h"
+#include "detscat.h"
 
 #include "detscat_math.h"
 #include "detscat_str.h"
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h>
 
-typedef struct DetScatDdscatCaseId DetScatDdscatCaseId;
+typedef struct {
+    int w;  // W from DDSCAT file name wxxxryyykzzz.* 
+    int r;  // R from DDSCAT file name wxxxryyykzzz.*
+    int k;  // K from DDSCAT file name wxxxryyykzzz.*
+} DetScatPrtCaseId;
 
 typedef struct {
     Vec3                    position;
     Str                     type_id;
-    DetScatDdscatCaseId     *case_id;
+    DetScatPrtCaseId        case_id;
 } DetScatPrtParticle;
 
 typedef struct {
@@ -30,13 +33,11 @@ typedef struct DetScatPrt {
     size_t                  n_particles;
 } DetScatPrt;
 
-bool detscat_prt_create(DetScatPrt **prt, DetScatDiagnose *diag);
+DetScatPrt *detscat_prt_create(DetScatError* err);
 
 void detscat_prt_destroy(DetScatPrt **prt);
-
-bool detscat_prt_load(const char *file_path, DetScatPrt *prt, DetScatDiagnose *diag);
 
 void detscat_prt_free_subset(DetScatPrt *prt, size_t types_count, size_t particles_count); 
 
 
-#endif  // DETSCAT_PARTICLES_H
+#endif  // DETSCAT_PRT_H
