@@ -14,5 +14,7 @@ static const size_t DETSCAT_PRT_PATH_MAX = 4096;
 static const size_t DETSCAT_PRT_TYPEID_INIT = 16;
 static const size_t DETSCAT_PRT_TYPEID_MAX = 128;
 
+static const size_t DETSCAT_DDSCAT_PATH_INIT = 512;
+static const size_t DETSCAT_DDSCAT_PATH_MAX = 4096;
 
 #endif  // DETSCAT_LIMITS_H

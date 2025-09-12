@@ -25,12 +25,12 @@ struct DetScatError {
 void detscat_error_set(DetScatError *err, const char *src, const char *func,
                        int lineno, DetScatStatus status, const char *fmt, ...);
 
-#define DETSCAT_SET_ERROR(err, status, fmt, ...)                              \
-    do {                                                                      \
-        if ((err)) {                                                          \
-            detscat_error_set(err, __FILE__, __func__, __LINE__, status, fmt, \
-                              ##__VA_ARGS__);                                 \
-        }                                                                     \
+#define DETSCAT_SET_ERROR(err, status, fmt, ...)                               \
+    do {                                                                       \
+        if ((err)) {                                                           \
+            detscat_error_set(err, __FILE__, __func__, __LINE__, status, fmt,  \
+                              ##__VA_ARGS__);                                  \
+        }                                                                      \
     } while (0)
 
 const char *detscat_error_status_to_str(DetScatStatus status);

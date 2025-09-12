@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,18 +22,26 @@ static bool detscat_handle_stream_error(DetScatParser *parser,
 
     assert(parser->type >= 0 && parser->type < DETSCAT_PARSER_TYPE_COUNT);
     const char *parser_type;
-    switch(parser->type) {
+    switch (parser->type) {
         case DETSCAT_CFG:
             parser_type = "cfg";
             break;
+
         case DETSCAT_PRT:
             parser_type = "prt";
+            break;
+
+        case DETSCAT_PAR:
+            parser_type = "par";
+            break;
+
+        case DETSCAT_FML:
+            parser_type = "fml";
             break;
     }
 
     if (!file_path || !*file_path) {
-        DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG,
-                          "Invalid %s file path",
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG, "Invalid %s file path",
                           parser_type);
         return false;
     }
@@ -48,29 +57,27 @@ static bool detscat_handle_stream_error(DetScatParser *parser,
                           strerror(errc));
     } else {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
-                          "Could not parse '%s' (unknown error)",
-                          file_path);
+                          "Could not parse '%s' (unknown error)", file_path);
     }
 
     return false;
 }
 
-
-// --- Internal helpers (SHARED) --- 
+// --- Internal helpers (SHARED) ---
 bool detscat_cfg_load(const char *cfg_file_path, DetScatConfig *cfg,
                       DetScatError *err) {
-    assert(cfg);   
+    assert(cfg);
 
     if (!cfg_file_path || !*cfg_file_path) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG,
-                         "Invalid cfg file path");
+                          "Invalid cfg file path");
         return false;
     }
 
     DetScatParser *parser = detscat_parser_create(DETSCAT_CFG);
     if (!parser) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
-                          "Could not create parser of %s from '%s'", 
+                          "Could not create parser of %s from '%s'",
                           detscat_parser_type_repr(DETSCAT_CFG), cfg_file_path);
         return false;
     }
@@ -82,9 +89,9 @@ bool detscat_cfg_load(const char *cfg_file_path, DetScatConfig *cfg,
 
     if (!detscat_parser_init(parser, cfg_file_path, &ctx)) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
-                         "Could not initialize parser of %s from '%s': %s", 
-                         detscat_parser_type_repr(DETSCAT_CFG), cfg_file_path,
-                         parser->error_message);
+                          "Could not initialize parser of %s from '%s': %s",
+                          detscat_parser_type_repr(DETSCAT_CFG), cfg_file_path,
+                          parser->error_message);
         detscat_parser_destroy(&parser);
         return false;
     }
@@ -92,8 +99,8 @@ bool detscat_cfg_load(const char *cfg_file_path, DetScatConfig *cfg,
     while (detscat_parser_next_line(parser)) {
         if (!detscat_parser_parse_line(parser)) {
             DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
-                             "Could not parse '%s': %s", cfg_file_path,
-                             parser->error_message);
+                              "Could not parse '%s': %s", cfg_file_path,
+                              parser->error_message);
             detscat_parser_destroy(&parser);
             return false;
         }
@@ -116,26 +123,24 @@ bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
 
     if (!prt_file_path || !*prt_file_path) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG,
-                         "Invalid particles file path");
+                          "Invalid particles file path");
         return false;
     }
 
     DetScatParser *parser = detscat_parser_create(DETSCAT_PRT);
     if (!parser) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
-                        "Could not create particles file parser");
+                          "Could not create particles file parser");
         return false;
     }
 
-    DetScatParserPrtContext ctx = {
-        .magic = DETSCAT_PRT_MAGIC,
-        .prt = prt,
-        .types_allocated = 0,
-        .particles_allocated = 0,
-        .state = STATE_INITIAL,
-        .types_parsed = false,
-        .particles_parsed = false
-    };
+    DetScatParserPrtContext ctx = {.magic = DETSCAT_PRT_MAGIC,
+                                   .prt = prt,
+                                   .types_allocated = 0,
+                                   .particles_allocated = 0,
+                                   .state = PRT_STATE_INITIAL,
+                                   .types_parsed = false,
+                                   .particles_parsed = false};
 
     if (!detscat_parser_init(parser, prt_file_path, &ctx)) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
@@ -148,8 +153,8 @@ bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
     while (detscat_parser_next_line(parser)) {
         if (!detscat_parser_parse_line(parser)) {
             DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
-                             "Could not parse '%s': %s", prt_file_path,
-                             parser->error_message);
+                              "Could not parse '%s': %s", prt_file_path,
+                              parser->error_message);
             detscat_parser_destroy(&parser);
             return false;
         }
@@ -163,7 +168,7 @@ bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
 
     if (!detscat_parser_check_final_state_prt(parser, prt_file_path, &ctx)) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE, "Could not parse '%s': %s",
-                         prt_file_path, parser->error_message);
+                          prt_file_path, parser->error_message);
         detscat_parser_destroy(&parser);
         return false;
     }
@@ -174,7 +179,8 @@ bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
     return true;
 }
 
-bool detscat_ddscat_par_load(const char *par_file_path, DetScatDdscatParams *par, DetScatError *err) {
+bool detscat_ddscat_par_load(const char *par_file_path,
+                             DetScatDdscatParams *par, DetScatError *err) {
     assert(par);
 
     if (!par_file_path || !*par_file_path) {
@@ -183,93 +189,115 @@ bool detscat_ddscat_par_load(const char *par_file_path, DetScatDdscatParams *par
         return false;
     }
 
-    DetScatParser *parser = detscat_parser_create(DETSCAT_DDSCAT_PAR);
+    DetScatParser *parser = detscat_parser_create(DETSCAT_PAR);
     if (!parser) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
-                        "Could not create particles file parser");
+                          "Could not create par file parser");
         return false;
     }
 
-    DetScatParserPrtContext ctx = {
-        .magic = DETSCAT_PRT_MAGIC,
-        .prt = prt,
-        .types_allocated = 0,
-        .particles_allocated = 0,
-        .state = STATE_INITIAL,
-        .types_parsed = false,
-        .particles_parsed = false
+    DetScatParserParContext ctx = {
+        .magic = DETSCAT_PAR_MAGIC,
+        .par = par,
+        .components_allocated = 0,
+        .state = PAR_STATE_INITIAL,
+        .scat_planes_parsed = 0,
     };
 
-    if (!detscat_parser_init(parser, prt_file_path, &ctx)) {
+    if (!detscat_parser_init(parser, par_file_path, &ctx)) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
-                          "Could not initialize particles file parser: %s",
+                          "Could not initialize par file parser: %s",
                           parser->error_message);
         detscat_parser_destroy(&parser);
         return false;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    DetScatParser parser;
-    if (!detscat_parser_init(&parser, file_path)) {
-        DETSCAT_SET_DIAGNOSE(diag, DETSCAT_ERR_PARSING,
-                             "Could not initialize parser: %s", parser.errmsg);
-        return false;
-    }
-
-
-    DdscatParParserContext ctx = {0};
-    while (detscat_parser_next_line(&parser)) {
-        if (!detscat_ddscat_parse_par_line(&parser, par, &ctx)) {
-            detscat_parser_free(&parser);
-            DETSCAT_SET_DIAGNOSE(diag, DETSCAT_ERR_PARSING,
-                                 "Could not parse '%s': %s", file_path,
-                                 parser.errmsg);
+    while (detscat_parser_next_line(parser)) {
+        if (!detscat_parser_parse_line(parser)) {
+            DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
+                              "Could not parse '%s': %s", par_file_path,
+                              parser->error_message);
+            detscat_parser_destroy(&parser);
             return false;
         }
     }
 
-    if (!parser.eof) {
-        detscat_parser_free(&parser);
-        detscat_parser_handle_stream_error(&parser, file_path, diag);
+    if (!parser->eof) {
+        detscat_handle_stream_error(parser, par_file_path, err);
+        detscat_parser_destroy(&parser);
         return false;
     }
 
-    if (ctx.components_allocated != par->n_components) {
-        snprintf(parser.errmsg, sizeof(parser.errmsg),
-                 "Expected %zu components but got %zu", par->n_components,
-                 ctx.components_allocated);
-        parser.status = DETSCAT_PARSER_ERR_FORMAT;
-        detscat_ddscat_par_free_count(par, ctx.components_allocated);
-        detscat_parser_free(&parser);
-        return false;
-    }
-    if (ctx.scat_planes_parsed != par->n_scat_planes) {
-        snprintf(parser.errmsg, sizeof(parser.errmsg),
-                 "Expected %zu scattering planes but got %zu",
-                 par->n_scat_planes, ctx.scat_planes_parsed);
-        parser.status = DETSCAT_PARSER_ERR_FORMAT;
-        detscat_ddscat_par_free_count(par, ctx.components_allocated);
-        detscat_parser_free(&parser);
+    if (!detscat_parser_check_final_state_par(parser, par_file_path, &ctx)) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE, "Could not parse '%s': %s",
+                          par_file_path, parser->error_message);
+        detscat_parser_destroy(&parser);
         return false;
     }
 
-    detscat_parser_free(&parser);
+    detscat_parser_destroy(&parser);
+
     return true;
 }
 
+bool detscat_ddscat_fml_load(const char *fml_file_path, DetScatDdscatFml *fml,
+                             DetScatDdscatParams *par, DetScatError *err) {
+    assert(fml);
 
+    if (!fml_file_path || !*fml_file_path) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG, "%s",
+                          "Invalid .fml file path");
+        return false;
+    }
 
+    DetScatParser *parser = detscat_parser_create(DETSCAT_FML);
+    if (!parser) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                          "Could not create fml file parser");
+        return false;
+    }
+
+    DetScatParserFmlContext ctx = {.magic = DETSCAT_FML_MAGIC,
+                                   .fml = fml,
+                                   .par = par,
+                                   .matrices_allocated = 0,
+                                   .current_plane = 0,
+                                   .current_theta = 0,
+                                   .data_header_found = false,
+                                   .state = FML_STATE_INITIAL};
+
+    if (!detscat_parser_init(parser, fml_file_path, &ctx)) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
+                          "Could not initialize fml file parser: %s",
+                          parser->error_message);
+        detscat_parser_destroy(&parser);
+        return false;
+    }
+
+    while (detscat_parser_next_line(parser)) {
+        if (!detscat_parser_parse_line(parser)) {
+            DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
+                              "Could not parse '%s': %s", fml_file_path,
+                              parser->error_message);
+            detscat_parser_destroy(&parser);
+            return false;
+        }
+    }
+
+    if (!parser->eof) {
+        detscat_handle_stream_error(parser, fml_file_path, err);
+        detscat_parser_destroy(&parser);
+        return false;
+    } else {
+        if (!ctx.data_header_found) {
+            DETSCAT_SET_ERROR(err, DETSCAT_ERR_PARSE,
+                              "Reached EOF. Did not find any data header.");
+            detscat_parser_destroy(&parser);
+            return false;
+        }
+    }
+
+    detscat_parser_destroy(&parser);
+
+    return true;
+}

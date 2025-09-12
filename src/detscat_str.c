@@ -1,10 +1,36 @@
 #include "detscat_str.h"
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+
+static bool detscat_str_grow(Str *s, size_t min_capacity) {
+    if (!s || min_capacity == 0) return false;
+    if (min_capacity > STR_MAX_CAP) return false;
+
+    if (s->capacity >= min_capacity) return true;
+
+    size_t new_cap = s->capacity ? s->capacity : STR_INIT_CAP;
+    while (new_cap < min_capacity) {
+        if (new_cap > STR_MAX_CAP / 2) {
+            new_cap = STR_MAX_CAP;
+            break;
+        }
+        new_cap *= 2;
+    }
+
+    char *new_data = realloc(s->data, new_cap);
+    if (!new_data) return false;
+
+    s->data = new_data;
+    s->capacity = new_cap;
+
+    return true;
+}
 
 char *detscat_str_raw_trim(char *s) {
     if (s == NULL) return NULL;
@@ -81,36 +107,32 @@ bool detscat_str_init(Str *s) {
     return true;
 }
 
+bool detscat_str_init_fmt(Str *s, const char *fmt, ...) {
+    if (!s || !fmt) return false;
+
+    va_list args;
+    va_start(args, fmt);
+    int needed = vsnprintf(NULL, 0, fmt, args);
+    va_end(args);
+
+    if (needed < 0) return false;
+
+    if (!detscat_str_grow(s, (size_t)needed + 1)) return false;
+
+    va_start(args, fmt);
+    vsnprintf(s->data, s->capacity, fmt, args);
+    va_end(args);
+
+    s->length = (size_t)needed;
+    return true;
+}
+
 void detscat_str_free(Str *s) {
     if (!s) return;
     free(s->data);
     s->data = NULL;
     s->length = 0;
     s->capacity = 0;
-}
-
-static bool detscat_str_grow(Str *s, size_t min_capacity) {
-    if (!s || min_capacity == 0) return false;
-    if (min_capacity > STR_MAX_CAP) return false;
-
-    if (s->capacity >= min_capacity) return true;
-
-    size_t new_cap = s->capacity ? s->capacity : STR_INIT_CAP;
-    while (new_cap < min_capacity)  {
-        if (new_cap > STR_MAX_CAP / 2) {
-            new_cap = STR_MAX_CAP;
-            break;
-        }
-        new_cap *= 2;
-    }
-    
-    char *new_data = realloc(s->data, new_cap);
-    if (!new_data) return false;
-
-    s->data = new_data;
-    s->capacity = new_cap;
-
-    return true;
 }
 
 bool detscat_str_reserve(Str *s, size_t needed_cap) {
@@ -135,12 +157,20 @@ bool detscat_str_copy(Str *dst, const Str *src) {
     return true;
 }
 
-bool detscat_str_append(Str *s, const char *suffix) {
-    if (!s || !suffix) return false;
-    size_t slen = strlen(suffix);
+bool detscat_str_append_cstr(Str *s, const char *cstr) {
+    if (!s || !cstr) return false;
+    size_t slen = strlen(cstr);
     if (!detscat_str_grow(s, s->length + slen + 1)) return false;
-    memcpy(s->data + s->length, suffix, slen + 1);
+    memcpy(s->data + s->length, cstr, slen + 1);
     s->length += slen;
+    return true;
+}
+
+bool detscat_str_append_str(Str *s, const Str *other) {
+    if (!s || !other || !other->data) return false;
+    if (!detscat_str_grow(s, s->length + other->length + 1)) return false;
+    memcpy(s->data + s->length, other->data, other->length + 1);
+    s->length += other->length;
     return true;
 }
 

@@ -1,3 +1,64 @@
+/* detscat_parser.c
+ *
+ * FUNCTIONS NAVIGATION:
+ * ---------------------
+ *
+ * Internal helpers (PRIVATE)
+ * --------------------------
+ *
+ *    // CFG
+ *    - detscat_parser_parse_bool_cfg
+ *    - detscat_parser_parse_double_cfg
+ *    - detscat_parser_parse_int_cfg
+ *    - detscat_parser_parse_vec3_cfg
+ *    - detscat_parser_parse_cplx_vec3_cfg
+ *    - detscat_parser_parser_str_cfg
+ *    - detscat_parser_split_key_value_cfg
+ *    - detscat_parser_handle_key_cfg
+ *    - detscat_parser_parse_line_cfg
+ *
+ *    // PRT
+ *    - detscat_parser_parse_double_prt
+ *    - detscat_parser_parse_int_prt
+ *    - detscat_parser_parse_type_prt
+ *    - detscat_parser_parse_particle_prt
+ *    - detscat_parser_wait_prt
+ *    - detscat_parser_types_meta_prt
+ *    - detscat_parser_types_def_prt
+ *    - detscat_parser_particles_meta_prt
+ *    - detscat_parser_particles_prt
+ *    - detscat_parser_parse_line_prt
+ *
+ *    // PAR
+ *    - detscat_parser_parse_component_par
+ *    - detscat_parser_initial_par
+ *    - detscat_parser_parse_components_par
+ *    - detscat_parser_parse_scat_planes
+ *    - detscat_parser_parse_line_par
+ *
+ *    // FML
+ *    - detscat_parser_initial_fml
+ *    - detscat_parser_find_header_fml
+ *    - detscat_parser_alloc_fmats_fml
+ *    - detscat_parser_alloc_scat_plane_fml
+ *    - detscat_parser_read_values_fml
+ *    - detscat_parser_next_scat_plane_fml
+ *    - detscat_parser_parse_line_fml
+ *
+ *
+ * Internal helpers (SHARED)
+ * --------------------------
+ *
+ *    - detscat_parser_create
+ *    - detscat_parser_destroy
+ *    - detscat_parser_init
+ *    - detscat_parser_next_line
+ *    - detscat_parser_parse_line
+ *    - detscat_parser_check_final_state_prt
+ *    - detscat_parser_check_final_state_par
+ *    - detscat_parser_type_repr
+ *
+ */
 #include "detscat_parser.h"
 
 #include <assert.h>
@@ -12,30 +73,29 @@
 
 #include "detscat_cfg.h"
 #include "detscat_limits.h"
+#include "detscat_math.h"
 #include "detscat_prt.h"
 #include "detscat_str.h"
 
-// --- Parser context signatures  ---
-static const uint32_t expected_magic[] = {
-    [DETSCAT_CFG] = DETSCAT_CFG_MAGIC,
-    [DETSCAT_PRT] = DETSCAT_PRT_MAGIC,
-};
+// --- Expected parser context signatures  ---
+static const uint32_t expected_magic[] = {[DETSCAT_CFG] = DETSCAT_CFG_MAGIC,
+                                          [DETSCAT_PRT] = DETSCAT_PRT_MAGIC,
+                                          [DETSCAT_PAR] = DETSCAT_PAR_MAGIC,
+                                          [DETSCAT_FML] = DETSCAT_FML_MAGIC};
 
 // --- Internal helpers (PRIVATE) ---
-
 //------------------------------------------------------------------------------
 // CFG Parser
 //------------------------------------------------------------------------------
-static bool parse_bool_cfg(const char *value, bool *out, DetScatParser *parser,
-                           const char *key) {
+static bool detscat_parser_parse_bool_cfg(const char *value, bool *out,
+                                          DetScatParser *parser,
+                                          const char *key) {
     assert(parser && out);
 
     if (!value || !*value || !key || !*key) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-            "Invalid or empty key and/or value provided at line %d",
-            parser->line_number);
-
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Invalid or empty key/value provided at line %d",
+                         parser->line_number);
         return false;
     }
 
@@ -44,67 +104,68 @@ static bool parse_bool_cfg(const char *value, bool *out, DetScatParser *parser,
     } else if (detscat_str_raw_strcasecmp(value, "false") == 0) {
         *out = false;
     } else {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Invalid bool format for '%s' at line %d", key,
-                         parser->line_number);
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_FORMAT,
+            "Invalid format for '%s' at line %d: expected a boolean", key,
+            parser->line_number);
         return false;
     }
 
-    parser->status = DETSCAT_PARSER_OK;
     return true;
 }
 
-static bool parse_double_cfg(const char *value, double *out,
-                             DetScatParser *parser, const char *key) {
+static bool detscat_parser_parse_double_cfg(const char *value, double *out,
+                                            DetScatParser *parser,
+                                            const char *key) {
     assert(parser && out);
 
     if (!value || !*value || !key || !*key) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-            "Invalid or empty key and/or value provided at line %d",
-            parser->line_number);
-
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Invalid or empty key/value provided at line %d",
+                         parser->line_number);
         return false;
     }
 
     errno = 0;
     char *endptr = NULL;
     double val = strtod(value, &endptr);
-    if (errno == ERANGE && (val == HUGE_VAL || val == -HUGE_VAL)) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_RANGE,
-                         "Overflow parsing '%s' at line %d", key,
-                         parser->line_number);
-        return false;
-    }
 
-    if (errno == ERANGE && val == 0) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_RANGE,
-                         "Underflow parsing '%s' at line %d", key,
-                         parser->line_number);
-        return false;
+    if (errno == ERANGE) {
+        if (val == HUGE_VAL || val == -HUGE_VAL) {
+            PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_OVERFLOW,
+                             "Overflow parsing '%s' at line %d", key,
+                             parser->line_number);
+            return false;
+        } else {
+            PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_UNDERFLOW,
+                             "Underflow parsing '%s' at line %d", key,
+                             parser->line_number);
+            return false;
+        }
     }
 
     if (endptr == value || *endptr != '\0') {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Invalid double format for '%s' at line %d", key,
-                         parser->line_number);
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_FORMAT,
+            "Invalid format for '%s' at line %d: expected a double", key,
+            parser->line_number);
         return false;
     }
 
     *out = val;
-    parser->status = DETSCAT_PARSER_OK;
+
     return true;
 }
 
-static bool parse_int_cfg(const char *value, int *out, DetScatParser *parser,
-                          const char *key) {
+static bool detscat_parser_parse_int_cfg(const char *value, int *out,
+                                         DetScatParser *parser,
+                                         const char *key) {
     assert(parser && out);
 
     if (!value || !*value || !key || !*key) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-            "Invalid or empty key and/or value provided at line %d",
-            parser->line_number);
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Invalid or empty key/value provided at line %d",
+                         parser->line_number);
 
         return false;
     }
@@ -121,13 +182,14 @@ static bool parse_int_cfg(const char *value, int *out, DetScatParser *parser,
     }
 
     if (endptr == value || *endptr != '\0') {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Invalid integer format for '%s' at line %d", key,
-                         parser->line_number);
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_FORMAT,
+            "Invalid format for '%s' at line %d: expected an integer", key,
+            parser->line_number);
         return false;
     }
 
-    // check if casting long to int is safe
+    // safety check for casting long to int
     if (val < INT_MIN || val > INT_MAX) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_RANGE,
                          "Integer value out of range for '%s' at line %d", key,
@@ -136,46 +198,19 @@ static bool parse_int_cfg(const char *value, int *out, DetScatParser *parser,
     }
 
     *out = (int)val;
-    parser->status = DETSCAT_PARSER_OK;
+
     return true;
 }
 
-static bool parse_cplx_vec3_cfg(const char *value, ComplexVec3 *out,
-                                DetScatParser *parser, const char *key) {
+static bool detscat_parser_parse_vec3_cfg(const char *value, Vec3 *out,
+                                          DetScatParser *parser,
+                                          const char *key) {
     assert(parser && out);
 
     if (!value || !*value || !key || !*key) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-            "Invalid or empty key and/or value provided at line %d",
-            parser->line_number);
-
-        return false;
-    }
-
-    int matched = sscanf(
-        value, "[ [ %lf , %lf ] , [ %lf , %lf ] , [ %lf , %lf ] ]", &out->x.re,
-        &out->x.im, &out->y.re, &out->y.im, &out->z.re, &out->z.im);
-    if (matched != 6) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Invalid array format for '%s' at line %d", key,
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Invalid or empty key/value provided at line %d",
                          parser->line_number);
-        return false;
-    }
-
-    parser->status = DETSCAT_PARSER_OK;
-    return true;
-}
-
-static bool parse_vec3_cfg(const char *value, Vec3 *out, DetScatParser *parser,
-                           const char *key) {
-    assert(parser && out);
-
-    if (!value || !*value || !key || !*key) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-            "Invalid or empty key and/or value provided at line %d",
-            parser->line_number);
 
         return false;
     }
@@ -184,29 +219,56 @@ static bool parse_vec3_cfg(const char *value, Vec3 *out, DetScatParser *parser,
         sscanf(value, "[ %lf , %lf , %lf ]", &out->x, &out->y, &out->z);
     if (matched != 3) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Invalid array format for '%s' at line %d", key,
-                         parser->line_number);
+                         "Invalid format for '%s' at line %d: expectec vec3",
+                         key, parser->line_number);
         return false;
     }
 
-    parser->status = DETSCAT_PARSER_OK;
     return true;
 }
 
-static bool parse_str_cfg(const char *value, Str *out, DetScatParser *parser,
-                          const char *key) {
+static bool detscat_parser_parse_cplx_vec3_cfg(const char *value,
+                                               ComplexVec3 *out,
+                                               DetScatParser *parser,
+                                               const char *key) {
     assert(parser && out);
 
     if (!value || !*value || !key || !*key) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-            "Invalid or empty key and/or value provided at line %d",
-            parser->line_number);
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Invalid or empty key/value provided at line %d",
+                         parser->line_number);
 
         return false;
     }
 
-    if (strlen(value) > DETSCAT_CFG_PATH_MAX - 1) {
+    int matched = sscanf(
+        value, "[ [ %lf , %lf ] , [ %lf , %lf ] , [ %lf , %lf ] ]", &out->x.re,
+        &out->x.im, &out->y.re, &out->y.im, &out->z.re, &out->z.im);
+    if (matched != 6) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_FORMAT,
+            "Invalid format for '%s' at line %d: expected a complex vec3", key,
+            parser->line_number);
+        return false;
+    }
+
+    return true;
+}
+
+static bool detscat_parser_parser_str_cfg(const char *value, Str *out,
+                                          DetScatParser *parser,
+                                          const char *key) {
+    assert(parser && out);
+
+    if (!value || !*value || !key || !*key) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Invalid or empty key/value provided at line %d",
+                         parser->line_number);
+
+        return false;
+    }
+
+    if (strlen(value) >= DETSCAT_CFG_PATH_MAX) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
                          "Path too long for '%s' at line %d (max %zu chars)",
                          key, parser->line_number, DETSCAT_CFG_PATH_MAX - 1);
@@ -215,18 +277,19 @@ static bool parse_str_cfg(const char *value, Str *out, DetScatParser *parser,
 
     if (!detscat_str_set(out, value)) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Could not set '%s' at line %d", key,
+                         "Could not assign string for '%s' at line %d", key,
                          parser->line_number);
         return false;
     }
 
-    parser->status = DETSCAT_PARSER_OK;
     return true;
 }
 
-static bool detscat_parser_split_key_value(char *line, char **key,
-                                           char **value) {
-    if (!line || !*line || !key || !value) return false;
+static bool detscat_parser_split_key_value_cfg(char *line, char **key,
+                                               char **value) {
+    assert(key && value);
+
+    if (!line || !*line) return false;
 
     char *equals = strchr(line, '=');
     if (!equals) return false;
@@ -245,48 +308,60 @@ static bool detscat_parser_split_key_value(char *line, char **key,
     return true;
 }
 
-static bool detscat_parser_handle_key_cfg(DetScatConfig *cfg, const char *key,
-                                          const char *value,
+static bool detscat_parser_handle_key_cfg(const char *key, const char *value,
+                                          DetScatConfig *cfg,
                                           DetScatParser *parser) {
     assert(parser && cfg);
-    if (!value || !*value || !key || !*key) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-            "Invalid or empty key and/or value provided at line %d",
-            parser->line_number);
 
+    if (!value || !*value || !key || !*key) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Invalid or empty key/value provided at line %d",
+                         parser->line_number);
         return false;
     }
 
     if (strcmp(key, "is_polarized") == 0) {
-        return parse_bool_cfg(value, &cfg->is_polarized, parser, key);
+        return detscat_parser_parse_bool_cfg(value, &cfg->is_polarized, parser,
+                                             key);
     } else if (strcmp(key, "polarization") == 0) {
-        return parse_cplx_vec3_cfg(value, &cfg->polarization, parser, key);
+        return detscat_parser_parse_cplx_vec3_cfg(value, &cfg->polarization,
+                                                  parser, key);
     } else if (strcmp(key, "wavelength_nm") == 0) {
-        return parse_double_cfg(value, &cfg->wavelength_nm, parser, key);
+        return detscat_parser_parse_double_cfg(value, &cfg->wavelength_nm,
+                                               parser, key);
     } else if (strcmp(key, "pulse_energy_mj") == 0) {
-        return parse_double_cfg(value, &cfg->pulse_energy_mj, parser, key);
+        return detscat_parser_parse_double_cfg(value, &cfg->pulse_energy_mj,
+                                               parser, key);
     } else if (strcmp(key, "pulse_width_ns") == 0) {
-        return parse_double_cfg(value, &cfg->pulse_width_ns, parser, key);
+        return detscat_parser_parse_double_cfg(value, &cfg->pulse_width_ns,
+                                               parser, key);
     } else if (strcmp(key, "beam_diameter_mm") == 0) {
-        return parse_double_cfg(value, &cfg->beam_diameter_mm, parser, key);
+        return detscat_parser_parse_double_cfg(value, &cfg->beam_diameter_mm,
+                                               parser, key);
     } else if (strcmp(key, "particles_definition_file") == 0) {
-        return parse_str_cfg(value, &cfg->particles_file_path, parser, key);
+        return detscat_parser_parser_str_cfg(value, &cfg->particles_file_path,
+                                             parser, key);
     } else if (strcmp(key, "camera_center_position_m") == 0) {
-        return parse_vec3_cfg(value, &cfg->camera_center_position_m, parser,
-                              key);
+        return detscat_parser_parse_vec3_cfg(
+            value, &cfg->camera_center_position_m, parser, key);
     } else if (strcmp(key, "camera_sensor_normal_vector") == 0) {
-        return parse_vec3_cfg(value, &cfg->camera_sensor_normal, parser, key);
+        return detscat_parser_parse_vec3_cfg(value, &cfg->camera_sensor_normal,
+                                             parser, key);
     } else if (strcmp(key, "sensor_width_mm") == 0) {
-        return parse_double_cfg(value, &cfg->sensor_width_mm, parser, key);
+        return detscat_parser_parse_double_cfg(value, &cfg->sensor_width_mm,
+                                               parser, key);
     } else if (strcmp(key, "sensor_height_mm") == 0) {
-        return parse_double_cfg(value, &cfg->sensor_height_mm, parser, key);
+        return detscat_parser_parse_double_cfg(value, &cfg->sensor_height_mm,
+                                               parser, key);
     } else if (strcmp(key, "focal_length_mm") == 0) {
-        return parse_double_cfg(value, &cfg->focal_length_mm, parser, key);
+        return detscat_parser_parse_double_cfg(value, &cfg->focal_length_mm,
+                                               parser, key);
     } else if (strcmp(key, "camera_resolution_x_px") == 0) {
-        return parse_int_cfg(value, &cfg->camera_resolution_x_px, parser, key);
+        return detscat_parser_parse_int_cfg(value, &cfg->camera_resolution_x_px,
+                                            parser, key);
     } else if (strcmp(key, "camera_resolution_y_px") == 0) {
-        return parse_int_cfg(value, &cfg->camera_resolution_y_px, parser, key);
+        return detscat_parser_parse_int_cfg(value, &cfg->camera_resolution_y_px,
+                                            parser, key);
     } else {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_UNKNOWN_KEY,
                          "Unknown key '%s' at line %d", key,
@@ -295,36 +370,37 @@ static bool detscat_parser_handle_key_cfg(DetScatConfig *cfg, const char *key,
     }
 }
 
-static bool detscat_parser_parse_line_cfg(DetScatParser *parser,
-                                          DetScatParserCfgContext *ctx) {
+static bool detscat_parser_parse_line_cfg(DetScatParserCfgContext *ctx,
+                                          DetScatParser *parser) {
     assert(parser && ctx);
 
     char *trimmed = detscat_str_raw_trim(parser->current_line.data);
     if (trimmed[0] == '\0' || trimmed[0] == '#') return true;
 
     char *key = NULL, *value = NULL;
-    if (!detscat_parser_split_key_value(trimmed, &key, &value)) {
+    if (!detscat_parser_split_key_value_cfg(trimmed, &key, &value)) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_SYNTAX,
-                         "Missing '=' at line %d", parser->line_number);
+                         "Could not obtain key-value pair at line %d",
+                         parser->line_number);
         return false;
     }
 
-    if (!detscat_parser_handle_key_cfg(ctx->cfg, key, value, parser))
+    if (!detscat_parser_handle_key_cfg(key, value, ctx->cfg, parser))
         return false;
 
-    parser->status = DETSCAT_PARSER_OK;
     return true;
 }
 
 //------------------------------------------------------------------------------
 // PRT Parser
 //------------------------------------------------------------------------------
-static bool parse_double_prt(const char *str, double *out,
-                             DetScatParser *parser) {
+static bool detscat_parser_parse_double_prt(const char *str, double *out,
+                                            DetScatParser *parser) {
     assert(parser && out);
+
     if (!str || !*str) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-                         "Invalid or empty buffer provided at line %d",
+                         "Invalid or empty value string provided at line %d",
                          parser->line_number);
         return false;
     }
@@ -333,45 +409,42 @@ static bool parse_double_prt(const char *str, double *out,
     errno = 0;
     double val = strtod(str, &endptr);
 
-    if (endptr == str) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_FORMAT,
-            "Expected a numeric value at line %d (empty or invalid input)",
-            parser->line_number);
-        return false;
+    if (errno == ERANGE) {
+        if (val == HUGE_VAL || val == -HUGE_VAL) {
+            PARSER_SET_ERROR(
+                parser, DETSCAT_PARSER_ERR_OVERFLOW,
+                "Numeric value at line %d is out of range (overflow)",
+                parser->line_number);
+            return false;
+        } else {
+            PARSER_SET_ERROR(
+                parser, DETSCAT_PARSER_ERR_UNDERFLOW,
+                "Numeric value at line %d is too small (underflow)",
+                parser->line_number);
+            return false;
+        }
     }
-    if (*endptr != '\0') {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_FORMAT,
-            "Unexpected trailing characters in numeric value at line %d: '%s'",
-            parser->line_number, endptr);
-        return false;
-    }
-    if (errno == ERANGE && (val == HUGE_VAL || val == -HUGE_VAL)) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_OVERFLOW,
-                         "Numeric value at line %d is out of range (overflow)",
-                         parser->line_number);
-        return false;
-    }
-    if (errno == ERANGE && val == 0) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_UNDERFLOW,
-                         "Numeric value at line %d is too small (underflow)",
+
+    if (endptr == str || *endptr != '\0') {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Invalid format at line %d: expected a double",
                          parser->line_number);
         return false;
     }
 
     *out = val;
+
     return true;
 }
 
-static bool parse_int_prt(const char *str, int *out, DetScatParser *parser) {
+static bool detscat_parser_parse_int_prt(const char *str, int *out,
+                                         DetScatParser *parser) {
     assert(parser && out);
 
     if (!str || !*str) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_FORMAT,
-            "Expected an integer value at line %d (empty or null input)",
-            parser->line_number);
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Invalid or empty value string provided at line %d",
+                         parser->line_number);
         return false;
     }
 
@@ -379,44 +452,37 @@ static bool parse_int_prt(const char *str, int *out, DetScatParser *parser) {
     char *endptr = NULL;
     long val = strtol(str, &endptr, 10);
 
-    if (endptr == str) {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_FORMAT,
-            "Expected an integer value at line %d (invalid input: '%s')",
-            parser->line_number, str);
-        return false;
-    }
-
-    if (*endptr != '\0') {
-        PARSER_SET_ERROR(
-            parser, DETSCAT_PARSER_ERR_FORMAT,
-            "Unexpected trailing characters in integer value at line %d: '%s'",
-            parser->line_number, endptr);
-        return false;
-    }
-
     if ((val == LONG_MAX || val == LONG_MIN) && errno == ERANGE) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_RANGE,
-                         "Integer value at line %d is out of range for 'long'",
+                         "Overflow/underflow parsing at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+    if (endptr == str || *endptr != '\0') {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Invalid format at line %d: expected an integer",
                          parser->line_number);
         return false;
     }
 
     if (val > INT_MAX || val < INT_MIN) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_RANGE,
-                         "Integer value at line %d is out of range for 'int' "
-                         "(%ld is outside [%d, %d])",
-                         parser->line_number, val, INT_MIN, INT_MAX);
+                         "Integer value out of range for at line %d",
+                         parser->line_number);
         return false;
     }
 
     *out = (int)val;
+
     return true;
 }
 
-static bool parse_type_prt(DetScatParser *parser, DetScatPrtType *type,
-                           const char *line) {
+static bool detscat_parser_parse_type_prt(const char *line,
+                                          DetScatPrtType *type,
+                                          DetScatParser *parser) {
     assert(parser && type);
+
     if (!line || !*line) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
                          "Expected a particle type definition at line %d "
@@ -429,7 +495,7 @@ static bool parse_type_prt(DetScatParser *parser, DetScatPrtType *type,
     if (!copy) {
         PARSER_SET_ERROR(
             parser, DETSCAT_PARSER_ERR_MEMORY,
-            "Could not allocate memory for temporary buffer copy at line %d",
+            "Could not allocate temporary memory for buffer copy at line %d",
             parser->line_number);
         return false;
     }
@@ -439,8 +505,7 @@ static bool parse_type_prt(DetScatParser *parser, DetScatPrtType *type,
     char *token3 = strtok(NULL, " \t");
 
     if (!token1 || !token2 || token3) {
-        parser->status = DETSCAT_PARSER_ERR_FORMAT;
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_SYNTAX,
                          "Invalid particle type definition at line %d",
                          parser->line_number);
         goto error_cleanup;
@@ -449,7 +514,7 @@ static bool parse_type_prt(DetScatParser *parser, DetScatPrtType *type,
     if (strlen(token1) >= DETSCAT_PRT_TYPEID_MAX ||
         strlen(token2) >= DETSCAT_PRT_PATH_MAX) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_RANGE,
-                         "Particle type or data path out of range at line %d",
+                         "Particle type ID or data path too long at line %d",
                          parser->line_number);
         goto error_cleanup;
     }
@@ -457,7 +522,7 @@ static bool parse_type_prt(DetScatParser *parser, DetScatPrtType *type,
     if (!detscat_str_set(&type->type_id, token1) ||
         !detscat_str_set(&type->data_dir, token2)) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
-                         "Could not set data for particle type at line %d",
+                         "Could not set particle type data at line %d",
                          parser->line_number);
         goto error_cleanup;
     }
@@ -471,9 +536,11 @@ error_cleanup:
     return false;
 }
 
-static bool parse_particle_prt(DetScatParser *parser,
-                               DetScatPrtParticle *particle, const char *line) {
+static bool detscat_parser_parse_particle_prt(const char *line,
+                                              DetScatPrtParticle *particle,
+                                              DetScatParser *parser) {
     assert(parser && particle);
+
     if (!line || !*line) {
         PARSER_SET_ERROR(
             parser, DETSCAT_PARSER_ERR_FORMAT,
@@ -486,7 +553,7 @@ static bool parse_particle_prt(DetScatParser *parser,
     if (!copy) {
         PARSER_SET_ERROR(
             parser, DETSCAT_PARSER_ERR_FORMAT,
-            "Could not allocate memory for temporary buffer copy at line %d",
+            "Could not allocate temporary memory for buffer copy at line %d",
             parser->line_number);
         return false;
     }
@@ -495,17 +562,19 @@ static bool parse_particle_prt(DetScatParser *parser,
     double xyz[3];
 
     char *tok = strtok(copy, " \t");
+
     if (!tok) {
         free(copy);
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_SYNTAX,
                          "Invalid particle definition at line %d",
                          parser->line_number);
         return false;
     }
+
     if (strlen(tok) >= DETSCAT_PRT_TYPEID_MAX) {
         free(copy);
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Particle type too long at line %d",
+                         "Particle type ID too long at line %d",
                          parser->line_number);
         return false;
     }
@@ -515,13 +584,15 @@ static bool parse_particle_prt(DetScatParser *parser,
     for (size_t i = 0; i < 3; ++i) {
         tok = strtok(NULL, " \t");
         if (!tok) goto error_cleanup;
-        if (!parse_int_prt(tok, &wrk[i], parser)) goto error_cleanup;
+        if (!detscat_parser_parse_int_prt(tok, &wrk[i], parser))
+            goto error_cleanup;
     }
 
     for (size_t i = 0; i < 3; ++i) {
         tok = strtok(NULL, " \t");
         if (!tok) goto error_cleanup;
-        if (!parse_double_prt(tok, &xyz[i], parser)) goto error_cleanup;
+        if (!detscat_parser_parse_double_prt(tok, &xyz[i], parser))
+            goto error_cleanup;
     }
 
     tok = strtok(NULL, " \t");
@@ -558,7 +629,7 @@ static bool detscat_parser_wait_prt(const char *line,
 
     if (!line || !*line) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Received an empty or null input buffer at line %d",
+                         "Empty or null input buffer at line %d",
                          parser->line_number);
         return false;
     }
@@ -568,20 +639,20 @@ static bool detscat_parser_wait_prt(const char *line,
             PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
                              "Duplicate $(StartTypes) at line %d",
                              parser->line_number);
-            ctx->state = STATE_ERROR;
+            ctx->state = PRT_STATE_ERROR;
             return false;
         }
-        ctx->state = STATE_PARSE_TYPES_META;
+        ctx->state = PRT_STATE_PARSE_TYPES_META;
         return true;
     } else if (strcmp(line, "$(StartParticles)") == 0) {
         if (ctx->particles_parsed) {
             PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
                              "Duplicate $(StartParticles) at line %d",
                              parser->line_number);
-            ctx->state = STATE_ERROR;
+            ctx->state = PRT_STATE_ERROR;
             return false;
         }
-        ctx->state = STATE_PARSE_PARTICLES_META;
+        ctx->state = PRT_STATE_PARSE_PARTICLES_META;
         return true;
     }
     return true;
@@ -594,28 +665,30 @@ static bool detscat_parser_types_meta_prt(const char *line,
 
     if (!line || !*line) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Received an empty or null input buffer at line %d",
+                         "Empty or null input buffer at line %d",
                          parser->line_number);
         return false;
     }
 
     if (sscanf(line, " %zu ", &ctx->prt->n_types) != 1 ||
         ctx->prt->n_types == 0) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Invalid or missing number of particle types "
-                         "at line %d",
-                         parser->line_number);
-        ctx->state = STATE_ERROR;
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_SYNTAX,
+            "Invalid or missing number of particle types at line %d",
+            parser->line_number);
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
+
     ctx->prt->types = calloc(ctx->prt->n_types, sizeof(*(ctx->prt->types)));
     if (!ctx->prt->types) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
-                         "Memory allocation failed for particle types");
-        ctx->state = STATE_ERROR;
+                         "Could not allocate memory for particle types");
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
-    ctx->state = STATE_PARSE_TYPES_DEF;
+
+    ctx->state = PRT_STATE_PARSE_TYPES_DEF;
     return true;
 }
 
@@ -626,41 +699,40 @@ static bool detscat_parser_types_def_prt(const char *line,
 
     if (!line || !*line) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Received an empty or null input buffer at line %d",
+                         "Empty or null input buffer at line %d",
                          parser->line_number);
         return false;
     }
 
     if (strcmp(line, "$(StartParticles)") == 0) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Missing $(EndTypes) before $(StartParticles) at "
-                         "line %d",
-                         parser->line_number);
-        ctx->state = STATE_ERROR;
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_FORMAT,
+            "Missing $(EndTypes) before $(StartParticles) at line %d",
+            parser->line_number);
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
 
     if (strcmp(line, "$(EndTypes)") == 0) {
         if (ctx->types_allocated != ctx->prt->n_types) {
             PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                             "Expected %zu particle type definitions, "
-                             "got %zu",
+                             "Expected %zu particle type definitions, got %zu",
                              ctx->prt->n_types, ctx->types_allocated);
-            ctx->state = STATE_ERROR;
+            ctx->state = PRT_STATE_ERROR;
             return false;
         }
         ctx->types_parsed = true;
-        ctx->state = STATE_WAIT_SECTION;
+        ctx->state = PRT_STATE_WAIT_SECTION;
         return true;
     }
 
     if (ctx->types_allocated >= ctx->prt->n_types) {
         parser->status = DETSCAT_PARSER_ERR_FORMAT;
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Too many particle type definitions. Stopped "
-                         "at line %d",
-                         parser->line_number);
-        ctx->state = STATE_ERROR;
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_FORMAT,
+            "Too many particle type definitions. Stopped at line %d",
+            parser->line_number);
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
 
@@ -671,15 +743,16 @@ static bool detscat_parser_types_def_prt(const char *line,
         !detscat_str_reserve(&ctx->prt->types[ctx->types_allocated].data_dir,
                              DETSCAT_PRT_PATH_INIT)) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
-                         "Memory allocation failed for particle type ID "
-                         "or data path at line %d",
+                         "Could not allocate memory for particle type ID or "
+                         "data path at line %d",
                          parser->line_number);
-        ctx->state = STATE_ERROR;
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
 
-    if (!parse_type_prt(parser, &ctx->prt->types[ctx->types_allocated], line)) {
-        ctx->state = STATE_ERROR;
+    if (!detscat_parser_parse_type_prt(
+            line, &ctx->prt->types[ctx->types_allocated], parser)) {
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
 
@@ -695,7 +768,7 @@ static bool detscat_parser_particles_meta_prt(const char *line,
 
     if (!line || !*line) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Received an empty or null input buffer at line %d",
+                         "Empty or null input buffer at line %d",
                          parser->line_number);
         return false;
     }
@@ -705,18 +778,18 @@ static bool detscat_parser_particles_meta_prt(const char *line,
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
                          "Invalid or missing number of particles at line %d",
                          parser->line_number);
-        ctx->state = STATE_ERROR;
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
     ctx->prt->particles =
         calloc(ctx->prt->n_particles, sizeof(*(ctx->prt->particles)));
     if (!ctx->prt->particles) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
-                         "Memory allocation failed for particles");
-        ctx->state = STATE_ERROR;
+                         "Could not allocate memory for particles");
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
-    ctx->state = STATE_PARSE_PARTICLES_DEF;
+    ctx->state = PRT_STATE_PARSE_PARTICLES_DEF;
     return true;
 }
 
@@ -727,7 +800,7 @@ static bool detscat_parser_particles_prt(const char *line,
 
     if (!line || !*line) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Received an empty or null input buffer at line %d",
+                         "Empty or null input buffer at line %d",
                          parser->line_number);
         return false;
     }
@@ -737,7 +810,7 @@ static bool detscat_parser_particles_prt(const char *line,
             parser, DETSCAT_PARSER_ERR_FORMAT,
             "Missing $(EndParticles) before $(StartTypes) at line %d",
             parser->line_number);
-        ctx->state = STATE_ERROR;
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
 
@@ -746,19 +819,21 @@ static bool detscat_parser_particles_prt(const char *line,
             PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
                              "Expected %zu particles, got %zu",
                              ctx->prt->n_particles, ctx->particles_allocated);
-            ctx->state = STATE_ERROR;
+            ctx->state = PRT_STATE_ERROR;
             return false;
         }
         ctx->particles_parsed = true;
-        ctx->state = STATE_WAIT_SECTION;
+        ctx->state = PRT_STATE_WAIT_SECTION;
         return true;
     }
 
     if (ctx->particles_allocated >= ctx->prt->n_particles) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Too many particles defined. Stopped at line %d",
+                         "Too many particles defined. Expected %zu, got %zu. "
+                         "Stopped at line %d",
+                         ctx->prt->n_particles, ctx->particles_allocated,
                          parser->line_number);
-        ctx->state = STATE_ERROR;
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
 
@@ -768,16 +843,16 @@ static bool detscat_parser_particles_prt(const char *line,
             &ctx->prt->particles[ctx->particles_allocated].type_id,
             DETSCAT_PRT_TYPEID_INIT)) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
-                         "Memory allocation failed for particle type ID "
+                         "Could not allocate memory for particle type ID "
                          "at line %d",
                          parser->line_number);
-        ctx->state = STATE_ERROR;
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
 
-    if (!parse_particle_prt(
-            parser, &ctx->prt->particles[ctx->particles_allocated], line)) {
-        ctx->state = STATE_ERROR;
+    if (!detscat_parser_parse_particle_prt(
+            line, &ctx->prt->particles[ctx->particles_allocated], parser)) {
+        ctx->state = PRT_STATE_ERROR;
         return false;
     }
 
@@ -785,43 +860,43 @@ static bool detscat_parser_particles_prt(const char *line,
     return true;
 }
 
-static bool detscat_parser_parse_line_prt(DetScatParser *parser,
-                                          DetScatParserPrtContext *ctx) {
+static bool detscat_parser_parse_line_prt(DetScatParserPrtContext *ctx,
+                                          DetScatParser *parser) {
     assert(parser && ctx);
 
     char *trimmed = detscat_str_raw_trim(parser->current_line.data);
     if (trimmed[0] == '\0' || trimmed[0] == '#') return true;
 
     switch (ctx->state) {
-        case STATE_INITIAL:
-            ctx->state = STATE_WAIT_SECTION;
+        case PRT_STATE_INITIAL:
+            ctx->state = PRT_STATE_WAIT_SECTION;
             // fall through
 
-        case STATE_WAIT_SECTION:
+        case PRT_STATE_WAIT_SECTION:
             if (!detscat_parser_wait_prt(trimmed, ctx, parser))
                 goto error_cleanup;
             return true;
 
-        case STATE_PARSE_TYPES_META:
+        case PRT_STATE_PARSE_TYPES_META:
             if (!detscat_parser_types_meta_prt(trimmed, ctx, parser))
                 goto error_cleanup;
             return true;
 
-        case STATE_PARSE_TYPES_DEF:
+        case PRT_STATE_PARSE_TYPES_DEF:
             if (!detscat_parser_types_def_prt(trimmed, ctx, parser))
                 goto error_cleanup;
             return true;
 
-        case STATE_PARSE_PARTICLES_META:
+        case PRT_STATE_PARSE_PARTICLES_META:
             if (!detscat_parser_particles_meta_prt(trimmed, ctx, parser))
                 goto error_cleanup;
             return true;
-        case STATE_PARSE_PARTICLES_DEF:
+        case PRT_STATE_PARSE_PARTICLES_DEF:
             if (!detscat_parser_particles_prt(trimmed, ctx, parser))
                 goto error_cleanup;
             return true;
 
-        case STATE_ERROR:
+        case PRT_STATE_ERROR:
             goto error_cleanup;
 
         default:
@@ -834,6 +909,66 @@ error_cleanup:
     return false;
 }
 
+//------------------------------------------------------------------------------
+// PAR Parser
+//------------------------------------------------------------------------------
+static bool detscat_parser_parse_component_par(const char *line, Str *component,
+                                               DetScatParser *parser) {
+    assert(parser && component);
+
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+    const char *start = strchr(line, '\'');
+    if (!start) goto cleanup;
+    start++;
+
+    const char *end = strchr(start, '\'');
+    if (!end) goto cleanup;
+
+    size_t len = end - start;
+
+    if (len >= DETSCAT_DDSCAT_PATH_MAX) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_RANGE,
+                         "Component data path too long at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+    char *path = malloc(len + 1);
+    if (!path) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_MEMORY,
+            "Could not allocate temporary memory for data path at line %d",
+            parser->line_number);
+        return false;
+    }
+    memcpy(path, start, len);
+    path[len] = '\0';
+
+    if (!detscat_str_set(component, path)) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
+                         "Could not set component data path at line %d",
+                         parser->line_number);
+        free(path);
+        return false;
+    }
+    detscat_str_raw_normpath(component->data);
+
+    free(path);
+    return true;
+
+cleanup:
+    PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                     "Invalid component data path at line %d",
+                     parser->line_number);
+    return false;
+}
+
 static bool detscat_parser_initial_par(const char *line,
                                        DetScatParserParContext *ctx,
                                        DetScatParser *parser) {
@@ -841,160 +976,358 @@ static bool detscat_parser_initial_par(const char *line,
 
     if (!line || !*line) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                         "Received an empty or null input buffer at line %d",
+                         "Empty or null input buffer at line %d",
                          parser->line_number);
         return false;
     }
 
-
-
-    if (strstr(trimmed, "NCOMP")) {
+    if (strstr(line, "NCOMP")) {
         size_t n_components;
-        if (sscanf(trimmed, "%zu", &n_components) != 1 ||
-            n_components == 0) {
-            snprintf(parser->errmsg, sizeof(parser->errmsg),
-                     "Invalid NCOMP format at line %d",
-                     parser->lineno);
-            parser->status = DETSCAT_PARSER_ERR_FORMAT;
-            goto error_cleanup;
+        if (sscanf(line, "%zu", &n_components) != 1 || n_components == 0) {
+            PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                             "Invalid NCOMP format at line %d",
+                             parser->line_number);
+            return false;
         }
 
-        par->n_components = n_components;
-        par->components = calloc(n_components,
-                                 sizeof(*par->components));
-        if (!par->components) {
-            snprintf(parser->errmsg, sizeof(parser->errmsg),
-                     "Memory allocation for components failed");
-            parser->status = DETSCAT_PARSER_ERR_ALLOC;
-            goto error_cleanup;
+        ctx->par->n_components = n_components;
+        ctx->par->components =
+            calloc(n_components, sizeof(*ctx->par->components));
+        if (!ctx->par->components) {
+            PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
+                             "Could not allocate memory for components");
+            return false;
         }
 
-        ctx->state = PARSE_COMP;
-    } else if (strstr(trimmed, "NPLANES")) {
+        ctx->state = PAR_STATE_PARSE_COMPONENTS;
+    } else if (strstr(line, "NPLANES")) {
         size_t n_scat_planes;
-        if (sscanf(trimmed, "%zu", &n_scat_planes) != 1 ||
-            n_scat_planes == 0) {
-            snprintf(parser->errmsg, sizeof(parser->errmsg),
-                     "Invalid NPLANES format at line %d",
-                     parser->lineno);
-            parser->status = DETSCAT_PARSER_ERR_FORMAT;
-            goto error_cleanup;
+        if (sscanf(line, "%zu", &n_scat_planes) != 1 || n_scat_planes == 0) {
+            PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                             "Invalid NPLANES format at line %d",
+                             parser->line_number);
+            return false;
         }
 
-        par->n_scat_planes = n_scat_planes;
-        par->scat_planes = calloc(n_scat_planes,
-                sizeof(double[DETSCAT_DDSCAT_SCAT_PLANE_PARAMS]));
-        if (!par->scat_planes) {
-            snprintf(parser->errmsg, sizeof(parser->errmsg),
-                     "Memory allocation for scattering planes "
-                     "failed");
-            parser->status = DETSCAT_PARSER_ERR_ALLOC;
-            goto error_cleanup;
+        ctx->par->n_scat_planes = n_scat_planes;
+        ctx->par->scat_planes =
+            calloc(n_scat_planes, sizeof(*ctx->par->scat_planes));
+        if (!ctx->par->scat_planes) {
+            PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
+                             "Could not allocate memory for scattering planes");
+            return false;
         }
 
-        ctx->state = PARSE_PLANES;
-    } else if (strstr(trimmed, "Polarization state")) {
-        if (sscanf(trimmed, "(%lf, %lf) (%lf, %lf) (%lf, %lf)",
-                   &par->e01.x.re, &par->e01.x.im, &par->e01.y.re,
-                   &par->e01.y.im, &par->e01.z.re,
-                   &par->e01.z.im) != 6) {
-            snprintf(
-                parser->errmsg, sizeof(parser->errmsg),
-                "Invalid format for polarization state at line %d",
-                parser->lineno);
-            parser->status = DETSCAT_PARSER_ERR_FORMAT;
-            goto error_cleanup;
+        ctx->state = PAR_STATE_PARSE_SCAT_PLANES;
+    } else if (strstr(line, "Polarization state")) {
+        if (sscanf(line, "(%lf, %lf) (%lf, %lf) (%lf, %lf)",
+                   &ctx->par->e01.x.re, &ctx->par->e01.x.im,
+                   &ctx->par->e01.y.re, &ctx->par->e01.y.im,
+                   &ctx->par->e01.z.re, &ctx->par->e01.z.im) != 6) {
+            PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                             "Invalid format for polarization state at line %d",
+                             parser->line_number);
+            return false;
         }
-        ctx->state = PARSE_INITIAL;
+        ctx->state = PAR_STATE_INITIAL;
     }
     return true;
-
 }
 
+static bool detscat_parser_parse_components_par(const char *line,
+                                                DetScatParserParContext *ctx,
+                                                DetScatParser *parser) {
+    assert(parser && ctx);
 
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
 
+    if (ctx->components_allocated >= ctx->par->n_components) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Too many components provided (expected %zu) at "
+                         "line %d",
+                         ctx->par->n_components, parser->line_number);
+        return false;
+    }
 
+    if (!detscat_str_init(&ctx->par->components[ctx->components_allocated]) ||
+        !detscat_str_reserve(&ctx->par->components[ctx->components_allocated],
+                             DETSCAT_DDSCAT_PATH_INIT)) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_MEMORY,
+            "Could not allocate memory for component data path at line %d",
+            parser->line_number);
+        return false;
+    }
 
-static bool detscat_ddscat_parse_par_line(DetScatParser *parser,
-                                          DetScatParserParContext *ctx) { 
+    if (!detscat_parser_parse_component_par(
+            line, &ctx->par->components[ctx->components_allocated], parser)) {
+        return false;
+    }
+
+    ctx->components_allocated++;
+    if (ctx->components_allocated == ctx->par->n_components) {
+        ctx->state = PAR_STATE_INITIAL;
+    }
+    return true;
+}
+
+static bool detscat_parser_parse_scat_planes(const char *line,
+                                             DetScatParserParContext *ctx,
+                                             DetScatParser *parser) {
+    assert(parser && ctx);
+
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+    if (ctx->scat_planes_parsed >= ctx->par->n_scat_planes) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_FORMAT,
+            "Too many scattering planes provided (expected %zu) at line %d",
+            ctx->par->n_scat_planes, parser->line_number);
+        return false;
+    }
+
+    if (sscanf(line, "%lf %lf %lf %lf",
+               &ctx->par->scat_planes[ctx->scat_planes_parsed][0],
+               &ctx->par->scat_planes[ctx->scat_planes_parsed][1],
+               &ctx->par->scat_planes[ctx->scat_planes_parsed][2],
+               &ctx->par->scat_planes[ctx->scat_planes_parsed][3]) != 4) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Invalid format for scattering plane at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+    ctx->scat_planes_parsed++;
+    if (ctx->scat_planes_parsed == ctx->par->n_scat_planes) {
+        ctx->state = PAR_STATE_INITIAL;
+    }
+    return true;
+}
+
+static bool detscat_parser_parse_line_par(DetScatParserParContext *ctx,
+                                          DetScatParser *parser) {
     assert(parser && ctx);
 
     char *trimmed = detscat_str_raw_trim(parser->current_line.data);
 
     switch (ctx->state) {
-        case PAR_INITIAL:
+        case PAR_STATE_INITIAL:
             if (!detscat_parser_initial_par(trimmed, ctx, parser))
                 goto error_cleanup;
-
-        case PARSE_COMP:
-            if (ctx->components_allocated >= par->n_components) {
-                snprintf(parser->errmsg, sizeof(parser->errmsg),
-                         "Too many components provided (expected %zu) at "
-                         "line %d",
-                         par->n_components, parser->lineno);
-                parser->status = DETSCAT_PARSER_ERR_FORMAT;
-                goto error_cleanup;
-            }
-
-            if (!str_init(&par->components[ctx->components_allocated]) ||
-                !str_reserve(&par->components[ctx->components_allocated],
-                             DETSCAT_DDSCAT_PATH_INIT)) {
-                parser->status = DETSCAT_PARSER_ERR_ALLOC;
-                snprintf(parser->errmsg, sizeof(parser->errmsg),
-                         "Memory allocation failed for component path "
-                         "at line %d",
-                         parser->lineno);
-                goto error_cleanup;
-            }
-
-            if (!detscat_ddscat_parse_par_component(
-                    parser, &par->components[ctx->components_allocated], trimmed)) {
-                goto error_cleanup;
-            }
-
-            ctx->components_allocated++;
-            if (ctx->components_allocated == par->n_components) {
-                ctx->state = PARSE_INITIAL;
-            }
             return true;
 
-        case PARSE_PLANES:
-            if (ctx->scat_planes_parsed >= par->n_scat_planes) {
-                snprintf(parser->errmsg, sizeof(parser->errmsg),
-                         "Too many scattering planes provided (expected "
-                         "%zu) at line %d",
-                         par->n_scat_planes, parser->lineno);
-                parser->status = DETSCAT_PARSER_ERR_FORMAT;
+        case PAR_STATE_PARSE_COMPONENTS:
+            if (!detscat_parser_parse_components_par(trimmed, ctx, parser))
                 goto error_cleanup;
-            }
+            return true;
 
-            if (sscanf(trimmed, "%lf %lf %lf %lf",
-                       &par->scat_planes[ctx->scat_planes_parsed][0],
-                       &par->scat_planes[ctx->scat_planes_parsed][1],
-                       &par->scat_planes[ctx->scat_planes_parsed][2],
-                       &par->scat_planes[ctx->scat_planes_parsed][3]) !=
-                DETSCAT_DDSCAT_SCAT_PLANE_PARAMS) {
-                snprintf(parser->errmsg, sizeof(parser->errmsg),
-                         "Invalid format for scattering plane at line %d",
-                         parser->lineno);
-                parser->status = DETSCAT_PARSER_ERR_FORMAT;
+        case PAR_STATE_PARSE_SCAT_PLANES:
+            if (!detscat_parser_parse_scat_planes(trimmed, ctx, parser))
                 goto error_cleanup;
-            }
-
-            ctx->scat_planes_parsed++;
-            if (ctx->scat_planes_parsed == par->n_scat_planes) {
-                ctx->state = PARSE_INITIAL;
-            }
             return true;
     }
 
 error_cleanup:
-    detscat_ddscat_par_free_count(par, ctx->components_allocated);
+    detscat_ddscat_par_free_subset(ctx->par, ctx->components_allocated);
     return false;
 }
 
+//------------------------------------------------------------------------------
+// FML Parser
+//------------------------------------------------------------------------------
+static bool detscat_parser_initial_fml(DetScatParserFmlContext *ctx,
+                                       DetScatParser *parser) {
+    assert(parser && ctx);
 
+    ctx->fml->n_fmats = ctx->par->n_scat_planes;
+    if (ctx->fml->n_fmats == 0) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_RANGE,
+            "Number of scattering planes must be larger than zero");
+        return false;
+    }
+    ctx->state = FML_STATE_FIND_HEADER;
+    return true;
+}
 
+static bool detscat_parser_find_header_fml(const char *line,
+                                           DetScatParserFmlContext *ctx,
+                                           DetScatParser *parser) {
+    assert(ctx);
+
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+    if (strstr(line, "Re")) {
+        ctx->data_header_found = true;
+        ctx->state = FML_STATE_ALLOC_FMATS;
+    }
+    return true;
+}
+
+static bool detscat_parser_alloc_fmats_fml(DetScatParserFmlContext *ctx,
+                                           DetScatParser *parser) {
+    assert(ctx && parser);
+
+    ctx->fml->fmats = calloc(ctx->fml->n_fmats, sizeof(*ctx->fml->fmats));
+    if (!ctx->fml->fmats) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
+                         "Could not allocate memory for fmats");
+        return false;
+    }
+
+    ctx->fml->refcount = 1;
+    ctx->current_plane = 0;
+    ctx->current_theta = 0;
+    ctx->state = FML_STATE_ALLOC_SCAT_PLANE;
+    return true;
+}
+
+static bool detscat_parser_alloc_scat_plane_fml(DetScatParserFmlContext *ctx,
+                                                DetScatParser *parser) {
+    assert(ctx && parser);
+
+    size_t i = ctx->current_plane;
+
+    double range = ctx->par->scat_planes[i][2] - ctx->par->scat_planes[i][1];
+    double step = ctx->par->scat_planes[i][3];
+
+    size_t n_theta;
+
+    if (step <= 0.0 || range < 0.0) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Invalid step/range for plane %zu", i + 1);
+        return false;
+    }
+    n_theta = (size_t)(range / step) + 1;
+
+    ctx->fml->fmats[i].n_theta = n_theta;
+    ctx->fml->fmats[i].phi = ctx->par->scat_planes[i][0];
+    ctx->fml->fmats[i].theta = calloc(n_theta, sizeof(double));
+    ctx->fml->fmats[i].f11 = calloc(n_theta, sizeof(Complex));
+    ctx->fml->fmats[i].f12 = calloc(n_theta, sizeof(Complex));
+    ctx->fml->fmats[i].f21 = calloc(n_theta, sizeof(Complex));
+    ctx->fml->fmats[i].f22 = calloc(n_theta, sizeof(Complex));
+
+    if (!ctx->fml->fmats[i].theta || !ctx->fml->fmats[i].f11 ||
+        !ctx->fml->fmats[i].f12 || !ctx->fml->fmats[i].f21 ||
+        !ctx->fml->fmats[i].f22) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
+                         "Could not allocate memory for f-matrix of scattering "
+                         "plane %zu",
+                         i + 1);
+        return false;
+    }
+
+    ctx->current_theta = 0;
+    ctx->state = FML_STATE_READ_VALUES;
+    return true;
+}
+
+static bool detscat_parser_read_values_fml(const char *line,
+                                           DetScatParserFmlContext *ctx,
+                                           DetScatParser *parser) {
+    assert(ctx && parser);
+
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+    size_t i = ctx->current_plane;
+    size_t j = ctx->current_theta;
+
+    if (sscanf(line, "%lf %*f %lf %lf %lf %lf %lf %lf %lf %lf",
+               &ctx->fml->fmats[i].theta[j], &ctx->fml->fmats[i].f11[j].re,
+               &ctx->fml->fmats[i].f11[j].im, &ctx->fml->fmats[i].f21[j].re,
+               &ctx->fml->fmats[i].f21[j].im, &ctx->fml->fmats[i].f12[j].re,
+               &ctx->fml->fmats[i].f12[j].im, &ctx->fml->fmats[i].f22[j].re,
+               &ctx->fml->fmats[i].f22[j].im) != 9) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Could not parse line %d", parser->line_number);
+        return false;
+    }
+
+    if (++ctx->current_theta >= ctx->fml->fmats[i].n_theta) {
+        ctx->matrices_allocated++;
+        ctx->state = FML_STATE_NEXT_SCAT_PLANE;
+    }
+
+    return true;
+}
+
+static bool detscat_parser_next_scat_plane_fml(DetScatParserFmlContext *ctx) {
+    assert(ctx);
+
+    if (++ctx->current_plane < ctx->fml->n_fmats) {
+        ctx->state = FML_STATE_ALLOC_SCAT_PLANE;
+    } else {
+        ctx->state = FML_STATE_DONE;
+    }
+    return true;
+}
+
+static bool detscat_parser_parse_line_fml(DetScatParserFmlContext *ctx,
+                                          DetScatParser *parser) {
+    assert(parser && ctx);
+
+    char *trimmed = detscat_str_raw_trim(parser->current_line.data);
+    if (trimmed[0] == '\0') return true;
+
+    switch (ctx->state) {
+        case FML_STATE_INITIAL:
+            if (!detscat_parser_initial_fml(ctx, parser)) goto error_cleanup;
+            // fall through
+
+        case FML_STATE_FIND_HEADER:
+            if (!detscat_parser_find_header_fml(trimmed, ctx, parser))
+                goto error_cleanup;
+            return true;
+
+        case FML_STATE_ALLOC_FMATS:
+            if (!detscat_parser_alloc_fmats_fml(ctx, parser))
+                goto error_cleanup;
+            // fall through
+
+        case FML_STATE_ALLOC_SCAT_PLANE:
+            if (!detscat_parser_alloc_scat_plane_fml(ctx, parser))
+                goto error_cleanup;
+            // fall through
+
+        case FML_STATE_READ_VALUES:
+            if (!detscat_parser_read_values_fml(trimmed, ctx, parser))
+                goto error_cleanup;
+            return true;
+
+        case FML_STATE_NEXT_SCAT_PLANE:
+            detscat_parser_next_scat_plane_fml(ctx);
+            return true;
+
+        case FML_STATE_DONE:
+            return true;
+    }
+    return false;  // should not reach
+
+error_cleanup:
+    detscat_ddscat_fml_free_subset(ctx->fml, ctx->matrices_allocated);
+    return false;
+}
 
 // --- Internal helpers (SHARED) ---
 DetScatParser *detscat_parser_create(DetScatParserType type) {
@@ -1029,8 +1362,8 @@ void detscat_parser_destroy(DetScatParser **parser) {
 }
 
 bool detscat_parser_init(DetScatParser *parser, const char *file_path,
-                         void *context) {
-    assert(parser && context);
+                         void *ctx) {
+    assert(parser && ctx);
 
     if (!file_path || !*file_path) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
@@ -1048,7 +1381,7 @@ bool detscat_parser_init(DetScatParser *parser, const char *file_path,
 
     assert(parser->type >= 0 && parser->type < DETSCAT_PARSER_TYPE_COUNT);
     uint32_t expected = expected_magic[parser->type];
-    uint32_t actual = context ? *(uint32_t *)context : 0;
+    uint32_t actual = ctx ? *(uint32_t *)ctx : 0;
 
     if (actual != expected) {
         fclose(parser->stream);
@@ -1058,61 +1391,7 @@ bool detscat_parser_init(DetScatParser *parser, const char *file_path,
                          detscat_parser_type_repr(parser->type));
         return false;
     }
-    parser->context = context;
-
-    return true;
-}
-
-bool detscat_parser_reset(DetScatParser *parser, const char *file_path,
-                          void *context) {
-    /* The reset function intentionally leaves the parser in an
-     * invalid yet reusable state on failure. In such cases,
-     * it is safe to either call reset again or destroy the parser. */
-    assert(parser && context);
-
-    if (!file_path || !*file_path) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-                         "Invalid file path for resetting parser");
-        return false;
-    }
-
-    if (parser->stream) {
-        fclose(parser->stream);
-        parser->stream = NULL;
-    }
-
-    detscat_str_free(&parser->current_line);
-    if (!detscat_str_init(&parser->current_line) ||
-        !detscat_str_reserve(&parser->current_line, DETSCAT_PARSER_LINE_INIT)) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_MEMORY,
-                         "Memory reset for parser line buffer failed");
-        return false;
-    }
-
-    assert(parser->type >= 0 && parser->type < DETSCAT_PARSER_TYPE_COUNT);
-    uint32_t expected = expected_magic[parser->type];
-    uint32_t actual = context ? *(uint32_t *)context : 0;
-
-    if (actual != expected) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
-                         "Invalid context for %s",
-                         detscat_parser_type_repr(parser->type));
-        return false;
-    }
-    parser->context = context;
-
-    errno = 0;
-    parser->stream = fopen(file_path, "r");
-    if (!parser->stream) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FILE,
-                         "Could not open '%s': %s", file_path, strerror(errno));
-        return false;
-    }
-
-    parser->line_number = 0;
-    parser->status = DETSCAT_PARSER_OK;
-    parser->eof = false;
-    parser->error_message[0] = '\0';
+    parser->context = ctx;
 
     return true;
 }
@@ -1140,7 +1419,9 @@ bool detscat_parser_next_line(DetScatParser *parser) {
 
     if (!parser->context ||
         expected_magic[parser->type] != *(uint32_t *)parser->context) {
-        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_CONTEXT, "Invalid context");
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_CONTEXT,
+                         "Invalid parser context for %s",
+                         detscat_parser_type_repr(parser->type));
         return false;
     }
 
@@ -1187,7 +1468,6 @@ bool detscat_parser_next_line(DetScatParser *parser) {
 
 bool detscat_parser_parse_line(DetScatParser *parser) {
     assert(parser);
-
     assert(parser->stream);
     assert(parser->context);
     STR_ASSERT_VALID(&parser->current_line);
@@ -1199,15 +1479,30 @@ bool detscat_parser_parse_line(DetScatParser *parser) {
             assert(expected_magic[DETSCAT_CFG] == *(uint32_t *)parser->context);
             DetScatParserCfgContext *ctx =
                 (DetScatParserCfgContext *)(parser->context);
-            return detscat_parser_parse_line_cfg(parser, ctx);
+            return detscat_parser_parse_line_cfg(ctx, parser);
         }
 
         case DETSCAT_PRT: {
             assert(expected_magic[DETSCAT_PRT] == *(uint32_t *)parser->context);
             DetScatParserPrtContext *ctx =
                 (DetScatParserPrtContext *)(parser->context);
-            return detscat_parser_parse_line_prt(parser, ctx);
+            return detscat_parser_parse_line_prt(ctx, parser);
         }
+
+        case DETSCAT_PAR: {
+            assert(expected_magic[DETSCAT_PAR] == *(uint32_t *)parser->context);
+            DetScatParserParContext *ctx =
+                (DetScatParserParContext *)(parser->context);
+            return detscat_parser_parse_line_par(ctx, parser);
+        }
+
+        case DETSCAT_FML: {
+            assert(expected_magic[DETSCAT_FML] == *(uint32_t *)parser->context);
+            DetScatParserFmlContext *ctx =
+                (DetScatParserFmlContext *)(parser->context);
+            return detscat_parser_parse_line_fml(ctx, parser);
+        }
+
         default:
             PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_TYPE,
                              "Invalid parser type");
@@ -1216,9 +1511,8 @@ bool detscat_parser_parse_line(DetScatParser *parser) {
 }
 
 bool detscat_parser_check_final_state_prt(DetScatParser *parser,
-                                          const char *file_path,
-                                          void *context) {
-    assert(parser && context);
+                                          const char *file_path, void *ctx) {
+    assert(parser && ctx);
 
     if (!file_path || !*file_path) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
@@ -1227,41 +1521,75 @@ bool detscat_parser_check_final_state_prt(DetScatParser *parser,
     }
 
     assert(expected_magic[DETSCAT_PRT] == *(uint32_t *)parser->context);
-    DetScatParserPrtContext *ctx = (DetScatParserPrtContext *)(parser->context);
+    DetScatParserPrtContext *ctxt =
+        (DetScatParserPrtContext *)(parser->context);
 
-    switch (ctx->state) {
-        case STATE_PARSE_TYPES_DEF:
+    switch (ctxt->state) {
+        case PRT_STATE_PARSE_TYPES_DEF:
             PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
                              "Unexpected end of file: missing $(EndTypes)");
             break;
 
-        case STATE_PARSE_PARTICLES_DEF:
+        case PRT_STATE_PARSE_PARTICLES_DEF:
             PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
                              "Unexpected end of file: missing $(EndParticles)");
             break;
 
         default: {
-            const char* error_message;
-            if (!ctx->types_parsed || !ctx->particles_parsed) {
-
-                if (!ctx->types_parsed && !ctx->particles_parsed) {
-                    error_message = "Missing sections: $(StartTypes) and $(StartParticles)";
-                } else if (!ctx->types_parsed) {
+            const char *error_message;
+            if (!ctxt->types_parsed || !ctxt->particles_parsed) {
+                if (!ctxt->types_parsed && !ctxt->particles_parsed) {
+                    error_message =
+                        "Missing sections: $(StartTypes) and $(StartParticles)";
+                } else if (!ctxt->types_parsed) {
                     error_message = "Missing section: $(StartTypes)";
                 } else {
                     error_message = "Missing section: $(StartParticles)";
                 }
-                PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
-                                 "%s", error_message);
+                PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT, "%s",
+                                 error_message);
                 break;
             }
             return true;
         }
     }
 
-    detscat_prt_free_subset(ctx->prt, ctx->types_allocated, ctx->particles_allocated);
-
+    detscat_prt_free_subset(ctxt->prt, ctxt->types_allocated,
+                            ctxt->particles_allocated);
     return false;
+}
+
+bool detscat_parser_check_final_state_par(DetScatParser *parser,
+                                          const char *file_path, void *ctx) {
+    assert(parser && ctx);
+
+    if (!file_path || !*file_path) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Function argument 'file_path' is invalid");
+        return false;
+    }
+
+    assert(expected_magic[DETSCAT_PAR] == *(uint32_t *)parser->context);
+    DetScatParserParContext *ctxt =
+        (DetScatParserParContext *)(parser->context);
+
+    if (ctxt->components_allocated != ctxt->par->n_components) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Expected %zu components but got %zu",
+                         ctxt->par->n_components, ctxt->components_allocated);
+        detscat_ddscat_par_free_subset(ctxt->par, ctxt->components_allocated);
+        return false;
+    }
+
+    if (ctxt->scat_planes_parsed != ctxt->par->n_scat_planes) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Expected %zu scattering planes but got %zu",
+                         ctxt->par->n_scat_planes, ctxt->scat_planes_parsed);
+        detscat_ddscat_par_free_subset(ctxt->par, ctxt->components_allocated);
+        return false;
+    }
+
+    return true;
 }
 
 const char *detscat_parser_type_repr(DetScatParserType type) {

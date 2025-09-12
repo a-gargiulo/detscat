@@ -3,13 +3,18 @@
 
 #include <stdbool.h>
 
-/* Main DetScat context */
+/* ==========================================================================
+ * Main DetScat context 
+ * ========================================================================== */
 typedef struct DetScat DetScat;
 
 /* Error tracking */
 typedef struct DetScatError DetScatError;
 
-/* DetScat program status*/
+
+/* ==========================================================================
+ * DetScat program status codes 
+ * ========================================================================== */
 typedef enum {
     DETSCAT_OK,
     DETSCAT_ERR_CMD_ARG,
@@ -25,7 +30,10 @@ typedef enum {
     DETSCAT_STATUS_COUNT
 } DetScatStatus;
 
-/* Log levels */
+
+/* ==========================================================================
+ * Logging levels
+ * ========================================================================== */
 typedef enum {
     DETSCAT_DEBUG,
     DETSCAT_INFO,
@@ -33,30 +41,44 @@ typedef enum {
     DETSCAT_ERROR
 } DetScatLogLevel;
 
-// --- DetScat ---
-DetScat *detscat_create(const char* cfg_file_path, DetScatError *err);
+
+/* ==========================================================================
+ * Core functions 
+ * ========================================================================== */
+
+/* Detscat context lifecycle */
+bool detscat_init(DetScat *detscat, const char* cfg_file_path, DetScatError *err);
 void detscat_destroy(DetScat **detscat);
+
+/* Load simulation data */
 bool detscat_load_data(DetScat* detscat, DetScatError* err);
 
+/* Inspect data */
 void detscat_print_cfg(const DetScat *detscat);
+void detscat_print_prt(const DetScat *detscat);
+void detscat_print_ddscat(const DetScat *detscat);
 
-// --- System ---
-bool detscat_init(DetScatError *err);
+
+/* ==========================================================================
+ * System level functions
+ * ========================================================================== */
+bool detscat_system_init(DetScatError *err);
 void detscat_shutdown(void);
 
-// --- Error tracking ---
+
+/* ==========================================================================
+ * Error tracking
+ * ========================================================================== */
 DetScatError *detscat_error_create(void);
 void detscat_error_destroy(DetScatError **err);
 DetScatStatus detscat_error_status(const DetScatError *err);
 const char *detscat_error_message(const DetScatError *err);
 
-// --- Logging ---
+
+/* ==========================================================================
+ * Logging
+ * ========================================================================== */
 void detscat_log(DetScatLogLevel level, const char *fmt, ...);
 void detscat_log_error(const DetScatError *err);
-
-
-
-// void detscat_data_free(DetScat *detscat);
-
 
 #endif  //  DETSCAT_H

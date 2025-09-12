@@ -20,24 +20,24 @@ char *detscat_str_raw_strdup(const char *s);
 int detscat_str_raw_strcasecmp(const char *s1, const char *s2);
 
 bool detscat_str_init(Str *s);
+bool detscat_str_init_fmt(Str *s, const char *fmt, ...);
 void detscat_str_free(Str *s);
 bool detscat_str_reserve(Str *s, size_t needed_cap);
 bool detscat_str_set(Str *s, const char *src);
 bool detscat_str_copy(Str *dst, const Str *src);
-bool detscat_str_append(Str *s, const char *suffix);
+bool detscat_str_append_str(Str *s, const Str *other);
+bool detscat_str_append_cstr(Str *s, const char *cstr);
 bool detscat_str_append_char(Str *s, char c);
 bool detscat_str_is_valid(const Str *s);
 
-#define STR_ASSERT_VALID(s) do { \
-    assert((s) != NULL); \
-    assert((s)->capacity > 0); \
-    assert((s)->capacity <= STR_MAX_CAP); \
-    assert((s)->length < (s)->capacity); \
-    assert((s)->data != NULL); \
-    assert((s)->data[(s)->length] == '\0'); \
-} while (0)
-
-
-
+#define STR_ASSERT_VALID(s)                     \
+    do {                                        \
+        assert((s) != NULL);                    \
+        assert((s)->capacity > 0);              \
+        assert((s)->capacity <= STR_MAX_CAP);   \
+        assert((s)->length < (s)->capacity);    \
+        assert((s)->data != NULL);              \
+        assert((s)->data[(s)->length] == '\0'); \
+    } while (0)
 
 #endif  // DETSCAT_STR_H

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 // --- Internal helpers (PRIVATE) ---
 static void detscat_prt_clear_types(DetScatPrt *prt, size_t count) {
     if (!prt || !prt->types) return;
@@ -40,28 +41,15 @@ static void detscat_prt_clear_particles(DetScatPrt *prt, size_t count) {
 }
 
 // --- Internal helpers (SHARED) ---
-DetScatPrt *detscat_prt_create(DetScatError *err) {
-    DetScatPrt *prt = calloc(1, sizeof(*prt));
-    if (!prt) {
-        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
-                          "Failed to allocate memory for prt data");
-        return NULL;
-    }
+void detscat_prt_destroy(DetScatPrt *prt) {
+    if (!prt) return;
 
-    return prt;
-}
+    detscat_prt_clear_types(prt, prt->n_types);
+    detscat_prt_clear_particles(prt, prt->n_particles);
 
-void detscat_prt_destroy(DetScatPrt **prt) {
-    if (!prt || !*prt) return;
+    prt->n_types = 0;
+    prt->n_particles = 0;
 
-    detscat_prt_clear_types(*prt, (*prt)->n_types);
-    detscat_prt_clear_particles(*prt, (*prt)->n_particles);
-
-    (*prt)->n_types = 0;
-    (*prt)->n_particles = 0;
-
-    free(*prt); 
-    *prt = NULL;
 }
 
 void detscat_prt_free_subset(DetScatPrt *prt, size_t types_count,

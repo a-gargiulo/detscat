@@ -3,48 +3,35 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h>
 
 #include "detscat.h"
 #include "detscat_math.h"
 #include "detscat_str.h"
 
-#define DETSCAT_DDSCAT_LINE_MAX 1024
-
-/**
- * wxxxryyykzzz.fml - 16 bytes
- */
-#define DETSCAT_DDSCAT_FML_FILENAME_LEN 16
-
-/**
- * ddscat.par - 10 bytes
- */
-#define DETSCAT_DDSCAT_PAR_FILENAME_LEN 10
-
 struct DetScatPrt;
-
 
 typedef double Plane[4];
 
 typedef struct {
-    ComplexVec3 e01;       // Incident light polarization basis vector
-    Str *components;       // Component names
-    Plane *scat_planes;    // Scattering plane parameters
-    size_t n_components;   // Number of components forming the target
-    size_t n_scat_planes;  // Number of scattering planes
+    ComplexVec3 e01;
+    Str *components;
+    Plane *scat_planes;
+    size_t n_components;
+    size_t n_scat_planes;
 } DetScatDdscatParams;
 
 typedef struct {
-    double phi;      // Azimuthal angle
-    double *theta;   // Scattering angles
-    Complex *f11;    // Scattering matrix component f11
-    Complex *f21;    // Scattering matrix component f21
-    Complex *f12;    // Scattering matrix component f12
-    Complex *f22;    // Scattering matrix component f22
-    size_t n_theta;  // Number of scattering angles, theta
+    double phi;
+    double *theta;
+    Complex *f11;
+    Complex *f21;
+    Complex *f12;
+    Complex *f22;
+    size_t n_theta;
 } DetScatDdscatFmatrix;
 
 typedef struct {
+    size_t refcount;  // for safe freeing after caching
     DetScatDdscatFmatrix *fmats;
     size_t n_fmats;
 } DetScatDdscatFml;
@@ -58,17 +45,16 @@ typedef struct {
     size_t *par_idxs;
 } DetScatDdscat;
 
-DetScatDdscat *detscat_ddscat_create(size_t n_pars, size_t n_fmls, size_t n_par_idxs, DetScatError *err);
-
-void detscat_ddscat_destroy(DetScatDdscat **ddscat);
-void detscat_ddscat_par_clear(DetScatDdscatParams *par);
-void detscat_ddscat_fml_clear(DetScatDdscatFml *fml);
-
-bool detscat_ddscat_par_load(const char *par_file_path, DetScatDdscatParams *par,
-                             DetScatError *err);
-
+bool detscat_ddscat_init(DetScatDdscat *ddscat, size_t n_pars, size_t n_fmls,
+                         size_t n_par_idxs, DetScatError *err);
+void detscat_ddscat_destroy(DetScatDdscat *ddscat);
+void detscat_ddscat_par_free(DetScatDdscatParams *par);
+void detscat_ddscat_par_free_subset(DetScatDdscatParams *par, size_t count);
+void detscat_ddscat_fml_free(DetScatDdscatFml *fml);
+void detscat_ddscat_fml_free_subset(DetScatDdscatFml *fml, size_t count);
+bool detscat_ddscat_par_load(const char *par_file_path,
+                             DetScatDdscatParams *par, DetScatError *err);
 bool detscat_ddscat_fml_load(const char *fml_file_path, DetScatDdscatFml *fml,
                              DetScatDdscatParams *par, DetScatError *err);
-
 
 #endif  // DETSCAT_DDSCAT_H

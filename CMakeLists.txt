@@ -20,22 +20,30 @@ add_executable(detscat
     "${PROJECT_SOURCE_DIR}/src/detscat_cfg.c" 
     "${PROJECT_SOURCE_DIR}/src/detscat_prt.c" 
     "${PROJECT_SOURCE_DIR}/src/detscat_load.c" 
+    "${PROJECT_SOURCE_DIR}/src/detscat_ddscat.c" 
 )
 
 
 target_include_directories(
     detscat
     PRIVATE "${PROJECT_SOURCE_DIR}/include" 
+    PRIVATE "/opt/homebrew/opt/libomp/include"
 )
 
-find_package(OpenMP REQUIRED)
-if(OpenMP_C_FOUND)
-    target_compile_options(detscat PRIVATE ${OpenMP_C_FLAGS})
-    target_link_libraries(detscat PRIVATE ${OpenMP_C_LIBRARIES})
-endif()
+target_link_directories(
+    detscat
+    PRIVATE "/opt/homebrew/opt/libomp/lib"
+)
 
-target_compile_options(detscat PRIVATE -Wall -Wextra -pedantic)
+target_link_libraries(
+    detscat
+    PRIVATE omp
+)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(detscat PRIVATE -O0 -g)
-endif()
+# find_package(OpenMP REQUIRED)
+# if(OpenMP_C_FOUND)
+#     target_compile_options(detscat PRIVATE ${OpenMP_C_FLAGS})
+#     target_link_libraries(detscat PRIVATE ${OpenMP_C_LIBRARIES})
+# endif()
+
+target_compile_options(detscat PRIVATE -Wall -Wextra -Wno-gnu-zero-variadic-macro-arguments -pedantic -O0 -g)

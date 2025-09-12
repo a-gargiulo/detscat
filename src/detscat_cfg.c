@@ -10,29 +10,22 @@
 #include <stdlib.h>
 
 // --- Internal helpers (SHARED) ---
-DetScatConfig *detscat_cfg_create(DetScatError *err) {
-    DetScatConfig *cfg = calloc(1, sizeof(*cfg));
-    if (!cfg) goto cleanup;
+bool detscat_cfg_init(DetScatConfig *cfg, DetScatError *err) {
+    assert(cfg);
 
     if (!detscat_str_init(&cfg->particles_file_path) ||
         !detscat_str_reserve(&cfg->particles_file_path,
                              DETSCAT_CFG_PATH_INIT)) {
         detscat_str_free(&cfg->particles_file_path);
-        goto cleanup;
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                          "Failed to allocate memory for cfg data");
+        return false;
     }
 
-    return cfg;
-
-cleanup:
-    free(cfg);
-    DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
-                     "Failed to allocate memory for cfg data");
-    return NULL;
+    return true;
 }
 
-void detscat_cfg_destroy(DetScatConfig **cfg) {
-    if (!cfg || !*cfg) return;
-    detscat_str_free(&(*cfg)->particles_file_path);
-    free(*cfg);
-    *cfg = NULL;
+void detscat_cfg_destroy(DetScatConfig *cfg) {
+    if (!cfg) return;
+    detscat_str_free(&cfg->particles_file_path);
 }
