@@ -109,6 +109,10 @@ static void detscat_cache_fml(DetScatFmlCache *cache, Str *type_id,
 
 static void detscat_cache_destroy_fml(DetScatFmlCache *cache) {
     if (!cache) return;
+
+    for (size_t i = 0; i < cache->n_entries; ++i) {
+        detscat_str_free(&cache->entries[i].type_id);
+    }
     free(cache->entries);  // free only the array of entries
     cache->entries = NULL;
     cache->n_entries = 0;
@@ -215,7 +219,7 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
             DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
                               "Could not allocate memory for .par file path");
             detscat_str_free(&par_file_path);
-        };
+        }
 
         if (!detscat_ddscat_par_load(par_file_path.data,
                                      &detscat->ddscat.pars[i], err)) {
@@ -255,6 +259,8 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         }
 
         // check cache
+        // for each particle, check if type_id and case_id were cached
+        // retrieve corresponding fml file --> pointer to fml struct
         DetScatDdscatFml *cached_fml = detscat_get_cached_fml(
             &fml_cache, &detscat->prt.particles[i].type_id,
             &detscat->prt.particles[i].case_id);
@@ -262,11 +268,23 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         if (cached_fml) {
             detscat_fml_acquire(cached_fml);
             // reuse cached fml
-            detscat->ddscat.fmls[i] = *cached_fml;
+            detscat->ddscat.fmls[i] = cached_fml; // cache was wrongly copied before
         } else {
+            // allocate fml struct on demand
+            DetScatDdscatFml *new_fml = calloc(1, sizeof(*new_fml));
+            if (!new_fml) {
+                DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                                  "Could not allocate memory for temporary fml handle");
+                detscat_str_free(&fml_file_path);
+                goto cleanup_ddscat;
+            }
+
+            // new_fml->refcount = 1
+
             if (!detscat_ddscat_fml_load(fml_file_path.data,
-                                         &detscat->ddscat.fmls[i],
+                                         new_fml,
                                          &detscat->ddscat.pars[idx], err)) {
+                free(new_fml);
                 detscat_str_free(&fml_file_path);
                 goto cleanup_ddscat;
             }
@@ -274,7 +292,8 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
             // store in cache for future reuse
             detscat_cache_fml(&fml_cache, &detscat->prt.particles[i].type_id,
                               &detscat->prt.particles[i].case_id,
-                              &detscat->ddscat.fmls[i]);
+                              new_fml);
+            detscat->ddscat.fmls[i] = new_fml;
         }
 
         detscat_str_free(&fml_file_path);
@@ -393,22 +412,22 @@ void detscat_print_ddscat(const DetScat *detscat) {
     }
 
     for (size_t i = 0; i < detscat->ddscat.n_fmls; ++i) {
-        for (size_t j = 0; j < detscat->ddscat.fmls[i].n_fmats; ++j) {
-            for (size_t k = 0; k < detscat->ddscat.fmls[i].fmats[j].n_theta;
+        for (size_t j = 0; j < detscat->ddscat.fmls[i]->n_fmats; ++j) {
+            for (size_t k = 0; k < detscat->ddscat.fmls[i]->fmats[j].n_theta;
                  ++k) {
                 printf(
                     "%.1lf %.1lf %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e "
                     "%10.3e %10.3e\n",
-                    detscat->ddscat.fmls[i].fmats[j].theta[k],
-                    detscat->ddscat.fmls[i].fmats[j].phi,
-                    detscat->ddscat.fmls[i].fmats[j].f11[k].re,
-                    detscat->ddscat.fmls[i].fmats[j].f11[k].im,
-                    detscat->ddscat.fmls[i].fmats[j].f21[k].re,
-                    detscat->ddscat.fmls[i].fmats[j].f21[k].im,
-                    detscat->ddscat.fmls[i].fmats[j].f12[k].re,
-                    detscat->ddscat.fmls[i].fmats[j].f12[k].im,
-                    detscat->ddscat.fmls[i].fmats[j].f22[k].re,
-                    detscat->ddscat.fmls[i].fmats[j].f22[k].im);
+                    detscat->ddscat.fmls[i]->fmats[j].theta[k],
+                    detscat->ddscat.fmls[i]->fmats[j].phi,
+                    detscat->ddscat.fmls[i]->fmats[j].f11[k].re,
+                    detscat->ddscat.fmls[i]->fmats[j].f11[k].im,
+                    detscat->ddscat.fmls[i]->fmats[j].f21[k].re,
+                    detscat->ddscat.fmls[i]->fmats[j].f21[k].im,
+                    detscat->ddscat.fmls[i]->fmats[j].f12[k].re,
+                    detscat->ddscat.fmls[i]->fmats[j].f12[k].im,
+                    detscat->ddscat.fmls[i]->fmats[j].f22[k].re,
+                    detscat->ddscat.fmls[i]->fmats[j].f22[k].im);
             }
         }
     }

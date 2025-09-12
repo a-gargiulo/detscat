@@ -95,6 +95,8 @@ void detscat_ddscat_fml_free(DetScatDdscatFml *fml) {
     }
 
     fml->n_fmats = 0;
+
+    free(fml);
 }
 
 void detscat_ddscat_destroy(DetScatDdscat *ddscat) {
@@ -110,7 +112,9 @@ void detscat_ddscat_destroy(DetScatDdscat *ddscat) {
 
     if (ddscat->fmls) {
         for (size_t i = 0; i < ddscat->n_fmls; ++i) {
-            detscat_ddscat_fml_free(&ddscat->fmls[i]);
+            if (ddscat->fmls[i]) {
+                detscat_ddscat_fml_free(ddscat->fmls[i]);
+            }
         }
         free(ddscat->fmls);
         ddscat->fmls = NULL;

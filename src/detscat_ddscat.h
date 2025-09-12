@@ -41,7 +41,7 @@ typedef struct {
     size_t n_fmls;
     size_t n_par_idxs;
     DetScatDdscatParams *pars;
-    DetScatDdscatFml *fmls;
+    DetScatDdscatFml **fmls;  // "array of pointers to fml structs", double pointer due to caching
     size_t *par_idxs;
 } DetScatDdscat;
 
