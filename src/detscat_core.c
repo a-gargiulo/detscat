@@ -97,8 +97,10 @@ static DetScatDdscatFml *detscat_get_cached_fml(DetScatFmlCache *cache,
 static void detscat_cache_fml(DetScatFmlCache *cache, Str *type_id,
                               DetScatPrtCaseId *case_id,
                               DetScatDdscatFml *fml) {
+
     cache->entries = realloc(
         cache->entries, sizeof(DetScatFmlCacheEntry) * (cache->n_entries + 1));
+    cache->entries[cache->n_entries].type_id = (Str){0};
     detscat_str_copy(&cache->entries[cache->n_entries].type_id, type_id);
     cache->entries[cache->n_entries].case_id.w = case_id->w;
     cache->entries[cache->n_entries].case_id.r = case_id->r;
