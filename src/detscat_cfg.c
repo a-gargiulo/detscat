@@ -6,6 +6,7 @@
 #include "detscat_limits.h"
 #include "detscat_str.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 

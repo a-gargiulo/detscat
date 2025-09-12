@@ -10,7 +10,7 @@
 
 // --- Internal helpers (SHARED)
 bool detscat_ddscat_init(DetScatDdscat *ddscat, size_t n_pars, size_t n_fmls,
-                           size_t n_par_idxs, DetScatError *err) {
+                         size_t n_par_idxs, DetScatError *err) {
     assert(ddscat);
 
     if (!n_pars || !n_fmls || !n_par_idxs) {

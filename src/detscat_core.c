@@ -123,7 +123,7 @@ static void detscat_fml_acquire(DetScatDdscatFml *fml) {
 }
 
 // --- Public API ---
-bool detscat_system_init(DetScatError *err) {
+bool detscat_init(DetScatError *err) {
     detscat_log_init_lock();
     detscat_banner_print(NULL);
     return true;
@@ -133,24 +133,36 @@ void detscat_shutdown(void) {
     detscat_log_destroy_lock();
 }
 
-bool detscat_init(DetScat *detscat, const char *cfg_file_path, DetScatError *err) {
+DetScat *detscat_create(const char *cfg_file_path, DetScatError *err) {
     if (!cfg_file_path || !*cfg_file_path) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG,
                           "Invalid cfg file path");
         return NULL;
     }
 
-    detscat->cfg_file_path = cfg_file_path;
-
-    // CFG
-    if (!detscat_cfg_init(&detscat->cfg, err)) return false;
-
-    if (!detscat_cfg_load(cfg_file_path, &detscat->cfg, err)) {
-        detscat_cfg_destroy(&detscat->cfg);
-        return false;
+    DetScat *detscat = calloc(1, sizeof(*detscat));
+    if (!detscat) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                          "Could not allocate memory for DetScat context");
+        return NULL;
     }
 
-    return true;
+    detscat->cfg_file_path = cfg_file_path;
+    detscat->cfg = (DetScatConfig){0};
+    detscat->prt = (DetScatPrt){0};
+    detscat->ddscat = (DetScatDdscat){0};
+
+    if (!detscat_cfg_init(&detscat->cfg, err)) goto error_cleanup;
+
+    if (!detscat_cfg_load(cfg_file_path, &detscat->cfg, err))
+        goto error_cleanup;
+
+    return detscat;
+
+error_cleanup:
+    detscat_cfg_destroy(&detscat->cfg);
+    free(detscat);
+    return NULL;
 }
 
 void detscat_destroy(DetScat **detscat) {
@@ -165,39 +177,36 @@ void detscat_destroy(DetScat **detscat) {
 }
 
 bool detscat_load_data(DetScat *detscat, DetScatError *err) {
-    assert(detscat && detscat->cfg);
+    assert(detscat);
 
-    if (!detscat || !detscat->cfg) {
+    if (!detscat) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG,
-                          "DetScat object is empty or corrupted");
+                          "DetScat object does not exist / is null");
         return false;
     }
 
-    if (!detscat->cfg->particles_file_path.data ||
-        !*detscat->cfg->particles_file_path.data) {
+    if (!detscat->cfg.particles_file_path.data ||
+        !*detscat->cfg.particles_file_path.data) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_INVALID_ARG,
                           "Invalid particles file path");
         return false;
     }
-    const char *prt_file_path = detscat->cfg->particles_file_path.data;
+    const char *prt_file_path = detscat->cfg.particles_file_path.data;
 
     // PRT
-    detscat->prt = detscat_prt_create(err);
-    if (!detscat->prt) goto cleanup;
-    if (!detscat_prt_load(prt_file_path, detscat->prt, err)) goto cleanup;
+    if (!detscat_prt_load(prt_file_path, &detscat->prt, err)) goto cleanup;
 
     // DDSCAT
     DetScatFmlCache fml_cache = {0};
 
-    size_t n_pars = detscat->prt->n_types;
-    size_t n_fmls = detscat->prt->n_particles;
-    size_t n_par_idxs = detscat->prt->n_particles;
-    detscat->ddscat = detscat_ddscat_create(n_pars, n_fmls, n_par_idxs, err);
-    if (!detscat->ddscat) goto cleanup_ddscat;
+    size_t n_pars = detscat->prt.n_types;
+    size_t n_fmls = detscat->prt.n_particles;
+    size_t n_par_idxs = detscat->prt.n_particles;
+    if (!detscat_ddscat_init(&detscat->ddscat, n_pars, n_fmls, n_par_idxs, err)) goto cleanup_ddscat;
 
     // PARS
     for (size_t i = 0; i < n_pars; ++i) {
-        const char *par_dir = detscat->prt->types[i].data_dir.data;
+        const char *par_dir = detscat->prt.types[i].data_dir.data;
 
         Str par_file_path = {0};
         detscat_str_init_fmt(
@@ -205,51 +214,51 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
             (par_dir[0] && par_dir[strlen(par_dir) - 1] != '/') ? "/" : "");
 
         if (!detscat_ddscat_par_load(par_file_path.data,
-                                     &detscat->ddscat->pars[i], err))
+                                     &detscat->ddscat.pars[i], err))
             goto cleanup_ddscat;
     }
 
     // FMLS + PAR_IDXS
-    for (size_t i = 0; i < detscat->prt->n_particles; ++i) {
+    for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
         size_t idx;
-        if (!find_type_index(detscat->prt,
-                             detscat->prt->particles[i].type_id.data, &idx)) {
+        if (!find_type_index(&detscat->prt,
+                             detscat->prt.particles[i].type_id.data, &idx)) {
             DETSCAT_SET_ERROR(err, DETSCAT_ERR_KEY_LOOKUP,
                               "Particle type '%s' not found in definitions",
-                              detscat->prt->particles[i].type_id.data);
+                              detscat->prt.particles[i].type_id.data);
             goto cleanup_ddscat;
         }
-        detscat->ddscat->par_idxs[i] = idx;
+        detscat->ddscat.par_idxs[i] = idx;
 
-        const char *fml_dir = detscat->prt->types[idx].data_dir.data;
+        const char *fml_dir = detscat->prt.types[idx].data_dir.data;
 
         Str fml_file_path = {0};
         detscat_str_init_fmt(
             &fml_file_path, "%s%sw%03dr%03dk%03d.fml", fml_dir,
             (fml_dir[0] && fml_dir[strlen(fml_dir) - 1] != '/') ? "/" : "",
-            detscat->prt->particles[i].case_id.w,
-            detscat->prt->particles[i].case_id.r,
-            detscat->prt->particles[i].case_id.k);
+            detscat->prt.particles[i].case_id.w,
+            detscat->prt.particles[i].case_id.r,
+            detscat->prt.particles[i].case_id.k);
 
         // check cache
         DetScatDdscatFml *cached_fml = detscat_get_cached_fml(
-            &fml_cache, &detscat->prt->particles[i].type_id,
-            &detscat->prt->particles[i].case_id);
+            &fml_cache, &detscat->prt.particles[i].type_id,
+            &detscat->prt.particles[i].case_id);
 
         if (cached_fml) {
             detscat_fml_acquire(cached_fml);
             // reuse cached fml
-            detscat->ddscat->fmls[i] = *cached_fml;
+            detscat->ddscat.fmls[i] = *cached_fml;
         } else {
             if (!detscat_ddscat_fml_load(fml_file_path.data,
-                                         &detscat->ddscat->fmls[i],
-                                         &detscat->ddscat->pars[idx], err))
+                                         &detscat->ddscat.fmls[i],
+                                         &detscat->ddscat.pars[idx], err))
                 goto cleanup_ddscat;
 
             // store in cache for future reuse
-            detscat_cache_fml(&fml_cache, &detscat->prt->particles[i].type_id,
-                              &detscat->prt->particles[i].case_id,
-                              &detscat->ddscat->fmls[i]);
+            detscat_cache_fml(&fml_cache, &detscat->prt.particles[i].type_id,
+                              &detscat->prt.particles[i].case_id,
+                              &detscat->ddscat.fmls[i]);
         }
     }
 
@@ -266,10 +275,7 @@ cleanup:
 }
 
 void detscat_print_cfg(const DetScat *detscat) {
-    if (!detscat || !detscat->cfg) {
-        printf("<null config>\n");
-        return;
-    }
+    if (!detscat) return;
 
     printf("\n");
     printf("        Parsed CFG Data:\n");
@@ -277,120 +283,114 @@ void detscat_print_cfg(const DetScat *detscat) {
 
     // For strings, use         %-25s to left-align within 25 chars
     printf("        %-25s: \"%s\"\n", "particles_file_path",
-           detscat->cfg->particles_file_path.data);
+           detscat->cfg.particles_file_path.data);
 
     // For ComplexVec3, align the label
     printf("        %-25s: ", "polarization");
-    complexvec3_print(&detscat->cfg->polarization);
+    complexvec3_print(&detscat->cfg.polarization);
     printf("\n");
 
     // Align doubles
     printf("        %-25s: %10.6f\n", "wavelength_nm",
-           detscat->cfg->wavelength_nm);
+           detscat->cfg.wavelength_nm);
     printf("        %-25s: %10.6f\n", "pulse_energy_mj",
-           detscat->cfg->pulse_energy_mj);
+           detscat->cfg.pulse_energy_mj);
     printf("        %-25s: %10.6f\n", "pulse_width_ns",
-           detscat->cfg->pulse_width_ns);
+           detscat->cfg.pulse_width_ns);
     printf("        %-25s: %10.6f\n", "beam_diameter_mm",
-           detscat->cfg->beam_diameter_mm);
+           detscat->cfg.beam_diameter_mm);
 
     // Bool as string
     printf("        %-25s: %s\n", "is_polarized",
-           detscat->cfg->is_polarized ? "true" : "false");
+           detscat->cfg.is_polarized ? "true" : "false");
 
     // Vec3
     printf("        %-25s: ", "camera_center_position_m");
-    vec3_print(&detscat->cfg->camera_center_position_m);
+    vec3_print(&detscat->cfg.camera_center_position_m);
     printf("\n");
     printf("        %-25s: ", "camera_sensor_normal");
-    vec3_print(&detscat->cfg->camera_sensor_normal);
+    vec3_print(&detscat->cfg.camera_sensor_normal);
     printf("\n");
 
     // More doubles
     printf("        %-25s: %10.6f\n", "focal_length_mm",
-           detscat->cfg->focal_length_mm);
+           detscat->cfg.focal_length_mm);
     printf("        %-25s: %10.6f\n", "sensor_width_mm",
-           detscat->cfg->sensor_width_mm);
+           detscat->cfg.sensor_width_mm);
     printf("        %-25s: %10.6f\n", "sensor_height_mm",
-           detscat->cfg->sensor_height_mm);
+           detscat->cfg.sensor_height_mm);
 
     // Integers
     printf("        %-25s: %6d\n", "camera_resolution_x_px",
-           detscat->cfg->camera_resolution_x_px);
+           detscat->cfg.camera_resolution_x_px);
     printf("        %-25s: %6d\n", "camera_resolution_y_px",
-           detscat->cfg->camera_resolution_y_px);
+           detscat->cfg.camera_resolution_y_px);
 
     printf("\n");
 }
 
 // TODO: expand
 void detscat_print_prt(const DetScat *detscat) {
-    if (!detscat || !detscat->prt) {
-        printf("<null prt>\n");
-        return;
-    }
+    if (!detscat) return; 
 
-    for (size_t i = 0; i < detscat->prt->n_particles; ++i) {
+    for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
         printf("%s %d %d %d %lf %lf %lf\n",
-               detscat->prt->particles[i].type_id.data,
-               detscat->prt->particles[i].case_id.w,
-               detscat->prt->particles[i].case_id.r,
-               detscat->prt->particles[i].case_id.k,
-               detscat->prt->particles[i].position.x,
-               detscat->prt->particles[i].position.y,
-               detscat->prt->particles[i].position.z);
+               detscat->prt.particles[i].type_id.data,
+               detscat->prt.particles[i].case_id.w,
+               detscat->prt.particles[i].case_id.r,
+               detscat->prt.particles[i].case_id.k,
+               detscat->prt.particles[i].position.x,
+               detscat->prt.particles[i].position.y,
+               detscat->prt.particles[i].position.z);
     }
 }
 
 // TODO: expand
 void detscat_print_ddscat(const DetScat *detscat) {
-    if (!detscat || !detscat->ddscat) {
-        printf("<null ddscat>\n");
-        return;
-    }
+    if (!detscat) return; 
 
-    for (size_t i = 0; i < detscat->ddscat->n_pars; ++i) {
+    for (size_t i = 0; i < detscat->ddscat.n_pars; ++i) {
         printf("PAR %zu\n", i);
         printf("\n");
         printf("        %-25s: ", "e01");
-        complexvec3_print(&detscat->ddscat->pars[i].e01);
+        complexvec3_print(&detscat->ddscat.pars[i].e01);
         printf("\n");
 
         printf("        %-25s: %zu\n", "#Components",
-               detscat->ddscat->pars[i].n_components);
-        for (size_t j = 0; j < detscat->ddscat->pars[i].n_components; ++j) {
+               detscat->ddscat.pars[i].n_components);
+        for (size_t j = 0; j < detscat->ddscat.pars[i].n_components; ++j) {
             printf("        %-25s  %s\n", "",
-                   detscat->ddscat->pars[i].components[j].data);
+                   detscat->ddscat.pars[i].components[j].data);
         }
 
         printf("        %-25s: %zu\n", "#Scattering Planes",
-               detscat->ddscat->pars[i].n_scat_planes);
-        for (size_t j = 0; j < detscat->ddscat->pars[i].n_scat_planes; ++j) {
+               detscat->ddscat.pars[i].n_scat_planes);
+        for (size_t j = 0; j < detscat->ddscat.pars[i].n_scat_planes; ++j) {
             printf("        %-25s  %lf %lf %lf %lf\n", "",
-                   detscat->ddscat->pars[i].scat_planes[j][0],
-                   detscat->ddscat->pars[i].scat_planes[j][1],
-                   detscat->ddscat->pars[i].scat_planes[j][2],
-                   detscat->ddscat->pars[i].scat_planes[j][3]);
+                   detscat->ddscat.pars[i].scat_planes[j][0],
+                   detscat->ddscat.pars[i].scat_planes[j][1],
+                   detscat->ddscat.pars[i].scat_planes[j][2],
+                   detscat->ddscat.pars[i].scat_planes[j][3]);
         }
     }
 
-    for (size_t i = 0; i < detscat->ddscat->n_fmls; ++i) {
-        for (size_t j = 0; j < detscat->ddscat->fmls[i].n_fmats; ++j) {
-            for (size_t k = 0; k < detscat->ddscat->fmls[i].fmats[j].n_theta;
+    for (size_t i = 0; i < detscat->ddscat.n_fmls; ++i) {
+        for (size_t j = 0; j < detscat->ddscat.fmls[i].n_fmats; ++j) {
+            for (size_t k = 0; k < detscat->ddscat.fmls[i].fmats[j].n_theta;
                  ++k) {
                 printf(
                     "%.1lf %.1lf %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e "
                     "%10.3e %10.3e\n",
-                    detscat->ddscat->fmls[i].fmats[j].theta[k],
-                    detscat->ddscat->fmls[i].fmats[j].phi,
-                    detscat->ddscat->fmls[i].fmats[j].f11[k].re,
-                    detscat->ddscat->fmls[i].fmats[j].f11[k].im,
-                    detscat->ddscat->fmls[i].fmats[j].f21[k].re,
-                    detscat->ddscat->fmls[i].fmats[j].f21[k].im,
-                    detscat->ddscat->fmls[i].fmats[j].f12[k].re,
-                    detscat->ddscat->fmls[i].fmats[j].f12[k].im,
-                    detscat->ddscat->fmls[i].fmats[j].f22[k].re,
-                    detscat->ddscat->fmls[i].fmats[j].f22[k].im);
+                    detscat->ddscat.fmls[i].fmats[j].theta[k],
+                    detscat->ddscat.fmls[i].fmats[j].phi,
+                    detscat->ddscat.fmls[i].fmats[j].f11[k].re,
+                    detscat->ddscat.fmls[i].fmats[j].f11[k].im,
+                    detscat->ddscat.fmls[i].fmats[j].f21[k].re,
+                    detscat->ddscat.fmls[i].fmats[j].f21[k].im,
+                    detscat->ddscat.fmls[i].fmats[j].f12[k].re,
+                    detscat->ddscat.fmls[i].fmats[j].f12[k].im,
+                    detscat->ddscat.fmls[i].fmats[j].f22[k].re,
+                    detscat->ddscat.fmls[i].fmats[j].f22[k].im);
             }
         }
     }

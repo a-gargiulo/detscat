@@ -47,7 +47,7 @@ typedef enum {
  * ========================================================================== */
 
 /* Detscat context lifecycle */
-bool detscat_init(DetScat *detscat, const char* cfg_file_path, DetScatError *err);
+DetScat *detscat_create(const char* cfg_file_path, DetScatError *err);
 void detscat_destroy(DetScat **detscat);
 
 /* Load simulation data */
@@ -62,7 +62,7 @@ void detscat_print_ddscat(const DetScat *detscat);
 /* ==========================================================================
  * System level functions
  * ========================================================================== */
-bool detscat_system_init(DetScatError *err);
+bool detscat_init(DetScatError *err);
 void detscat_shutdown(void);
 
 

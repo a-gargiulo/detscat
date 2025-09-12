@@ -49,7 +49,6 @@ void detscat_prt_destroy(DetScatPrt *prt) {
 
     prt->n_types = 0;
     prt->n_particles = 0;
-
 }
 
 void detscat_prt_free_subset(DetScatPrt *prt, size_t types_count,
