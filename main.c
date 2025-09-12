@@ -44,6 +44,7 @@ int main(int argc, char **argv) {
 
 
 cleanup:
+    detscat_log(DETSCAT_DEBUG, "Made it here now");
     detscat_destroy(&detscat);
     detscat_error_destroy(&err);
 
