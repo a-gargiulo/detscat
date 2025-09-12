@@ -27,24 +27,24 @@ add_executable(detscat
 target_include_directories(
     detscat
     PRIVATE "${PROJECT_SOURCE_DIR}/include" 
-    # PRIVATE "/opt/homebrew/opt/libomp/include"
+    PRIVATE "/opt/homebrew/opt/libomp/include"
 )
 
-# target_link_directories(
-#     detscat
-#     PRIVATE "/opt/homebrew/opt/libomp/lib"
-# )
+target_link_directories(
+    detscat
+    PRIVATE "/opt/homebrew/opt/libomp/lib"
+)
 
-# target_link_libraries(
-#     detscat
-#     PRIVATE omp
-# )
+target_link_libraries(
+    detscat
+    PRIVATE omp
+)
 
-find_package(OpenMP REQUIRED)
-if(OpenMP_C_FOUND)
-    target_compile_options(detscat PRIVATE ${OpenMP_C_FLAGS})
-    target_link_libraries(detscat PRIVATE ${OpenMP_C_LIBRARIES})
-endif()
+# find_package(OpenMP REQUIRED)
+# if(OpenMP_C_FOUND)
+#     target_compile_options(detscat PRIVATE ${OpenMP_C_FLAGS})
+#     target_link_libraries(detscat PRIVATE ${OpenMP_C_LIBRARIES})
+# endif()
 
-# target_compile_options(detscat PRIVATE -Wall -Wextra -Wno-gnu-zero-variadic-macro-arguments -pedantic -O0 -g)
 target_compile_options(detscat PRIVATE -Wall -Wextra -pedantic -O0 -g)
+# target_compile_options(detscat PRIVATE -Wall -Wextra -pedantic -O0 -g)

@@ -209,13 +209,21 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         const char *par_dir = detscat->prt.types[i].data_dir.data;
 
         Str par_file_path = {0};
-        detscat_str_init_fmt(
+        if (!detscat_str_init_fmt(
             &par_file_path, "%s%sddscat.par", par_dir,
-            (par_dir[0] && par_dir[strlen(par_dir) - 1] != '/') ? "/" : "");
+            (par_dir[0] && par_dir[strlen(par_dir) - 1] != '/') ? "/" : "")) {
+            DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                              "Could not allocate memory for .par file path");
+            detscat_str_free(&par_file_path);
+        };
 
         if (!detscat_ddscat_par_load(par_file_path.data,
-                                     &detscat->ddscat.pars[i], err))
+                                     &detscat->ddscat.pars[i], err)) {
+            detscat_str_free(&par_file_path);
             goto cleanup_ddscat;
+        }
+
+        detscat_str_free(&par_file_path);
     }
 
     // FMLS + PAR_IDXS
@@ -233,12 +241,18 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         const char *fml_dir = detscat->prt.types[idx].data_dir.data;
 
         Str fml_file_path = {0};
-        detscat_str_init_fmt(
+        if (!detscat_str_init_fmt(
             &fml_file_path, "%s%sw%03dr%03dk%03d.fml", fml_dir,
             (fml_dir[0] && fml_dir[strlen(fml_dir) - 1] != '/') ? "/" : "",
             detscat->prt.particles[i].case_id.w,
             detscat->prt.particles[i].case_id.r,
-            detscat->prt.particles[i].case_id.k);
+            detscat->prt.particles[i].case_id.k)) {
+            
+            DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                              "Could not allocate memory for .fml file path");
+            detscat_str_free(&fml_file_path);
+            goto cleanup_ddscat;
+        }
 
         // check cache
         DetScatDdscatFml *cached_fml = detscat_get_cached_fml(
@@ -252,14 +266,18 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         } else {
             if (!detscat_ddscat_fml_load(fml_file_path.data,
                                          &detscat->ddscat.fmls[i],
-                                         &detscat->ddscat.pars[idx], err))
+                                         &detscat->ddscat.pars[idx], err)) {
+                detscat_str_free(&fml_file_path);
                 goto cleanup_ddscat;
+            }
 
             // store in cache for future reuse
             detscat_cache_fml(&fml_cache, &detscat->prt.particles[i].type_id,
                               &detscat->prt.particles[i].case_id,
                               &detscat->ddscat.fmls[i]);
         }
+
+        detscat_str_free(&fml_file_path);
     }
 
     detscat_cache_destroy_fml(&fml_cache);
