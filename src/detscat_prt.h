@@ -32,7 +32,7 @@ typedef struct DetScatPrt {
     size_t n_particles;
 } DetScatPrt;
 
-void detscat_prt_destroy(DetScatPrt *prt);
+void detscat_prt_free(DetScatPrt *prt);
 bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
                       DetScatError *err);
 void detscat_prt_free_subset(DetScatPrt *prt, size_t types_count,

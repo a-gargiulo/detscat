@@ -12,7 +12,7 @@
  *    - detscat_parser_parse_int_cfg
  *    - detscat_parser_parse_vec3_cfg
  *    - detscat_parser_parse_cplx_vec3_cfg
- *    - detscat_parser_parser_str_cfg
+ *    - detscat_parser_parse_str_cfg
  *    - detscat_parser_split_key_value_cfg
  *    - detscat_parser_handle_key_cfg
  *    - detscat_parser_parse_line_cfg
@@ -61,6 +61,12 @@
  */
 #include "detscat_parser.h"
 
+#include "detscat_cfg.h"
+#include "detscat_limits.h"
+#include "detscat_math.h"
+#include "detscat_prt.h"
+#include "detscat_str.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -71,11 +77,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "detscat_cfg.h"
-#include "detscat_limits.h"
-#include "detscat_math.h"
-#include "detscat_prt.h"
-#include "detscat_str.h"
 
 // --- Expected parser context signatures  ---
 static const uint32_t expected_magic[] = {[DETSCAT_CFG] = DETSCAT_CFG_MAGIC,
@@ -255,9 +256,9 @@ static bool detscat_parser_parse_cplx_vec3_cfg(const char *value,
     return true;
 }
 
-static bool detscat_parser_parser_str_cfg(const char *value, Str *out,
-                                          DetScatParser *parser,
-                                          const char *key) {
+static bool detscat_parser_parse_str_cfg(const char *value, Str *out,
+                                         DetScatParser *parser, const char *key,
+                                         size_t maxlen) {
     assert(parser && out);
 
     if (!value || !*value || !key || !*key) {
@@ -268,7 +269,7 @@ static bool detscat_parser_parser_str_cfg(const char *value, Str *out,
         return false;
     }
 
-    if (strlen(value) >= DETSCAT_CFG_PATH_MAX) {
+    if (strlen(value) >= maxlen) {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
                          "Path too long for '%s' at line %d (max %zu chars)",
                          key, parser->line_number, DETSCAT_CFG_PATH_MAX - 1);
@@ -320,12 +321,29 @@ static bool detscat_parser_handle_key_cfg(const char *key, const char *value,
         return false;
     }
 
-    if (strcmp(key, "is_polarized") == 0) {
-        return detscat_parser_parse_bool_cfg(value, &cfg->is_polarized, parser,
-                                             key);
-    } else if (strcmp(key, "polarization") == 0) {
-        return detscat_parser_parse_cplx_vec3_cfg(value, &cfg->polarization,
-                                                  parser, key);
+    if (strcmp(key, "polarization_type") == 0) {
+        return detscat_parser_parse_str_cfg(value, &cfg->polarization_type,
+                                            parser, key,
+                                            DETSCAT_CFG_STRVAR_MAX);
+    } else if (strcmp(key, "polarization_axis") == 0) {
+        return detscat_parser_parse_str_cfg(value, &cfg->polarization_axis,
+                                            parser, key,
+                                            DETSCAT_CFG_STRVAR_MAX);
+    } else if (strcmp(key, "elliptical_alpha_deg") == 0) {
+        return detscat_parser_parse_double_cfg(
+            value, &cfg->elliptical_alpha_deg, parser, key);
+
+    } else if (strcmp(key, "elliptical_beta_deg") == 0) {
+        return detscat_parser_parse_double_cfg(value, &cfg->elliptical_beta_deg,
+                                               parser, key);
+
+    } else if (strcmp(key, "light_source_position_m") == 0) {
+        return detscat_parser_parse_vec3_cfg(
+            value, &cfg->light_source_position_m, parser, key);
+    } else if (strcmp(key, "light_source_direction") == 0) {
+        return detscat_parser_parse_vec3_cfg(
+            value, &cfg->light_source_direction, parser, key);
+
     } else if (strcmp(key, "wavelength_nm") == 0) {
         return detscat_parser_parse_double_cfg(value, &cfg->wavelength_nm,
                                                parser, key);
@@ -339,13 +357,13 @@ static bool detscat_parser_handle_key_cfg(const char *key, const char *value,
         return detscat_parser_parse_double_cfg(value, &cfg->beam_diameter_mm,
                                                parser, key);
     } else if (strcmp(key, "particles_definition_file") == 0) {
-        return detscat_parser_parser_str_cfg(value, &cfg->particles_file_path,
-                                             parser, key);
+        return detscat_parser_parse_str_cfg(value, &cfg->particles_file_path,
+                                            parser, key, DETSCAT_CFG_PATH_MAX);
     } else if (strcmp(key, "camera_center_position_m") == 0) {
         return detscat_parser_parse_vec3_cfg(
             value, &cfg->camera_center_position_m, parser, key);
-    } else if (strcmp(key, "camera_sensor_normal_vector") == 0) {
-        return detscat_parser_parse_vec3_cfg(value, &cfg->camera_sensor_normal,
+    } else if (strcmp(key, "camera_direction") == 0) {
+        return detscat_parser_parse_vec3_cfg(value, &cfg->camera_direction,
                                              parser, key);
     } else if (strcmp(key, "sensor_width_mm") == 0) {
         return detscat_parser_parse_double_cfg(value, &cfg->sensor_width_mm,
@@ -356,11 +374,11 @@ static bool detscat_parser_handle_key_cfg(const char *key, const char *value,
     } else if (strcmp(key, "focal_length_mm") == 0) {
         return detscat_parser_parse_double_cfg(value, &cfg->focal_length_mm,
                                                parser, key);
-    } else if (strcmp(key, "camera_resolution_x_px") == 0) {
-        return detscat_parser_parse_int_cfg(value, &cfg->camera_resolution_x_px,
+    } else if (strcmp(key, "sensor_resolution_x_px") == 0) {
+        return detscat_parser_parse_int_cfg(value, &cfg->sensor_resolution_x_px,
                                             parser, key);
-    } else if (strcmp(key, "camera_resolution_y_px") == 0) {
-        return detscat_parser_parse_int_cfg(value, &cfg->camera_resolution_y_px,
+    } else if (strcmp(key, "sensor_resolution_y_px") == 0) {
+        return detscat_parser_parse_int_cfg(value, &cfg->sensor_resolution_y_px,
                                             parser, key);
     } else {
         PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_UNKNOWN_KEY,

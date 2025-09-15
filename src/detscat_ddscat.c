@@ -99,7 +99,7 @@ void detscat_ddscat_fml_free(DetScatDdscatFml *fml) {
     free(fml);
 }
 
-void detscat_ddscat_destroy(DetScatDdscat *ddscat) {
+void detscat_ddscat_free(DetScatDdscat *ddscat) {
     if (!ddscat) return;
 
     if (ddscat->pars) {

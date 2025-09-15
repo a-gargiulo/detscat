@@ -9,24 +9,35 @@
 #include <stdbool.h>
 
 typedef struct {
-    Str            particles_file_path;
-    ComplexVec3    polarization;
+
+    // Light source
+    Vec3           light_source_position_m;
+    Vec3           light_source_direction;
+    double         beam_diameter_mm;
     double         wavelength_nm;
+    Str            polarization_type;
+    Str            polarization_axis;
+    double         elliptical_alpha_deg;
+    double         elliptical_beta_deg;
     double         pulse_energy_mj;
     double         pulse_width_ns;
-    double         beam_diameter_mm;
-    bool           is_polarized;
+
+    // Particles
+    Str            particles_file_path;
+
+    // Camera
     Vec3           camera_center_position_m;
-    Vec3           camera_sensor_normal;
+    Vec3           camera_direction;
     double         focal_length_mm;
     double         sensor_width_mm;
     double         sensor_height_mm;
-    int            camera_resolution_x_px;
-    int            camera_resolution_y_px;
+    int            sensor_resolution_x_px;
+    int            sensor_resolution_y_px;
+
 } DetScatConfig;
 
 bool detscat_cfg_init(DetScatConfig *cfg, DetScatError *err);
-void detscat_cfg_destroy(DetScatConfig *cfg);
+void detscat_cfg_free(DetScatConfig *cfg);
 bool detscat_cfg_load(const char *cfg_file_path, DetScatConfig *cfg,
                       DetScatError *err);
 

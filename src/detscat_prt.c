@@ -41,7 +41,7 @@ static void detscat_prt_clear_particles(DetScatPrt *prt, size_t count) {
 }
 
 // --- Internal helpers (SHARED) ---
-void detscat_prt_destroy(DetScatPrt *prt) {
+void detscat_prt_free(DetScatPrt *prt) {
     if (!prt) return;
 
     detscat_prt_clear_types(prt, prt->n_types);

@@ -151,6 +151,13 @@ void detscat_math_vec3_normalize(Vec3 *e, const Vec3 *v, double abs) {
     e->z = v->z / abs;
 }
 
+void detscat_math_vec3_scale(Vec3 *out, const Vec3 *v, double s) {
+    assert(out && v);
+    out->x = v->x * s;
+    out->y = v->y * s;
+    out->z = v->z * s;
+}
+
 double detscat_math_cplx_abs(Complex c) {
     return hypot(c.re, c.im);
 }
@@ -181,4 +188,34 @@ Complex detscat_math_cplx_conj(Complex c) {
     result.re = c.re;
     result.im = -c.im;
     return result;
+}
+
+void detscat_math_mat3_vec3_mult(Vec3 *vout, const Mat3 *m, const Vec3 *v) {
+    assert(vout && m && v);
+
+    double t1, t2, t3;
+
+    t1 = m->m11 * v->x + m->m12 * v->y + m->m13 * v->z;
+    t2 = m->m21 * v->x + m->m22 * v->y + m->m23 * v->z;
+    t3 = m->m31 * v->x + m->m32 * v->y + m->m33 * v->z;
+
+    *vout = (Vec3){t1, t2, t3};
+}
+
+void detscat_math_mat3_mat3_mult(Mat3 *mout, const Mat3 *m1, const Mat3 *m2) {
+    assert(mout && m1 && m2);
+
+    double t1, t2, t3, t4, t5, t6, t7, t8, t9;
+
+    t1 = m1->m11 * m2->m11 + m1->m12 * m2->m21 + m1->m13 * m2->m31;
+    t2 = m1->m11 * m2->m12 + m1->m12 * m2->m22 + m1->m13 * m2->m32;
+    t3 = m1->m11 * m2->m13 + m1->m12 * m2->m23 + m1->m13 * m2->m33;
+    t4 = m1->m21 * m2->m11 + m1->m22 * m2->m21 + m1->m23 * m2->m31;
+    t5 = m1->m21 * m2->m12 + m1->m22 * m2->m22 + m1->m23 * m2->m32;
+    t6 = m1->m21 * m2->m13 + m1->m22 * m2->m23 + m1->m23 * m2->m33;
+    t7 = m1->m31 * m2->m11 + m1->m32 * m2->m21 + m1->m33 * m2->m31;
+    t8 = m1->m31 * m2->m12 + m1->m32 * m2->m22 + m1->m33 * m2->m32;
+    t9 = m1->m31 * m2->m13 + m1->m32 * m2->m23 + m1->m33 * m2->m33;
+
+    *mout = (Mat3){t1, t2, t3, t4, t5, t6, t7, t8, t9};
 }

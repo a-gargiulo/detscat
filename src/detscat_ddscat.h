@@ -47,7 +47,7 @@ typedef struct {
 
 bool detscat_ddscat_init(DetScatDdscat *ddscat, size_t n_pars, size_t n_fmls,
                          size_t n_par_idxs, DetScatError *err);
-void detscat_ddscat_destroy(DetScatDdscat *ddscat);
+void detscat_ddscat_free(DetScatDdscat *ddscat);
 void detscat_ddscat_par_free(DetScatDdscatParams *par);
 void detscat_ddscat_par_free_subset(DetScatDdscatParams *par, size_t count);
 void detscat_ddscat_fml_free(DetScatDdscatFml *fml);

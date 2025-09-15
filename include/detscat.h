@@ -4,16 +4,15 @@
 #include <stdbool.h>
 
 /* ==========================================================================
- * Main DetScat context 
+ * Main DetScat context
  * ========================================================================== */
 typedef struct DetScat DetScat;
 
 /* Error tracking */
 typedef struct DetScatError DetScatError;
 
-
 /* ==========================================================================
- * DetScat program status codes 
+ * DetScat program status codes
  * ========================================================================== */
 typedef enum {
     DETSCAT_OK,
@@ -30,7 +29,6 @@ typedef enum {
     DETSCAT_STATUS_COUNT
 } DetScatStatus;
 
-
 /* ==========================================================================
  * Logging levels
  * ========================================================================== */
@@ -41,30 +39,29 @@ typedef enum {
     DETSCAT_ERROR
 } DetScatLogLevel;
 
-
 /* ==========================================================================
- * Core functions 
+ * Core functions
  * ========================================================================== */
 
 /* Detscat context lifecycle */
-DetScat *detscat_create(const char* cfg_file_path, DetScatError *err);
+DetScat *detscat_create(const char *cfg_file_path, DetScatError *err);
 void detscat_destroy(DetScat **detscat);
 
 /* Load simulation data */
-bool detscat_load_data(DetScat* detscat, DetScatError* err);
+bool detscat_load_data(DetScat *detscat, DetScatError *err);
+
+bool detscat_setup_camera(DetScat *detscat, DetScatError *err);
 
 /* Inspect data */
 void detscat_print_cfg(const DetScat *detscat);
 void detscat_print_prt(const DetScat *detscat);
 void detscat_print_ddscat(const DetScat *detscat);
 
-
 /* ==========================================================================
  * System level functions
  * ========================================================================== */
 bool detscat_init(DetScatError *err);
 void detscat_shutdown(void);
-
 
 /* ==========================================================================
  * Error tracking
@@ -73,7 +70,6 @@ DetScatError *detscat_error_create(void);
 void detscat_error_destroy(DetScatError **err);
 DetScatStatus detscat_error_status(const DetScatError *err);
 const char *detscat_error_message(const DetScatError *err);
-
 
 /* ==========================================================================
  * Logging

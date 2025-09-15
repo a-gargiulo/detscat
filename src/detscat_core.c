@@ -1,11 +1,6 @@
-#include <assert.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "detscat.h"
+
+#include "detscat_camera.h"
 #include "detscat_cfg.h"
 #include "detscat_ddscat.h"
 #include "detscat_error.h"
@@ -14,11 +9,20 @@
 #include "detscat_prt.h"
 #include "detscat_str.h"
 
+#include <assert.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 struct DetScat {
     const char *cfg_file_path;
     DetScatConfig cfg;
     DetScatPrt prt;
     DetScatDdscat ddscat;
+    DetScatCamera cam;
 };
 
 typedef struct {
@@ -109,7 +113,7 @@ static void detscat_cache_fml(DetScatFmlCache *cache, Str *type_id,
     cache->n_entries++;
 }
 
-static void detscat_cache_destroy_fml(DetScatFmlCache *cache) {
+static void detscat_cache_free_fml(DetScatFmlCache *cache) {
     if (!cache) return;
 
     for (size_t i = 0; i < cache->n_entries; ++i) {
@@ -157,6 +161,7 @@ DetScat *detscat_create(const char *cfg_file_path, DetScatError *err) {
     detscat->cfg = (DetScatConfig){0};
     detscat->prt = (DetScatPrt){0};
     detscat->ddscat = (DetScatDdscat){0};
+    detscat->cam = (DetScatCamera){0};
 
     if (!detscat_cfg_init(&detscat->cfg, err)) goto error_cleanup;
 
@@ -166,7 +171,7 @@ DetScat *detscat_create(const char *cfg_file_path, DetScatError *err) {
     return detscat;
 
 error_cleanup:
-    detscat_cfg_destroy(&detscat->cfg);
+    detscat_cfg_free(&detscat->cfg);
     free(detscat);
     return NULL;
 }
@@ -174,9 +179,9 @@ error_cleanup:
 void detscat_destroy(DetScat **detscat) {
     if (!detscat || !*detscat) return;
 
-    detscat_cfg_destroy(&(*detscat)->cfg);
-    detscat_prt_destroy(&(*detscat)->prt);
-    detscat_ddscat_destroy(&(*detscat)->ddscat);
+    detscat_cfg_free(&(*detscat)->cfg);
+    detscat_prt_free(&(*detscat)->prt);
+    detscat_ddscat_free(&(*detscat)->ddscat);
 
     free(*detscat);
     *detscat = NULL;
@@ -201,6 +206,49 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
 
     // PRT
     if (!detscat_prt_load(prt_file_path, &detscat->prt, err)) goto cleanup;
+
+    Vec3 prt_centroid= {0};
+    for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
+        detscat_math_vec3_add(&prt_centroid, &prt_centroid, &detscat->prt.particles[i].position);
+    }
+    detscat_math_vec3_scale(&prt_centroid, &prt_centroid, 1.0 / detscat->prt.n_particles);
+
+
+    Vec3 ref;
+    Vec3 xlab = {1, 0, 0};
+    Vec3 ylab = {0, 1, 0};
+    Vec3 zlab = {0, 0, 1};
+
+    double vx = fabs(detscat->cfg.light_source_direction.x);
+    double vy = fabs(detscat->cfg.light_source_direction.y);
+    double vz = fabs(detscat->cfg.light_source_direction.z);
+
+    if (vx <= vy && vx <= vz) 
+        ref = xlab;
+    else if (vy <= vz)
+        ref = ylab;
+    else
+        ref = zlab;
+
+    Vec3 xprime, yprime, zprime;
+    detscat_math_vec3_normalize(&xprime, &detscat->cfg.light_source_direction, detscat_math_vec3_abs(&detscat->cfg.light_source_direction));
+
+    detscat_math_vec3_cross(&zprime, &xprime, &ref);
+    detscat_math_vec3_normalize(&zprime, &zprime, detscat_math_vec3_abs(&zprime));
+
+    detscat_math_vec3_cross(&yprime, &zprime, &xprime);
+    detscat_math_vec3_normalize(&yprime, &yprime, detscat_math_vec3_abs(&yprime));
+
+    Mat3 rotmat = {xprime.x, xprime.y, xprime.z, 
+                   yprime.x, yprime.y, yprime.z,
+                   zprime.x, zprime.y, zprime.z};
+
+    for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
+        detscat_math_vec3_sub(&detscat->prt.particles[i].position,&detscat->prt.particles[i].position, &prt_centroid);
+        detscat_math_mat3_vec3_mult(&detscat->prt.particles[i].position, &rotmat, &detscat->prt.particles[i].position);
+    }
+
+
 
     // DDSCAT
     DetScatFmlCache fml_cache = {0};
@@ -301,17 +349,39 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         detscat_str_free(&fml_file_path);
     }
 
-    detscat_cache_destroy_fml(&fml_cache);
+    detscat_cache_free_fml(&fml_cache);
     detscat_log(DETSCAT_INFO, "Successfully loaded simulation data");
     return true;
 
 cleanup_ddscat:
-    detscat_cache_destroy_fml(&fml_cache);
-    detscat_ddscat_destroy(&detscat->ddscat);
+    detscat_cache_free_fml(&fml_cache);
+    detscat_ddscat_free(&detscat->ddscat);
 cleanup:
-    detscat_prt_destroy(&detscat->prt);
+    detscat_prt_free(&detscat->prt);
     return false;
 }
+
+
+
+
+
+
+bool detscat_setup_camera(DetScat *detscat, DetScatError *err) {
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void detscat_print_cfg(const DetScat *detscat) {
     if (!detscat) return;
@@ -434,3 +504,8 @@ void detscat_print_ddscat(const DetScat *detscat) {
         }
     }
 }
+
+
+
+
+
