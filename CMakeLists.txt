@@ -12,6 +12,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 add_executable(detscat 
     "${PROJECT_SOURCE_DIR}/main.c" 
     "${PROJECT_SOURCE_DIR}/src/detscat_core.c" 
+    "${PROJECT_SOURCE_DIR}/src/detscat_camera.c" 
     "${PROJECT_SOURCE_DIR}/src/detscat_error.c" 
     "${PROJECT_SOURCE_DIR}/src/detscat_parser.c" 
     "${PROJECT_SOURCE_DIR}/src/detscat_str.c" 
@@ -27,23 +28,23 @@ add_executable(detscat
 target_include_directories(
     detscat
     PRIVATE "${PROJECT_SOURCE_DIR}/include" 
-    PRIVATE "/opt/homebrew/opt/libomp/include"
+    # PRIVATE "/opt/homebrew/opt/libomp/include"
 )
 
-target_link_directories(
-    detscat
-    PRIVATE "/opt/homebrew/opt/libomp/lib"
-)
+# target_link_directories(
+#     detscat
+#     PRIVATE "/opt/homebrew/opt/libomp/lib"
+# )
 
-target_link_libraries(
-    detscat
-    PRIVATE omp
-)
+# target_link_libraries(
+#     detscat
+#     PRIVATE omp
+# )
 
-# find_package(OpenMP REQUIRED)
-# if(OpenMP_C_FOUND)
-#     target_compile_options(detscat PRIVATE ${OpenMP_C_FLAGS})
-#     target_link_libraries(detscat PRIVATE ${OpenMP_C_LIBRARIES})
-# endif()
+find_package(OpenMP REQUIRED)
+if(OpenMP_C_FOUND)
+    target_compile_options(detscat PRIVATE ${OpenMP_C_FLAGS})
+    target_link_libraries(detscat PRIVATE ${OpenMP_C_LIBRARIES})
+endif()
 
 target_compile_options(detscat PRIVATE -Wall -Wextra -pedantic -O0 -g)

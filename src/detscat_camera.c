@@ -13,23 +13,23 @@
 bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, DetScatError *err) {
     assert(cam && cfg);
 
-    Vec3 xaxis = {1, 0, 0};
-    Vec3 yaxis = {0, 1, 0};
-    Vec3 zaxis = {0, 0, 1};
-    Vec3 ref;
+    // Vec3 xaxis = {1, 0, 0};
+    // Vec3 yaxis = {0, 1, 0};
+    // Vec3 zaxis = {0, 0, 1};
+    // Vec3 ref;
 
-    cam->C = cfg->camera_center_position_m;
+    // cam->C = cfg->camera_center_position_m;
 
-    detscat_math_vec3_normalize(
-        &cam->n, &cfg->camera_sensor_normal,
-        detscat_math_vec3_abs(&cfg->camera_sensor_normal));
+    // detscat_math_vec3_normalize(
+    //     &cam->n, &cfg->camera_sensor_normal,
+    //     detscat_math_vec3_abs(&cfg->camera_sensor_normal));
 
-    if (fabs(cam->n.x) < fabs(cam->n.y) && fabs(cam->n.x) < fabs(cam->n.z))
-        ref = xaxis;
-    else if (fabs(cam->n.y) < fabs(cam->n.z))
-        ref = yaxis;
-    else
-        ref = zaxis;
+    // if (fabs(cam->n.x) < fabs(cam->n.y) && fabs(cam->n.x) < fabs(cam->n.z))
+    //     ref = xaxis;
+    // else if (fabs(cam->n.y) < fabs(cam->n.z))
+    //     ref = yaxis;
+    // else
+    //     ref = zaxis;
 
 
 //     Vec3 yref = {0, -1, 0};
@@ -72,7 +72,7 @@ bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, DetScatEr
 //         return -3;
 //     }
 
-    detscat->cam.image.pixels = calloc()
+    // detscat->cam.image.pixels = calloc()
     
     return true;
 }

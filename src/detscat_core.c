@@ -213,12 +213,12 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
     }
     detscat_math_vec3_scale(&prt_centroid, &prt_centroid, 1.0 / detscat->prt.n_particles);
 
-
     Vec3 ref;
     Vec3 xlab = {1, 0, 0};
     Vec3 ylab = {0, 1, 0};
     Vec3 zlab = {0, 0, 1};
 
+    // perpendicular reference
     double vx = fabs(detscat->cfg.light_source_direction.x);
     double vy = fabs(detscat->cfg.light_source_direction.y);
     double vz = fabs(detscat->cfg.light_source_direction.z);
@@ -247,7 +247,6 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         detscat_math_vec3_sub(&detscat->prt.particles[i].position,&detscat->prt.particles[i].position, &prt_centroid);
         detscat_math_mat3_vec3_mult(&detscat->prt.particles[i].position, &rotmat, &detscat->prt.particles[i].position);
     }
-
 
 
     // DDSCAT
@@ -394,11 +393,6 @@ void detscat_print_cfg(const DetScat *detscat) {
     printf("        %-25s: \"%s\"\n", "particles_file_path",
            detscat->cfg.particles_file_path.data);
 
-    // For ComplexVec3, align the label
-    printf("        %-25s: ", "polarization");
-    complexvec3_print(&detscat->cfg.polarization);
-    printf("\n");
-
     // Align doubles
     printf("        %-25s: %10.6f\n", "wavelength_nm",
            detscat->cfg.wavelength_nm);
@@ -409,16 +403,12 @@ void detscat_print_cfg(const DetScat *detscat) {
     printf("        %-25s: %10.6f\n", "beam_diameter_mm",
            detscat->cfg.beam_diameter_mm);
 
-    // Bool as string
-    printf("        %-25s: %s\n", "is_polarized",
-           detscat->cfg.is_polarized ? "true" : "false");
-
     // Vec3
     printf("        %-25s: ", "camera_center_position_m");
     vec3_print(&detscat->cfg.camera_center_position_m);
     printf("\n");
-    printf("        %-25s: ", "camera_sensor_normal");
-    vec3_print(&detscat->cfg.camera_sensor_normal);
+    printf("        %-25s: ", "camera_direction");
+    vec3_print(&detscat->cfg.camera_direction);
     printf("\n");
 
     // More doubles
@@ -431,9 +421,9 @@ void detscat_print_cfg(const DetScat *detscat) {
 
     // Integers
     printf("        %-25s: %6d\n", "camera_resolution_x_px",
-           detscat->cfg.camera_resolution_x_px);
+           detscat->cfg.sensor_resolution_x_px);
     printf("        %-25s: %6d\n", "camera_resolution_y_px",
-           detscat->cfg.camera_resolution_y_px);
+           detscat->cfg.sensor_resolution_y_px);
 
     printf("\n");
 }

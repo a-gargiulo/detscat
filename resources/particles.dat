@@ -2,13 +2,21 @@ $(StartTypes)
 #number of particle types
 1
 #alias data_dir 
-sphere /Users/galdo/Downloads/ddscat/ELLIPSOID
-# sphere ..\..\ddscat\ELLIPSOID
+#sphere /Users/galdo/Downloads/ddscat/ELLIPSOID
+sphere ..\..\ddscat\ELLIPSOID
 $(EndTypes)
 $(StartParticles)
 #number of particles
-2
+10
 #alias wavelength_idx radius_idx orientation_idx x y z
-sphere 0 0 0 0 0 0
-sphere 0 0 0 0 1 2
+sphere 0 0 0 0.95 2.01 3.02
+sphere 0 0 0 1.02 1.97 2.95
+sphere 0 0 0 1.05 2.10 3.07
+sphere 0 0 0 0.98 2.05 3.01
+sphere 0 0 0 1.01 1.92 3.08
+sphere 0 0 0 1.08 2.03 2.99
+sphere 0 0 0 0.97 2.07 3.12
+sphere 0 0 0 1.03 1.95 3.04
+sphere 0 0 0 1.00 2.08 2.96
+sphere 0 0 0 1.06 1.99 3.05
 $(EndParticles)
