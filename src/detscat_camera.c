@@ -3,124 +3,99 @@
 #include "detscat.h"
 
 #include "detscat_cfg.h"
+#include "detscat_error.h"
+#include "detscat_const.h"
 #include "detscat_transform.h"
 #include "detscat_math.h"
 
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 // --- Public API ---
 bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const DetScatTransform *glob_t, DetScatError *err) {
     assert(cam && cfg);
 
+    // Camera center in CALC frame 
     Vec3 tmp;
     detscat_math_vec3_sub(&tmp, &cfg->camera_center_position_m, &glob_t->translation);
-    detscat_math_mat3_vec3_mult(&cam->C, &glob_t->rotation, &tmp);
+    detscat_math_mat3_vec3_mult(&cam->extrinsics.translation, &glob_t->rotation, &tmp);
 
-    detscat_math_mat3_vec3_mult(&cam->n, &glob_t->rotation, &cfg->camera_direction);
-    detscat_math_vec3_normalize(&cam->n, &cam->n, detscat_math_vec3_abs(&cam->n));
+    // Forward (view direction) in CALC frame
+    detscat_math_mat3_vec3_mult(&cam->axes.n, &glob_t->rotation, &cfg->camera_direction);
+    detscat_math_vec3_normalize(&cam->axes.n, &cam->axes.n, detscat_math_vec3_abs(&cam->axes.n));
 
+    // Build right-up axes from "preferred up" direction 
     Vec3 preferred_up_global = (Vec3){0, -1, 0};
     Vec3 preferred_up_calc;
     detscat_math_mat3_vec3_mult(&preferred_up_calc, &glob_t->rotation, &preferred_up_global);
-    detscat_math_vec3_build_basis(&cam->n, &preferred_up_calc, AXIS_CAMERA, &cam->r, &cam->u, &cam->n);
-
-
-    // detscat_math_vec3_build_basis(&cfg->camera_direction, &cam->n, &cam->u, &cam->r);
-
-    // Vec3 xaxis = {1, 0, 0};
-    // Vec3 yaxis = {0, 1, 0};
-    // Vec3 zaxis = {0, 0, 1};
-    // Vec3 ref;
-
-    // cam->C = cfg->camera_center_position_m;
-
-    // detscat_math_vec3_normalize(
-    //     &cam->n, &cfg->camera_sensor_normal,
-    //     detscat_math_vec3_abs(&cfg->camera_sensor_normal));
-
-    // if (fabs(cam->n.x) < fabs(cam->n.y) && fabs(cam->n.x) < fabs(cam->n.z))
-    //     ref = xaxis;
-    // else if (fabs(cam->n.y) < fabs(cam->n.z))
-    //     ref = yaxis;
-    // else
-    //     ref = zaxis;
-
-
-//     Vec3 yref = {0, -1, 0};
-//     Vec3 tmp_r;
-//     mymath_vec3_cross(&tmp_r, &yref, &camera->n);
-//     tmp_norm = mymath_vec3_abs(&tmp_r);
-//     camera->r.x = tmp_r.x / tmp_norm;
-//     camera->r.y = tmp_r.y / tmp_norm;
-//     camera->r.z = tmp_r.z / tmp_norm;
-
-//     Vec3 tmp_u;
-//     mymath_vec3_cross(&tmp_u, &camera->n, &camera->r);
-//     tmp_norm = mymath_vec3_abs(&tmp_u);
-//     camera->u.x = tmp_u.x / tmp_norm;
-//     camera->u.y = tmp_u.y / tmp_norm;
-//     camera->u.z = tmp_u.z / tmp_norm;
-
-
-//     camera->f = cfg->focal_length_mm * DETSCAT_CONST_MM2M;
-//     camera->p_x = cfg->sensor_width_mm * DETSCAT_CONST_MM2M / cfg->camera_resolution_x_px;
-//     camera->p_y = cfg->sensor_height_mm * DETSCAT_CONST_MM2M / cfg->camera_resolution_y_px;
-//     camera->width = cfg->camera_resolution_x_px;
-//     camera->height= cfg->camera_resolution_y_px;
-
-//     camera->c_x = (camera->width - 1.0) / 2.0;
-//     camera->c_y = (camera->height - 1.0) / 2.0;
-//     if (w <= 0 || h <= 0) return -1;
-
-//     size_t size = (size_t)w * (size_t)h;
-//     // Check for overflow
-//     if (size / (size_t)w != (size_t)h) {
-//         return -2;
-//     }
-
-//     image->width = w;
-//     image->height = h;
-
-//     image->pixels = calloc(size, sizeof(float));
-//     if (!image->pixels) {
-//         return -3;
-//     }
-
-    // detscat->cam.image.pixels = calloc()
     
+    detscat_math_vec3_build_basis(&cam->axes.n, &preferred_up_calc, AXIS_CAMERA, &cam->axes.r, &cam->axes.u, &cam->axes.n);
+
+    // Rotation matrix CALC -> CAMERA
+    detscat_math_mat3_basis_to_rotmat(&cam->extrinsics.rotation, &cam->axes.r, &cam->axes.u, &cam->axes.n);
+
+
+    // Camera intrinsics
+    cam->intrinsics.f = cfg->focal_length_mm * DETSCAT_CONST_MM2M;
+    cam->intrinsics.p_x = cfg->sensor_width_mm * DETSCAT_CONST_MM2M / cfg->sensor_resolution_x_px;
+    cam->intrinsics.p_y = cfg->sensor_height_mm * DETSCAT_CONST_MM2M / cfg->sensor_resolution_y_px;
+
+    cam->intrinsics.c_x = (cfg->sensor_resolution_x_px - 1.0) / 2.0;
+    cam->intrinsics.c_y = (cfg->sensor_resolution_y_px - 1.0) / 2.0;
+
+    cam->image.width = cfg->sensor_resolution_x_px;
+    cam->image.height= cfg->sensor_resolution_y_px;
+
+    size_t size = (size_t)(cam->image.width) * (size_t)(cam->image.height);
+    // Check for overflow
+    if (size / (size_t)(cam->image.width) != (size_t)cam->image.height) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_OVERFLOW,
+                          "Image size computation overflow");
+        return false;
+    }
+
+    cam->image.pixels = calloc(size, sizeof(float));
+    if (!cam->image.pixels) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                          "Could not allocate memory for image");
+        return false;
+    }
+
     return true;
 }
 
+void detscat_camera_free(DetScatCamera *cam) {
+    if (!cam) return;
+
+    if (cam->image.pixels) {
+        free(cam->image.pixels);
+        cam->image.pixels = NULL;
+    }
+
+    cam->axes = (DetScatCameraAxes){0};
+    cam->intrinsics = (DetScatCameraIntrinsic){0};
+    cam->extrinsics = (DetScatCameraExtrinsic){0};
+    cam->image.width = 0;
+    cam->image.height = 0;
+}
 
 
-
-
-
-
-// #include <math.h>
-// #include <stdlib.h>
-
-
-// #include "detscat_config.h"
-// #include "detscat_const.h"
-// #include "mymath.h"
-
-// void detscat_camera_pixel_coordinate_to_world(const DetScatCamera *camera, Vec3 *p, int u, int v) {
-//     p->x = camera->p_x * (u - camera->c_x) * camera->r.x +
-//            camera->p_y * (v - camera->c_y) * camera->u.x +
-//            camera->f * camera->n.x +
-//            camera->C.x;
-//     p->y = camera->p_x * (u - camera->c_x) * camera->r.y +
-//            camera->p_y * (v - camera->c_y) * camera->u.y +
-//            camera->f * camera->n.y +
-//            camera->C.y;
-//     p->z = camera->p_x * (u - camera->c_x) * camera->r.z +
-//            camera->p_y * (v - camera->c_y) * camera->u.z +
-//            camera->f * camera->n.z +
-//            camera->C.z;
-// }
+void detscat_camera_pixel_coordinate_to_world(Vec3 *p, int u, int v, const DetScatCamera *cam) {
+    p->x = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m11 +
+           cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m21 +
+           cam->intrinsics.f * cam->extrinsics.rotation.m31 +
+           cam->extrinsics.translation.x;
+    p->y = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m12 +
+           cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m22 +
+           cam->intrinsics.f * cam->extrinsics.rotation.m32 +
+           cam->extrinsics.translation.y;
+    p->z = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m13 +
+           cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m23 +
+           cam->intrinsics.f * cam->extrinsics.rotation.m33 +
+           cam->extrinsics.translation.z;
+}
 
 
 // void detscat_camera_pixel_observation_direction(const DetScatCamera *camera, Vec3 *d, int u, int v) {
@@ -144,84 +119,7 @@ bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const Det
 // }
 
 
-// // TODO: Add robustness with checks for config variables and for norms
-// // TODO: Add a more generic / safe choice for yref
-// void detscat_camera_init(DetScatCamera *cam, DetScatCfg *cfg) {
-//     assert(cam != NULL);
-//     assert(cfg != NULL);
-
-
-//     Vec3 xaxis = {1, 0, 0};
-//     Vec3 yaxis = {0, 1, 0};
-//     Vec3 zaxis = {0, 0, 1};
-//     Vec3 ref;
-
-//     cam->C = cfg->camera_center_pos_m;
-
-//     mymath_vec3_normalize(&cam->n, &cfg->camera_sensor_normal,
-//                           mymath_vec3_abs(&cfg->camera_sensor_normal));
-
-//     if (fabs(cam->n.x) < fabs(cam->n.y) && fabs(cam->n.x) < fabs(cam->n.z))
-//         ref = xaxis;
-//     else if (fabs(cam->n.y) < fabs(cam->n.z))
-//         ref = yaxis;
-//     else
-//         ref = zaxis;
-
-
-//     Vec3 yref = {0, -1, 0};
-//     Vec3 tmp_r;
-//     mymath_vec3_cross(&tmp_r, &yref, &camera->n);
-//     tmp_norm = mymath_vec3_abs(&tmp_r);
-//     camera->r.x = tmp_r.x / tmp_norm;
-//     camera->r.y = tmp_r.y / tmp_norm;
-//     camera->r.z = tmp_r.z / tmp_norm;
-
-//     Vec3 tmp_u;
-//     mymath_vec3_cross(&tmp_u, &camera->n, &camera->r);
-//     tmp_norm = mymath_vec3_abs(&tmp_u);
-//     camera->u.x = tmp_u.x / tmp_norm;
-//     camera->u.y = tmp_u.y / tmp_norm;
-//     camera->u.z = tmp_u.z / tmp_norm;
-
-
-//     camera->f = cfg->focal_length_mm * DETSCAT_CONST_MM2M;
-//     camera->p_x = cfg->sensor_width_mm * DETSCAT_CONST_MM2M / cfg->camera_resolution_x_px;
-//     camera->p_y = cfg->sensor_height_mm * DETSCAT_CONST_MM2M / cfg->camera_resolution_y_px;
-//     camera->width = cfg->camera_resolution_x_px;
-//     camera->height= cfg->camera_resolution_y_px;
-
-//     camera->c_x = (camera->width - 1.0) / 2.0;
-//     camera->c_y = (camera->height - 1.0) / 2.0;
-
-//     return;
-// }
-
-
-// int detscat_camera_image_create(DetScatImage *image, int w, int h)
-// {
-//     assert(image != NULL);
-
-//     if (w <= 0 || h <= 0) return -1;
-
-//     size_t size = (size_t)w * (size_t)h;
-//     // Check for overflow
-//     if (size / (size_t)w != (size_t)h) {
-//         return -2;
-//     }
-
-//     image->width = w;
-//     image->height = h;
-
-//     image->pixels = calloc(size, sizeof(float));
-//     if (!image->pixels) {
-//         return -3;
-//     }
-
-//     return 0;
-// }
-
-// int detscat_camera_get_image_index(DetScatImage* img, int u, int v) {
-//     // Row-major
-//     return v * img->width + u;
-// }
+int detscat_camera_get_image_index(int u, int v, const DetScatImage* img) {
+    // Row-major
+    return v * img->width + u;
+}

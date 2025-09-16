@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+
 typedef struct {
     double re, im;
 } Complex;

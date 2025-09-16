@@ -182,11 +182,16 @@ error_cleanup:
 void detscat_destroy(DetScat **detscat) {
     if (!detscat || !*detscat) return;
 
-    detscat_cfg_free(&(*detscat)->cfg);
-    detscat_prt_free(&(*detscat)->prt);
-    detscat_ddscat_free(&(*detscat)->ddscat);
+    DetScat *d = *detscat;
 
-    free(*detscat);
+    detscat_cfg_free(&d->cfg);
+    detscat_prt_free(&d->prt);
+    detscat_ddscat_free(&d->ddscat);
+    detscat_camera_free(&d->cam);
+
+    *d = (DetScat){0};
+
+    free(d);
     *detscat = NULL;
 }
 
@@ -343,12 +348,11 @@ cleanup:
     return false;
 }
 
-
-
-
-
-
 bool detscat_setup_camera(DetScat *detscat, DetScatError *err) {
+
+    if (!detscat_camera_init(&detscat->cam, &detscat->cfg, &detscat->transform, err)) return false;
+
+    return true;
 
 }
 
