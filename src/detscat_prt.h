@@ -37,5 +37,6 @@ bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
                       DetScatError *err);
 void detscat_prt_free_subset(DetScatPrt *prt, size_t types_count,
                              size_t particles_count);
+void detscat_prt_transform(DetScatPrtParticle *particles, size_t n, const Vec3 *origin, const Mat3 *rotmat);
 
 #endif  // DETSCAT_PRT_H

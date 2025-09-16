@@ -5,6 +5,7 @@
 
 #include "detscat_cfg.h"
 #include "detscat_math.h"
+#include "detscat_transform.h"
 
 
 #include <stdbool.h>
@@ -12,6 +13,7 @@
 typedef struct {
     float *pixels;
 } DetScatImage;
+
 
 typedef struct {
     DetScatImage image;
@@ -28,7 +30,7 @@ typedef struct {
     double c_y;
 } DetScatCamera;
 
-bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, DetScatError *err);
+bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const DetScatTransform *glob_t, DetScatError *err);
 
 // int detscat_camera_image_create(DetScatImage *image, int w, int h);
 

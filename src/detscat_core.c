@@ -8,6 +8,7 @@
 #include "detscat_math.h"
 #include "detscat_prt.h"
 #include "detscat_str.h"
+#include "detscat_transform.h"
 
 #include <assert.h>
 #include <math.h>
@@ -23,6 +24,7 @@ struct DetScat {
     DetScatPrt prt;
     DetScatDdscat ddscat;
     DetScatCamera cam;
+    DetScatTransform transform;
 };
 
 typedef struct {
@@ -162,6 +164,7 @@ DetScat *detscat_create(const char *cfg_file_path, DetScatError *err) {
     detscat->prt = (DetScatPrt){0};
     detscat->ddscat = (DetScatDdscat){0};
     detscat->cam = (DetScatCamera){0};
+    detscat->transform = (DetScatTransform){0};
 
     if (!detscat_cfg_init(&detscat->cfg, err)) goto error_cleanup;
 
@@ -207,47 +210,27 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
     // PRT
     if (!detscat_prt_load(prt_file_path, &detscat->prt, err)) goto cleanup;
 
-    Vec3 prt_centroid= {0};
-    for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
-        detscat_math_vec3_add(&prt_centroid, &prt_centroid, &detscat->prt.particles[i].position);
-    }
-    detscat_math_vec3_scale(&prt_centroid, &prt_centroid, 1.0 / detscat->prt.n_particles);
+    detscat_math_vec3_centroid(&detscat->transform.translation,
+                               detscat->prt.particles,
+                               detscat->prt.n_particles,
+                               sizeof(DetScatPrtParticle),
+                               offsetof(DetScatPrtParticle, position));
 
-    Vec3 ref;
-    Vec3 xlab = {1, 0, 0};
-    Vec3 ylab = {0, 1, 0};
-    Vec3 zlab = {0, 0, 1};
-
-    // perpendicular reference
-    double vx = fabs(detscat->cfg.light_source_direction.x);
-    double vy = fabs(detscat->cfg.light_source_direction.y);
-    double vz = fabs(detscat->cfg.light_source_direction.z);
-
-    if (vx <= vy && vx <= vz) 
-        ref = xlab;
-    else if (vy <= vz)
-        ref = ylab;
-    else
-        ref = zlab;
 
     Vec3 xprime, yprime, zprime;
-    detscat_math_vec3_normalize(&xprime, &detscat->cfg.light_source_direction, detscat_math_vec3_abs(&detscat->cfg.light_source_direction));
+    detscat_math_vec3_build_basis(&detscat->cfg.light_source_direction,
+                                  &(Vec3){0, 1, 0},
+                                  AXIS_X,
+                                  &xprime,
+                                  &yprime,
+                                  &zprime);
+    detscat_math_mat3_basis_to_rotmat(&detscat->transform.rotation, 
+                                      &xprime, &yprime, &zprime);
 
-    detscat_math_vec3_cross(&zprime, &xprime, &ref);
-    detscat_math_vec3_normalize(&zprime, &zprime, detscat_math_vec3_abs(&zprime));
-
-    detscat_math_vec3_cross(&yprime, &zprime, &xprime);
-    detscat_math_vec3_normalize(&yprime, &yprime, detscat_math_vec3_abs(&yprime));
-
-    Mat3 rotmat = {xprime.x, xprime.y, xprime.z, 
-                   yprime.x, yprime.y, yprime.z,
-                   zprime.x, zprime.y, zprime.z};
-
-    for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
-        detscat_math_vec3_sub(&detscat->prt.particles[i].position,&detscat->prt.particles[i].position, &prt_centroid);
-        detscat_math_mat3_vec3_mult(&detscat->prt.particles[i].position, &rotmat, &detscat->prt.particles[i].position);
-    }
-
+    detscat_prt_transform(detscat->prt.particles,
+                          detscat->prt.n_particles,
+                          &detscat->transform.translation,
+                          &detscat->transform.rotation);
 
     // DDSCAT
     DetScatFmlCache fml_cache = {0};

@@ -3,6 +3,7 @@
 #include "detscat.h"
 
 #include "detscat_cfg.h"
+#include "detscat_transform.h"
 #include "detscat_math.h"
 
 
@@ -10,8 +11,23 @@
 #include <stdbool.h>
 
 // --- Public API ---
-bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, DetScatError *err) {
+bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const DetScatTransform *glob_t, DetScatError *err) {
     assert(cam && cfg);
+
+    Vec3 tmp;
+    detscat_math_vec3_sub(&tmp, &cfg->camera_center_position_m, &glob_t->translation);
+    detscat_math_mat3_vec3_mult(&cam->C, &glob_t->rotation, &tmp);
+
+    detscat_math_mat3_vec3_mult(&cam->n, &glob_t->rotation, &cfg->camera_direction);
+    detscat_math_vec3_normalize(&cam->n, &cam->n, detscat_math_vec3_abs(&cam->n));
+
+    Vec3 preferred_up_global = (Vec3){0, -1, 0};
+    Vec3 preferred_up_calc;
+    detscat_math_mat3_vec3_mult(&preferred_up_calc, &glob_t->rotation, &preferred_up_global);
+    detscat_math_vec3_build_basis(&cam->n, &preferred_up_calc, AXIS_CAMERA, &cam->r, &cam->u, &cam->n);
+
+
+    // detscat_math_vec3_build_basis(&cfg->camera_direction, &cam->n, &cam->u, &cam->r);
 
     // Vec3 xaxis = {1, 0, 0};
     // Vec3 yaxis = {0, 1, 0};

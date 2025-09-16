@@ -1,7 +1,9 @@
 #include "detscat_math.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <math.h>
+#include <stddef.h>
 #include <string.h>
 
 double detscat_math_cplx_vec3_abs(const ComplexVec3 *c) {
@@ -118,6 +120,12 @@ double detscat_math_vec3_abs(const Vec3 *v) {
     return scale * sqrt(ssq);
 }
 
+double detscat_math_vec3_dot(const Vec3 *v1, const Vec3 *v2) {
+    assert(v1 && v2);
+
+    return v1->x*v2->x + v1->y*v2->y + v1->z*v2->z;
+}
+
 void detscat_math_vec3_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2) {
     assert(cross && v1 && v2);
 
@@ -156,6 +164,116 @@ void detscat_math_vec3_scale(Vec3 *out, const Vec3 *v, double s) {
     out->x = v->x * s;
     out->y = v->y * s;
     out->z = v->z * s;
+}
+
+void detscat_math_vec3_centroid(Vec3 *out, const void *arr, size_t n, size_t stride, size_t pos_offset) {
+    assert(out && arr);
+    assert(n > 0);
+
+    *out = (Vec3){0};
+
+    const unsigned char *ptr = (const unsigned char*)arr;
+    for (size_t i = 0; i < n; ++i) {
+        const Vec3 *pos = (const Vec3 *)(ptr + pos_offset);
+        out->x += pos->x;
+        out->y += pos->y;
+        out->z += pos->z;
+        ptr += stride;
+    }
+
+    double inv_n = 1.0 / (double)n;
+    out->x *= inv_n;
+    out->y *= inv_n;
+    out->z *= inv_n;
+}
+
+void detscat_math_vec3_perp_ref(Vec3 *out, const Vec3 *dir) {
+    assert(out && dir);
+
+    Vec3 dir_norm;
+    detscat_math_vec3_normalize(&dir_norm, dir, detscat_math_vec3_abs(dir));
+
+    Vec3 ref; 
+    if (fabs(dir->x) <= fabs(dir->y) && fabs(dir->x) <= fabs(dir->z)) {
+        ref = (Vec3){1.0, 0, 0};
+    } else if (fabs(dir->y) <= fabs(dir->z)) {
+        ref = (Vec3){0, 1.0, 0};
+    } else {
+        ref = (Vec3){0, 0, 1.0};
+    }
+
+    double dot = detscat_math_vec3_dot(&ref, &dir_norm);
+    ref.x -= dot * dir_norm.x;
+    ref.y -= dot * dir_norm.y;
+    ref.z -= dot * dir_norm.z;
+
+    double mag = detscat_math_vec3_abs(&ref);
+    assert(mag > 1e-12);
+    detscat_math_vec3_normalize(out, &ref, mag);
+}
+
+void detscat_math_vec3_build_basis(const Vec3 *dir, 
+                                   const Vec3 *ref_vec,
+                                   Axis primary_axis,
+                                   Vec3 *x_out,
+                                   Vec3 *y_out,
+                                   Vec3 *z_out) {
+    assert(dir && x_out && y_out && z_out);
+
+    Vec3 primary;
+    detscat_math_vec3_normalize(&primary, dir, detscat_math_vec3_abs(dir));
+
+    Vec3 secondary;
+
+    if (ref_vec) {
+        secondary = *ref_vec;
+        double dot = detscat_math_vec3_dot(&secondary, &primary);
+        secondary.x -= dot * primary.x;
+        secondary.y -= dot * primary.y;
+        secondary.z -= dot * primary.z;
+
+        double sec_mag = detscat_math_vec3_abs(&secondary);
+        if (sec_mag < 1e-12) {
+            detscat_math_vec3_perp_ref(&secondary, &primary);
+        } else {
+            detscat_math_vec3_normalize(&secondary, &secondary, sec_mag);
+        }
+    } else {
+        detscat_math_vec3_perp_ref(&secondary, &primary);
+    }
+
+    Vec3 tertiary;
+    detscat_math_vec3_cross(&tertiary, &primary, &secondary);
+    double ter_mag = detscat_math_vec3_abs(&tertiary);
+    assert(ter_mag > 1e-12);
+    detscat_math_vec3_normalize(&tertiary, &tertiary, ter_mag);
+
+
+    switch(primary_axis) {
+        case AXIS_X:
+            *x_out = primary;
+            *y_out = secondary;
+            *z_out = tertiary;
+            break;
+        case AXIS_Y:
+            *x_out = tertiary;
+            *y_out = primary;
+            *z_out = secondary;
+            break;
+        case AXIS_Z:
+            *x_out = secondary;
+            *y_out = tertiary;
+            *z_out = primary;
+            break;
+        case AXIS_CAMERA:
+            *x_out = tertiary;
+            detscat_math_vec3_scale(x_out, x_out, -1.0);
+            *y_out = secondary;
+            *z_out = primary;
+            break;
+        default:
+            assert(0 && "Invalid primary_axis");
+    }
 }
 
 double detscat_math_cplx_abs(Complex c) {
@@ -219,3 +337,13 @@ void detscat_math_mat3_mat3_mult(Mat3 *mout, const Mat3 *m1, const Mat3 *m2) {
 
     *mout = (Mat3){t1, t2, t3, t4, t5, t6, t7, t8, t9};
 }
+
+
+void detscat_math_mat3_basis_to_rotmat(Mat3 *mout, const Vec3 *x, const Vec3 *y, const Vec3 *z) {
+    assert(mout && x && y && z);
+
+    *mout = (Mat3){x->x, x->y, x->z, 
+             y->x, y->y, y->z,
+             z->x, z->y, z->z};
+}
+
