@@ -621,13 +621,13 @@ static bool detscat_parser_parse_particle_prt(const char *line,
 
 
     // wavelength
-    tok = strtok(NULL, "\t");
+    tok = strtok(NULL, " \t");
     if (!tok) goto error_cleanup;
     if (!detscat_parser_parse_double_prt(tok, &particle->wavelength_nm, parser))
         goto error_cleanup;
 
     // eff_raidus
-    tok = strtok(NULL, "\t");
+    tok = strtok(NULL, " \t");
     if (!tok) goto error_cleanup;
     if (!detscat_parser_parse_double_prt(tok, &particle->eff_radius_um, parser))
         goto error_cleanup;

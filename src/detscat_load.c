@@ -65,10 +65,10 @@ static bool detscat_handle_stream_error(DetScatParser *parser,
 
 static bool detscat_extract_ddscat_cases_from_par(DetScatDdscatParams *par, DetScatError *err) {
     par->n_cases = par->n_wavelengths * par->n_radii * par->n_orientations;
-    par->orientations = calloc(par->n_cases, sizeof(*par->orientations));
-    if (!par->orientations) {
+    par->cases = calloc(par->n_cases, sizeof(*par->cases));
+    if (!par->cases) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
-                          "Could not allocate memory for orientations");
+                          "Could not allocate memory for cases");
         return false;
     }
 
