@@ -50,9 +50,14 @@ void detscat_math_cplx_vec3_conj(ComplexVec3 *conj, const ComplexVec3 *c);
 void detscat_math_cplx_vec3_normalize(ComplexVec3 *e, const ComplexVec3 *c,
                                          double abs);
 
+// ComplexVec2
+double detscat_math_cplx_vec2_abs(const ComplexVec2 *c);
+void detscat_math_cplx_vec2_normalize(ComplexVec2 *e, const ComplexVec2 *c, double abs);
+void detscat_math_cplx_vec2_scale(ComplexVec2 *out, const ComplexVec2 *v, Complex c); 
+void detscat_math_cplx_vec2_add(ComplexVec2 *vsum, const ComplexVec2 *v1, const ComplexVec2 *v2);
 
-
-
+// ComplexMat2
+void detscat_math_cplx_mat2_cplx_vec2_mult(ComplexVec2 *vout, const ComplexMat2 *m, const ComplexVec2 *v);
 
 
 // Vec3

@@ -17,7 +17,9 @@ add_executable(detscat
 target_include_directories(
     detscat PRIVATE
     "${PROJECT_SOURCE_DIR}/include" 
+    "${PROJECT_SOURCE_DIR}/lib/stb" 
 )
+
 
 
 if(APPLE)

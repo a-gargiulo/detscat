@@ -83,10 +83,6 @@ void detscat_math_cplx_vec3_conj(ComplexVec3 *conj, const ComplexVec3 *c) {
     conj->z.im = -c->z.im;
 }
 
-
-
-
-
 void detscat_math_cplx_vec3_normalize(ComplexVec3 *e, const ComplexVec3 *c,
                                       double abs) {
     assert(e && c);
@@ -99,6 +95,77 @@ void detscat_math_cplx_vec3_normalize(ComplexVec3 *e, const ComplexVec3 *c,
     e->z.re = c->z.re / abs;
     e->z.im = c->z.im / abs;
 }
+
+
+
+
+double detscat_math_cplx_vec2_abs(const ComplexVec2 *c) {
+    assert(c);
+
+    double scale = 0.0;  // largest absolute value encountered
+    double ssq = 1.0;    // sum of squares
+
+    double comps[4] = {fabs(c->x.re), fabs(c->x.im), fabs(c->y.re), fabs(c->y.im)};
+
+    for (int i = 0; i < 4; i++) {
+        double cc = comps[i];
+        if (cc != 0.0) {
+            if (scale < cc) {
+                double t = scale / cc;
+                ssq = 1.0 + ssq * t * t;  // rescaling with respect to new scale
+                scale = cc;
+            } else {
+                double t = cc / scale;
+                ssq += t * t;
+            }
+        }
+    }
+    return scale * sqrt(ssq);
+}
+
+
+void detscat_math_cplx_vec2_normalize(ComplexVec2 *e, const ComplexVec2 *c, double abs) {
+    assert(e && c);
+    assert(abs != 0.0);
+
+    e->x.re = c->x.re / abs;
+    e->x.im = c->x.im / abs;
+    e->y.re = c->y.re / abs;
+    e->y.im = c->y.im / abs;
+}
+
+
+void detscat_math_cplx_vec2_scale(ComplexVec2 *out, const ComplexVec2 *v, Complex c) {
+    assert(out && v);
+
+    out->x = detscat_math_cplx_mult(c, v->x);
+    out->y = detscat_math_cplx_mult(c, v->y);
+}
+
+
+void detscat_math_cplx_vec2_add(ComplexVec2 *vsum, const ComplexVec2 *v1, const ComplexVec2 *v2) {
+    assert(vsum && v1 && v2);
+
+    vsum->x = detscat_math_cplx_add(v1->x, v2->x);
+    vsum->y = detscat_math_cplx_add(v1->y, v2->y);
+}
+
+
+
+void detscat_math_cplx_mat2_cplx_vec2_mult(ComplexVec2 *vout, const ComplexMat2 *m, const ComplexVec2 *v) {
+    assert(vout && m && v);
+
+    Complex t1, t2;
+
+    t1 = detscat_math_cplx_add(detscat_math_cplx_mult(m->f11, v->x), 
+                               detscat_math_cplx_mult(m->f12, v->y));
+
+    t2 = detscat_math_cplx_add(detscat_math_cplx_mult(m->f21, v->x), 
+                               detscat_math_cplx_mult(m->f22, v->y));
+
+    *vout = (ComplexVec2){t1, t2};
+}
+
 
 double detscat_math_vec3_abs(const Vec3 *v) {
     assert(v);

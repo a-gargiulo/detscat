@@ -11,7 +11,8 @@
 #include <stdbool.h>
 
 typedef struct {
-    float *pixels;
+    unsigned char *pixels;
+    double *intensities;
     int width;
     int height;
 } DetScatImage;

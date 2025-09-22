@@ -17,6 +17,7 @@ typedef struct DetScatError DetScatError;
 typedef enum {
     DETSCAT_OK,
     DETSCAT_ERR_CMD_ARG,
+    DETSCAT_ERR_IMAGE,
     DETSCAT_ERR_INVALID_ARG,
     DETSCAT_ERR_KEY_LOOKUP,
     DETSCAT_ERR_MEMORY,
@@ -52,7 +53,9 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err);
 
 bool detscat_setup_camera(DetScat *detscat, DetScatError *err);
 
-bool detscat_simulation_run(DetScat *detscat, DetScatError *err);
+void detscat_simulation_run(DetScat *detscat);
+
+bool detscat_construct_image(DetScat *detscat, DetScatError *err);
 
 /* Inspect data */
 void detscat_print_cfg(const DetScat *detscat);

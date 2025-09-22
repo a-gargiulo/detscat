@@ -50,16 +50,23 @@ bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const Det
 
     size_t size = (size_t)(cam->image.width) * (size_t)(cam->image.height);
     // Check for overflow
-    if (size / (size_t)(cam->image.width) != (size_t)cam->image.height) {
+    if (size / (size_t)(cam->image.width) != (size_t)(cam->image.height)) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_OVERFLOW,
                           "Image size computation overflow");
         return false;
     }
 
-    cam->image.pixels = calloc(size, sizeof(float));
+    cam->image.pixels = calloc(size, sizeof(unsigned char));
     if (!cam->image.pixels) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
                           "Could not allocate memory for image");
+        return false;
+    }
+
+    cam->image.intensities = calloc(size, sizeof(double));
+    if (!cam->image.intensities) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                          "Could not allocate memory for intensities");
         return false;
     }
 
@@ -72,6 +79,11 @@ void detscat_camera_free(DetScatCamera *cam) {
     if (cam->image.pixels) {
         free(cam->image.pixels);
         cam->image.pixels = NULL;
+    }
+
+    if (cam->image.intensities) {
+        free(cam->image.intensities);
+        cam->image.intensities = NULL;
     }
 
     cam->axes = (DetScatCameraAxes){0};

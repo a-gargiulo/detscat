@@ -11,6 +11,9 @@
 #include "detscat_str.h"
 #include "detscat_transform.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 #include <assert.h>
 #include <omp.h>
 #include <math.h>
@@ -669,13 +672,21 @@ void detscat_print_ddscat(const DetScat *detscat) {
     }
 }
 
-bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
+void detscat_simulation_run(DetScat *detscat) {
 
 
     double k = 2.0 * M_PI / (detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M);
     Vec3 k_i = {k, 0, 0};
 
     ComplexVec2 inc_pol = {detscat->cfg.e01_coeff, detscat->cfg.e02_coeff};
+    detscat_math_cplx_vec2_normalize(&inc_pol, &inc_pol, detscat_math_cplx_vec2_abs(&inc_pol));
+
+    double Dsq = (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M) * 
+                 (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M); 
+    double A = Dsq * M_PI / 4.0;
+    double Ep = detscat->cfg.pulse_energy_mj * DETSCAT_CONST_MJ2J;
+    double taup = detscat->cfg.pulse_width_ns * DETSCAT_CONST_NS2S;
+    double E0 = sqrt(2 * Ep  / taup / A / DETSCAT_CONST_C_M_S / DETSCAT_CONST_EPS0_F_M);
 
     #pragma omp parallel for schedule(static)
     for (int v = 0; v < detscat->cam.image.height; ++v) {
@@ -707,16 +718,54 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
                 Complex exp_arg = {0.0, phase};
                 Complex exp_phase = detscat_math_cplx_exp(exp_arg);
 
-                // Incident electric field
+                ComplexVec2 fp;
+                detscat_math_cplx_mat2_cplx_vec2_mult(&fp, &fmatrix, &inc_pol);
+                detscat_math_cplx_vec2_scale(&fp, &fp, exp_phase);
 
-                
-
-                
-
-
-                
+                detscat_math_cplx_vec2_add(&sum, &sum, &fp);
             }
+
+            double pxl_dist = detscat_math_vec3_abs(&pxl_pos_world);
+            double glob_phase = k * pxl_dist;
+            Complex exp_glob_arg = {0.0, glob_phase};
+            Complex exp_glob_phase = detscat_math_cplx_exp(exp_glob_arg);
+
+            Complex prefac = detscat_math_cplx_mult(exp_glob_phase, (Complex){E0 / (k * pxl_dist), 0.0});
+
+            ComplexVec2 Es; 
+            detscat_math_cplx_vec2_scale(&Es, &sum, prefac);
+
+            
+            double Es_abs = detscat_math_cplx_vec2_abs(&Es);
+            double n = 1;
+            double I = 0.5 * DETSCAT_CONST_C_M_S * DETSCAT_CONST_EPS0_F_M * Es_abs * Es_abs * n;
+
+            detscat->cam.image.intensities[idx] = I;
         }
+    }
+}
+
+bool detscat_construct_image(DetScat *detscat, DetScatError *err) {
+    assert(detscat);
+
+    size_t n = (size_t)(detscat->cam.image.width) * (size_t)(detscat->cam.image.height);
+    assert(n / (size_t)(detscat->cam.image.width) == (size_t)(detscat->cam.image.height));
+
+    double max = detscat->cam.image.intensities[0];
+    for (size_t i = 1; i < n; ++i) {
+        if (detscat->cam.image.intensities[i] > max) {
+            max = detscat->cam.image.intensities[i];
+        }
+    }
+
+    for (size_t i = 0; i < n; ++i) {
+        detscat->cam.image.pixels[i] = (unsigned char)(detscat->cam.image.intensities[i] / max * 255.0); 
+    }
+
+    if (!stbi_write_png("output.png", detscat->cam.image.width, detscat->cam.image.height,1, detscat->cam.image.pixels, detscat->cam.image.width)) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_IMAGE,
+                          "Could not write the particle image.");
+        return false;
     }
 
     return true;
