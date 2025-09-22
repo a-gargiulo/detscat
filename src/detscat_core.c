@@ -393,6 +393,13 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         }
 
         detscat_str_free(&par_file_path);
+
+        detscat_log(DETSCAT_DEBUG,
+                "number of wavelengths: %zu", detscat->ddscat.pars[i].n_wavelengths);
+        detscat_log(DETSCAT_DEBUG,
+                "wavelength: %lf", detscat->ddscat.pars[i].wavelengths[0]);
+
+
     }
 
     // FMLS + PAR_IDXS
@@ -443,6 +450,22 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         double delta_a2 = 100.0 * detscat_math_vec3_diff(
             &detscat->prt.particles[i].orientation.a2,
             &detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a2);  
+
+
+
+        for (size_t i = 0; i < detscat->ddscat.pars[idx].n_cases; ++i) {
+            detscat_log(DETSCAT_DEBUG,
+                "wavelength: %.3f\nradius: %.3f\na1: [%.3f, %.3f, %.3f]\na2: [%.3f, %.3f, %.3f]",
+                detscat->ddscat.pars[idx].cases[i].wavelength,
+                detscat->ddscat.pars[idx].cases[i].radius,
+                detscat->ddscat.pars[idx].cases[i].orientation.a1.x,
+                detscat->ddscat.pars[idx].cases[i].orientation.a1.y,
+                detscat->ddscat.pars[idx].cases[i].orientation.a1.z,
+                detscat->ddscat.pars[idx].cases[i].orientation.a2.x,
+                detscat->ddscat.pars[idx].cases[i].orientation.a2.y,
+                detscat->ddscat.pars[idx].cases[i].orientation.a2.z
+                );
+        }
 
         detscat_log(DETSCAT_INFO,
             "Particle %zu / %zu:\n"

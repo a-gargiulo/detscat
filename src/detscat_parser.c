@@ -1074,7 +1074,7 @@ static bool detscat_parser_parse_sampling_params_par(
 
     int match;
     if (parse_method) {
-        match = sscanf(line, " %lf %lf %zu '%8s' ",
+        match = sscanf(line, " %lf %lf %zu '%8[^']' ",
                        &params->min,
                        &params->max,
                        &params->n,
@@ -1187,11 +1187,11 @@ static bool detscat_parser_initial_par(const char *line,
         ctx->state = PAR_STATE_INITIAL;
     } else if (strstr(line, "wavelengths")) {
         if (!detscat_parser_parse_sampling_params_par(
-            line, "WAVELENGTH", ctx, parser, false)) return false;
+            line, "WAVELENGTH", ctx, parser, true)) return false;
         ctx->state = PAR_STATE_PARSE_WAVELENGTHS;
     } else if (strstr(line, "radii")) {
         if (!detscat_parser_parse_sampling_params_par(
-            line, "RADIUS", ctx, parser, false)) return false;
+            line, "RADIUS", ctx, parser, true)) return false;
         ctx->state = PAR_STATE_PARSE_RADII;
     }
     return true;
@@ -1352,22 +1352,23 @@ static bool detscat_parser_parse_wavelengths_par(const char *line,
     }
 
     const char *method = ctx->wavelength_params.method;
-    if (strcmp(method, "LIN")) {
+    if (strcmp(method, "LIN") == 0) {
         double step = 
             (ctx->wavelength_params.max - ctx->wavelength_params.min) /
             (ctx->wavelength_params.n - 1);
         for (size_t i = 0; i < ctx->wavelength_params.n; ++i) {
             ctx->par->wavelengths[i] = ctx->wavelength_params.min + i * step;
         }
-    } else if (strcmp(method, "INV")) {
+    } else if (strcmp(method, "INV") == 0) {
         double inv_start = 1.0 / ctx->wavelength_params.min;
         double inv_end   = 1.0 / ctx->wavelength_params.max;
         double step = (inv_end - inv_start) / (ctx->wavelength_params.n - 1);
         for (size_t i = 0; i < ctx->wavelength_params.n; ++i) {
             double inv_val = inv_start + i * step;
             ctx->par->wavelengths[i] = 1.0 / inv_val;
+            detscat_log(DETSCAT_DEBUG, "WL: %lf", inv_end);
         }
-    } else if (strcmp(method, "LOG")) {
+    } else if (strcmp(method, "LOG") == 0) {
         double log_start = log10(ctx->wavelength_params.min);
         double log_end   = log10(ctx->wavelength_params.max);
         double step = (log_end - log_start) / (ctx->wavelength_params.n - 1);

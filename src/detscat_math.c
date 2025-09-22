@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "detscat.h"
+
 double detscat_math_cplx_vec3_abs(const ComplexVec3 *c) {
     assert(c);
 
@@ -350,28 +352,28 @@ void detscat_math_vec3_build_basis(const Vec3 *dir,
 void detscat_math_vec3_orientation_to_angles(const Vec3 *v1, const Vec3 *v2,
                                              double *theta, double *beta,
                                              double *phi) {
-    assert(v1 && theta && beta && phi);
+    assert(v1 && v2 && theta && beta && phi);
     
     Vec3 x_ref = {1, 0, 0};
 
     *theta = acos(v1->x) * 180.0 / M_PI;
-
     *phi = atan2(v1->z, v1->y) * 180.0 / M_PI;
 
     // v2_ref
-    Vec3 v1_norm;
-    Vec3 tmp;
     Vec3 v2_ref;
-    detscat_math_vec3_normalize(&v1_norm, v1, detscat_math_vec3_abs(v1));
-    detscat_math_vec3_scale(&tmp, &v1_norm,
-                            detscat_math_vec3_dot(&v1_norm, &x_ref));
-    detscat_math_vec3_sub(&v2_ref, &tmp, &x_ref);
-    detscat_math_vec3_normalize(&v2_ref, &v2_ref,
-                                detscat_math_vec3_abs(&v2_ref));
+    if (*theta == 0 && *phi == 0) {
+        v2_ref = (Vec3){0.0, 1.0, 0.0};
+    } else {
+        Vec3 tmp;
+        detscat_math_vec3_scale(&tmp, v1, detscat_math_vec3_dot(v1, &x_ref));
+        detscat_math_vec3_sub(&v2_ref, &tmp, &x_ref);
+        detscat_math_vec3_normalize(&v2_ref, &v2_ref,
+                                    detscat_math_vec3_abs(&v2_ref));
+    }
 
     // v3_ref
     Vec3 v3_ref;
-    detscat_math_vec3_cross(&v3_ref, &v1_norm, &v2_ref);
+    detscat_math_vec3_cross(&v3_ref, v1, &v2_ref);
     detscat_math_vec3_normalize(&v3_ref, &v3_ref,
                                 detscat_math_vec3_abs(&v3_ref));
 
