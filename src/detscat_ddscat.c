@@ -8,6 +8,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+// --- Internal helpers (PRIVATE) ---
+static Complex detscat_ddscat_linterp_theta_array(double theta,
+                                                 double *theta_arr,
+                                                 Complex *values,
+                                                 size_t n) {
+    assert(theta_arr && values);
+
+    // Bracket theta
+    size_t idx_low, idx_high;
+    detscat_math_bracket_value(theta_arr, n, sizeof(double), 0, theta,
+                               &idx_low, &idx_high);
+
+    return detscat_math_cplx_linterp(theta,
+                                     values[idx_low], values[idx_high],
+                                     theta_arr[idx_low], theta_arr[idx_high]);
+}
+
+
+
 // --- Internal helpers (SHARED)
 bool detscat_ddscat_init(DetScatDdscat *ddscat, size_t n_pars, size_t n_fmls,
                          size_t n_par_idxs, DetScatError *err) {
@@ -61,8 +80,32 @@ void detscat_ddscat_par_free(DetScatDdscatParams *par) {
         par->scat_planes = NULL;
     }
 
+    if (par->orientations) {
+        free(par->orientations);
+        par->orientations = NULL;
+    }
+
+    if (par->wavelengths) {
+        free(par->wavelengths);
+        par->wavelengths = NULL;
+    }
+
+    if (par->radii) {
+        free(par->radii);
+        par->radii= NULL;
+    }
+
+    if (par->cases) {
+        free(par->cases);
+        par->cases = NULL;
+    }
+
     par->n_components = 0;
     par->n_scat_planes = 0;
+    par->n_cases = 0;
+    par->n_orientations = 0;
+    par->n_wavelengths = 0;
+    par->n_radii = 0;
     memset(&par->e01, 0, sizeof(par->e01));
 }
 
@@ -146,8 +189,32 @@ void detscat_ddscat_par_free_subset(DetScatDdscatParams *par, size_t count) {
         par->scat_planes = NULL;
     }
 
+    if (par->orientations) {
+        free(par->orientations);
+        par->orientations= NULL;
+    }
+
+    if (par->wavelengths) {
+        free(par->wavelengths);
+        par->wavelengths = NULL;
+    }
+
+    if (par->radii) {
+        free(par->radii);
+        par->radii= NULL;
+    }
+
+    if (par->cases) {
+        free(par->cases);
+        par->cases = NULL;
+    }
+
     par->n_components = 0;
     par->n_scat_planes = 0;
+    par->n_cases = 0;
+    par->n_orientations = 0;
+    par->n_wavelengths = 0;
+    par->n_radii = 0;
     memset(&par->e01, 0, sizeof(par->e01));
 }
 
@@ -176,4 +243,52 @@ void detscat_ddscat_fml_free_subset(DetScatDdscatFml *fml, size_t count) {
     }
 
     fml->n_fmats = 0;
+}
+
+
+ComplexMat2 detscat_ddscat_get_fmatrix(const DetScatDdscatFml *fml, double phi, double theta) {
+    ComplexMat2 F = (ComplexMat2){0};
+    
+    // Bracket phi 
+    size_t phi_low, phi_high;
+    detscat_math_bracket_value(
+        fml->fmats,
+        fml->n_fmats,
+        sizeof(DetScatDdscatFmatrix),
+        offsetof(DetScatDdscatFmatrix, phi),
+        phi,
+        &phi_low,
+        &phi_high);
+
+    const DetScatDdscatFmatrix *fm_low  = &fml->fmats[phi_low];
+    const DetScatDdscatFmatrix *fm_high = &fml->fmats[phi_high];
+
+    Complex f11_low = detscat_ddscat_linterp_theta_array(
+        theta, fm_low->theta, fm_low->f11, fm_low->n_theta);
+    Complex f12_low = detscat_ddscat_linterp_theta_array(
+        theta, fm_low->theta, fm_low->f12, fm_low->n_theta);
+    Complex f21_low = detscat_ddscat_linterp_theta_array(
+        theta, fm_low->theta, fm_low->f21, fm_low->n_theta);
+    Complex f22_low = detscat_ddscat_linterp_theta_array(
+        theta, fm_low->theta, fm_low->f22, fm_low->n_theta);
+
+    Complex f11_high = detscat_ddscat_linterp_theta_array(
+        theta, fm_high->theta, fm_high->f11, fm_high->n_theta);
+    Complex f12_high = detscat_ddscat_linterp_theta_array(
+        theta, fm_high->theta, fm_high->f12, fm_high->n_theta);
+    Complex f21_high = detscat_ddscat_linterp_theta_array(
+        theta, fm_high->theta, fm_high->f21, fm_high->n_theta);
+    Complex f22_high = detscat_ddscat_linterp_theta_array(
+        theta, fm_high->theta, fm_high->f22, fm_high->n_theta);
+
+    F.f11 = detscat_math_cplx_linterp(
+        phi, f11_low, f11_high, fm_low->phi, fm_high->phi);
+    F.f12 = detscat_math_cplx_linterp(
+        phi, f12_low, f12_high, fm_low->phi, fm_high->phi);
+    F.f21 = detscat_math_cplx_linterp(
+        phi, f21_low, f21_high, fm_low->phi, fm_high->phi);
+    F.f22 = detscat_math_cplx_linterp(
+        phi, f22_low, f22_high, fm_low->phi, fm_high->phi);
+
+    return F;
 }

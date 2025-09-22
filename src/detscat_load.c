@@ -63,6 +63,42 @@ static bool detscat_handle_stream_error(DetScatParser *parser,
     return false;
 }
 
+static bool detscat_extract_ddscat_cases_from_par(DetScatDdscatParams *par, DetScatError *err) {
+    par->n_cases = par->n_wavelengths * par->n_radii * par->n_orientations;
+    par->orientations = calloc(par->n_cases, sizeof(*par->orientations));
+    if (!par->orientations) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                          "Could not allocate memory for orientations");
+        return false;
+    }
+
+    size_t c = 0;
+    for (size_t i = 0; i < par->n_wavelengths; ++i) {
+        for (size_t j = 0; j < par->n_radii; ++j) {
+            for (size_t k = 0; k < par->n_orientations; ++k) {
+                par->cases[c].w = i;
+                par->cases[c].r = j;
+                par->cases[c].k = k;
+                par->cases[c].wavelength = par->wavelengths[i]; 
+                par->cases[c].radius = par->radii[j];
+                par->cases[c].orientation.beta = par->orientations[k].beta;
+                par->cases[c].orientation.theta = par->orientations[k].theta;
+                par->cases[c].orientation.phi = par->orientations[k].phi;
+                detscat_math_vec3_angles_to_orientation(
+                    par->cases[c].orientation.theta,
+                    par->cases[c].orientation.beta,
+                    par->cases[c].orientation.phi,
+                    &par->cases[c].orientation.a1,
+                    &par->cases[c].orientation.a2);
+                
+                c++;
+            }
+        }
+    }
+
+    return true;
+}
+
 // --- Internal helpers (SHARED) ---
 bool detscat_cfg_load(const char *cfg_file_path, DetScatConfig *cfg,
                       DetScatError *err) {
@@ -117,8 +153,7 @@ bool detscat_cfg_load(const char *cfg_file_path, DetScatConfig *cfg,
     return true;
 }
 
-bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
-                      DetScatError *err) {
+bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt, DetScatError *err) {
     assert(prt);
 
     if (!prt_file_path || !*prt_file_path) {
@@ -175,7 +210,7 @@ bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
 
     detscat_parser_destroy(&parser);
 
-    detscat_log(DETSCAT_INFO, "Successfully parsed '%s'", prt_file_path);
+    detscat_log(DETSCAT_INFO, "Successfully loaded '%s'", prt_file_path);
     return true;
 }
 
@@ -193,13 +228,18 @@ bool detscat_ddscat_par_load(const char *par_file_path,
     if (!parser) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
                           "Could not create par file parser");
-        return false;
-    }
+        return false; }
 
     DetScatParserParContext ctx = {
         .magic = DETSCAT_PAR_MAGIC,
         .par = par,
+        .beta_params = (DetScatDdscatSamplingParams){0},
+        .theta_params = (DetScatDdscatSamplingParams){0},
+        .phi_params = (DetScatDdscatSamplingParams){0},
+        .wavelength_params = (DetScatDdscatSamplingParams){0},
+        .radius_params = (DetScatDdscatSamplingParams){0},
         .components_allocated = 0,
+        .angles_parsed = 0,
         .state = PAR_STATE_INITIAL,
         .scat_planes_parsed = 0,
     };
@@ -236,6 +276,9 @@ bool detscat_ddscat_par_load(const char *par_file_path,
     }
 
     detscat_parser_destroy(&parser);
+
+
+    if (!detscat_extract_ddscat_cases_from_par(par, err)) return false;
 
     return true;
 }

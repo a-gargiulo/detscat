@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 
 // --- Internal helpers (PRIVATE) ---
@@ -29,11 +30,7 @@ static void detscat_prt_clear_particles(DetScatPrt *prt, size_t count) {
     for (size_t i = 0; i < count; ++i) {
         detscat_str_free(&prt->particles[i].type_id);
 
-        memset(&prt->particles[i].position, 0,
-               sizeof(prt->particles[i].position));
-
-        memset(&prt->particles[i].case_id, 0,
-               sizeof(prt->particles[i].case_id));
+        memset(&prt->particles[i], 0, sizeof(prt->particles[i]));
     }
 
     free(prt->particles);

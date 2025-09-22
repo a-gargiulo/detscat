@@ -47,7 +47,7 @@ bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const Det
 
 void detscat_camera_free(DetScatCamera *cam);
 
-int detscat_camera_get_image_index(int u, int v, const DetScatImage *img);
+int detscat_camera_get_pixel_index(int u, int v, const DetScatImage *img);
 
 void detscat_camera_pixel_coordinate_to_world(Vec3 *p, int u, int v, const DetScatCamera *cam);
 

@@ -1,46 +1,3 @@
-//// // static int cmp_phi(const void *a, const void *b) {
-//// //     const DetScatDdscatFmatrix *fa = (const DetScatDdscatFmatrix *)a;
-//// //     const DetScatDdscatFmatrix *fb = (const DetScatDdscatFmatrix *)b;
-//// //     return (fa->phi > fb->phi) - (fa->phi < fb->phi);
-//// // }
-
-//// // static void detscat_get_camera_and_image(DetScatCamera *camera,
-//// //                                          DetScatImage *image,
-//// //                                          DetScatConfig *config,
-//// //                                          DetScatDiagnose *diagnose) {
-//// //     assert(camera != NULL);
-//// //     assert(image != NULL);
-//// //     assert(config != NULL);
-//// //     assert(diagnose != NULL);
-
-//// //     detscat_camera_init(camera, config);
-//// //     int img_gen_status = detscat_camera_image_create(image, camera->width, camera->height); 
-//// //     if (img_gen_status != 0) {
-//// //         switch (img_gen_status) {
-//// //             case -1:
-//// //                 DETSCAT_SET_DIAGNOSE(
-//// //                     *diagnose, DETSCAT_ERR_INVALID_ARG,
-//// //                     "Specified image size %d x %d is invalid.",
-//// //                     camera->width, camera->height);
-//// //                 return;
-//// //             case -2:
-//// //                 DETSCAT_SET_DIAGNOSE(
-//// //                     *diagnose, DETSCAT_ERR_OVERFLOW,
-//// //                     "%s",
-//// //                     "Image size too large - overflow.");
-//// //                 return;
-//// //             case -3:
-//// //                 DETSCAT_SET_DIAGNOSE(
-//// //                     *diagnose, DETSCAT_ERR_ALLOC,
-//// //                     "%s",
-//// //                     "Image allocation failed.");
-//// //                 return;
-//// //         }
-//// //     }
-
-//// //     return;
-//// // } 
-
 //// DetScatStatus detscat_run(int argc, char **argv) {
 ////     detscat_print_banner();
 
@@ -130,6 +87,7 @@
 
 ////     //             // Interpolate between fmat[p][idx_low] and fmat[p][idx_high]
 ////     //             for each theta
+
 ////     //         }
 ////         // }
 ////     // }

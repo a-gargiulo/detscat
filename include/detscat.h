@@ -52,6 +52,8 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err);
 
 bool detscat_setup_camera(DetScat *detscat, DetScatError *err);
 
+bool detscat_simulation_run(DetScat *detscat, DetScatError *err);
+
 /* Inspect data */
 void detscat_print_cfg(const DetScat *detscat);
 void detscat_print_prt(const DetScat *detscat);

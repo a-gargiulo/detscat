@@ -1,5 +1,6 @@
 #include "detscat.h"
 
+#include "detscat_const.h"
 #include "detscat_camera.h"
 #include "detscat_cfg.h"
 #include "detscat_ddscat.h"
@@ -11,6 +12,7 @@
 #include "detscat_transform.h"
 
 #include <assert.h>
+#include <omp.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -38,6 +40,7 @@ typedef struct {
     size_t n_entries;
 } DetScatFmlCache;
 
+
 // --- Static helper (PRIVATE) ---
 static void detscat_banner_print(FILE *out) {
     if (!out) out = stdout;
@@ -52,6 +55,9 @@ static void detscat_banner_print(FILE *out) {
             " |_____/ \\___|\\__|_____/ \\___\\__,_|\\__| \n"
             "\n"
             "****************************************\n"
+            "\n"
+            "Detonation Scattering\n"
+            "A particle scattering image generator\n"
             "\n"
             "Version: 1.0.0\n"
             "Build date: %s, %s\n"
@@ -133,6 +139,126 @@ static void detscat_fml_acquire(DetScatDdscatFml *fml) {
 
     fml->refcount++;
 }
+
+static int cmp_phi(const void *a, const void *b) {
+    const DetScatDdscatFmatrix *fa = (const DetScatDdscatFmatrix *)a;
+    const DetScatDdscatFmatrix *fb = (const DetScatDdscatFmatrix *)b;
+    return (fa->phi > fb->phi) - (fa->phi < fb->phi);
+}
+
+
+
+static void detscat_compute_ddscat_case_mean_std(DetScatDdscatCase *cases, size_t n, double *mean, double *std) {
+
+    for (size_t i = 0; i < 8; ++i) { mean[i] = 0; std[i] = 0; }
+
+    for (size_t i = 0; i < n; ++i) {
+        double coords[8] = {
+            cases[i].wavelength, cases[i].radius,
+            cases[i].orientation.a1.x,
+            cases[i].orientation.a1.y,
+            cases[i].orientation.a1.z,
+            cases[i].orientation.a2.x,
+            cases[i].orientation.a2.y,
+            cases[i].orientation.a2.z
+        };
+        for(size_t j = 0; j < 8; ++j) mean[j] += coords[j];
+    }
+    for(size_t j = 0; j < 8; ++j) mean[j] /= n;
+
+
+    // std
+    for(size_t i = 0; i < n; ++i){
+        double coords[8] = {
+            cases[i].wavelength, cases[i].radius,
+            cases[i].orientation.a1.x,
+            cases[i].orientation.a1.y,
+            cases[i].orientation.a1.z,
+            cases[i].orientation.a2.x,
+            cases[i].orientation.a2.y,
+            cases[i].orientation.a2.z
+        };
+        for(size_t j = 0; j < 8; ++j) {
+            double diff = coords[j] - mean[j];
+            std[j] += diff*diff;
+        }
+    }
+    for(int j = 0; j < 8; ++j) std[j] = sqrt(std[j]/n);
+}
+
+
+static void detscat_normalize_ddscat_case(const DetScatDdscatCase *c, 
+                                          double* mean,
+                                          double* std,
+                                          double* out) {
+    double coords[8] = {c->wavelength, c->radius,
+                        c->orientation.a1.x,
+                        c->orientation.a1.y,
+                        c->orientation.a1.z,
+                        c->orientation.a2.x,
+                        c->orientation.a2.y,
+                        c->orientation.a2.z};
+    for(size_t i = 0; i < 8; ++i){
+        out[i] = (coords[i] - mean[i]) / std[i];
+    }
+}
+
+static double detscat_euclidean_distance_vec8(const double* a, 
+                                              const double* b) {
+    double sum = 0;
+    for(size_t i = 0; i < 8; ++i) {
+        double d = a[i] - b[i];
+        sum += d*d;
+    }
+    return sqrt(sum);
+}
+
+
+static int detscat_find_nearest_case_id(DetScatDdscatCase* cases, int n, double* mean, double* std,
+                      double wavelength, double radius,
+                      const Vec3 *a1, const Vec3 *a2) {
+
+    DetScatDdscatCase target;
+    target.wavelength = wavelength;
+    target.radius = radius;
+    target.orientation.a1 = *a1;
+    target.orientation.a2 = *a2;
+
+    double target_norm[8];
+    detscat_normalize_ddscat_case(&target, mean, std, target_norm);
+
+    double min_dist = 1e308;
+    int min_index = -1;
+
+    for(int i = 0; i < n; ++i){
+        double c_norm[8];
+        detscat_normalize_ddscat_case(&cases[i], mean, std, c_norm);
+        double d = detscat_euclidean_distance_vec8(c_norm, target_norm);
+        if (d < min_dist){
+            min_dist = d;
+            min_index = i;
+        }
+    }
+
+    return min_index;
+}
+
+// static ComplexVec2 detscat_form_input_pol(const DetScat *detscat) {
+//     assert(detscat);
+
+//     Vec3 eps_inc;
+
+//     Vec3 a_pol;
+//     if (strcmp(detscat->cfg.polarization_axis.data, "auto") == 0) {
+
+//         eps_inc = (Vec3){0.0, 1.0, 0.0};
+//     } else {
+        
+//     }
+
+
+// }
+
 
 // --- Public API ---
 bool detscat_init(DetScatError *err) {
@@ -221,7 +347,6 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
                                sizeof(DetScatPrtParticle),
                                offsetof(DetScatPrtParticle, position));
 
-
     Vec3 xprime, yprime, zprime;
     detscat_math_vec3_build_basis(&detscat->cfg.light_source_direction,
                                   &(Vec3){0, 1, 0},
@@ -269,6 +394,7 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
 
     // FMLS + PAR_IDXS
     for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
+
         size_t idx;
         if (!find_type_index(&detscat->prt,
                              detscat->prt.particles[i].type_id.data, &idx)) {
@@ -278,6 +404,66 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
             goto cleanup_ddscat;
         }
         detscat->ddscat.par_idxs[i] = idx;
+
+        double mean[8], std[8];
+        detscat_compute_ddscat_case_mean_std(
+            detscat->ddscat.pars[idx].cases,
+            detscat->ddscat.pars[idx].n_cases,
+            mean, std);
+
+        int nearest_idx = detscat_find_nearest_case_id(
+            detscat->ddscat.pars[idx].cases, 
+            detscat->ddscat.pars[idx].n_cases,
+            mean,
+            std,
+            detscat->prt.particles[i].wavelength_nm * 1e-3,
+            detscat->prt.particles[i].eff_radius_um,
+            &detscat->prt.particles[i].orientation.a1,
+            &detscat->prt.particles[i].orientation.a2);
+
+        detscat->prt.particles[i].case_id.w = detscat->ddscat.pars[idx].cases[nearest_idx].w;
+        detscat->prt.particles[i].case_id.r = detscat->ddscat.pars[idx].cases[nearest_idx].r;
+        detscat->prt.particles[i].case_id.k = detscat->ddscat.pars[idx].cases[nearest_idx].k;
+
+
+        double delta_w = 100 * (
+            detscat->prt.particles[i].wavelength_nm -
+            detscat->ddscat.pars[idx].cases[nearest_idx].wavelength * 1e3) / 
+            (detscat->ddscat.pars[idx].cases[nearest_idx].wavelength * 1e3);
+        double delta_r = 100 * (
+            detscat->prt.particles[i].eff_radius_um -
+            detscat->ddscat.pars[idx].cases[nearest_idx].radius) / 
+            (detscat->ddscat.pars[idx].cases[nearest_idx].radius);
+        double delta_a1 = 100.0 * detscat_math_vec3_diff(
+            &detscat->prt.particles[i].orientation.a1,
+            &detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a1);  
+        double delta_a2 = 100.0 * detscat_math_vec3_diff(
+            &detscat->prt.particles[i].orientation.a2,
+            &detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a2);  
+
+        detscat_log(DETSCAT_INFO,
+            "Particle %zu / %zu:\n"
+            "  Target:  wavelength = %.3f nm, eff. radius = %.3f um, a1 = [%.3f, %.3f, %.3f], a2 = [%.3f, %.3f, %.3f]\n"
+            "  Nearest:  wavelength = %.3f nm, eff. radius = %.3f um, a1 = [%.3f, %.3f, %.3f], a2 = [%.3f, %.3f, %.3f]\n"
+            "  Deviations: d(wavelength) = %.2f %, d(eff. radius) = %.2f %, d(a1) = %.2f %, d(a2) = %.2f %",
+            i + 1, detscat->prt.n_particles,
+            detscat->prt.particles[i].wavelength_nm,
+            detscat->prt.particles[i].eff_radius_um,
+            detscat->prt.particles[i].orientation.a1.x, 
+            detscat->prt.particles[i].orientation.a1.y, 
+            detscat->prt.particles[i].orientation.a1.z, 
+            detscat->prt.particles[i].orientation.a2.x, 
+            detscat->prt.particles[i].orientation.a2.y, 
+            detscat->prt.particles[i].orientation.a2.z, 
+            detscat->ddscat.pars[idx].cases[nearest_idx].wavelength * 1e3,
+            detscat->ddscat.pars[idx].cases[nearest_idx].radius,
+            detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a1.x,
+            detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a1.y,
+            detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a1.z,
+            detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a2.x,
+            detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a2.y,
+            detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a2.z,
+            delta_w, delta_r, delta_a1, delta_a2);
 
         const char *fml_dir = detscat->prt.types[idx].data_dir.data;
 
@@ -316,8 +502,6 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
                 goto cleanup_ddscat;
             }
 
-            // new_fml->refcount = 1
-
             if (!detscat_ddscat_fml_load(fml_file_path.data,
                                          new_fml,
                                          &detscat->ddscat.pars[idx], err)) {
@@ -325,6 +509,9 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
                 detscat_str_free(&fml_file_path);
                 goto cleanup_ddscat;
             }
+            
+            // sort fmls by azimuthal plane phi
+            qsort(new_fml->fmats, new_fml->n_fmats, sizeof(*new_fml->fmats), cmp_phi);
 
             // store in cache for future reuse
             detscat_cache_fml(&fml_cache, &detscat->prt.particles[i].type_id,
@@ -482,7 +669,55 @@ void detscat_print_ddscat(const DetScat *detscat) {
     }
 }
 
+bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
 
 
+    double k = 2.0 * M_PI / (detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M);
+    Vec3 k_i = {k, 0, 0};
+
+    ComplexVec2 inc_pol = {detscat->cfg.e01_coeff, detscat->cfg.e02_coeff};
+
+    #pragma omp parallel for schedule(static)
+    for (int v = 0; v < detscat->cam.image.height; ++v) {
+        for (int u = 0; u < detscat->cam.image.width; ++u) {
+            int idx = detscat_camera_get_pixel_index(u, v, &detscat->cam.image);
+
+            Vec3 pxl_pos_world;
+            detscat_camera_pixel_coordinate_to_world(&pxl_pos_world, u, v, &detscat->cam);
+
+            ComplexVec2 sum = (ComplexVec2){0};
+
+            for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
+                Vec3 pxl_scat_dir_world;
+                detscat_math_vec3_sub(&pxl_scat_dir_world, &pxl_pos_world, &detscat->prt.particles[i].position);
+                detscat_math_vec3_normalize(&pxl_scat_dir_world, &pxl_scat_dir_world, detscat_math_vec3_abs(&pxl_scat_dir_world));
+
+                Vec3 k_s = {k * pxl_scat_dir_world.x, k * pxl_scat_dir_world.y, k * pxl_scat_dir_world.z};
+
+                double phi = atan2(k_s.z, k_s.y) * 180.0 / M_PI;
+                double theta = acos(k_s.x / k) * 180.0 / M_PI;
+
+                ComplexMat2 fmatrix = detscat_ddscat_get_fmatrix(
+                    detscat->ddscat.fmls[i], phi, theta);
+
+                // Compute phase factor
+                Vec3 rj = detscat->prt.particles[i].position;
+                double phase = detscat_math_vec3_dot(&k_i, &rj) -
+                               detscat_math_vec3_dot(&k_s, &rj);
+                Complex exp_arg = {0.0, phase};
+                Complex exp_phase = detscat_math_cplx_exp(exp_arg);
+
+                // Incident electric field
+
+                
+
+                
 
 
+                
+            }
+        }
+    }
+
+    return true;
+}

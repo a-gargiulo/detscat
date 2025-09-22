@@ -79,7 +79,10 @@ typedef enum {
 typedef enum {
     PAR_STATE_INITIAL = 0,
     PAR_STATE_PARSE_COMPONENTS,
-    PAR_STATE_PARSE_SCAT_PLANES
+    PAR_STATE_PARSE_SCAT_PLANES,
+    PAR_STATE_PARSE_ORIENTATIONS,
+    PAR_STATE_PARSE_WAVELENGTHS,
+    PAR_STATE_PARSE_RADII
 } DetScatParserParState;
 
 typedef enum {
@@ -116,6 +119,12 @@ typedef struct {
     uint32_t magic;
     DetScatDdscatParams *par;
     DetScatParserParState state;
+    DetScatDdscatSamplingParams beta_params;
+    DetScatDdscatSamplingParams theta_params;
+    DetScatDdscatSamplingParams phi_params;
+    DetScatDdscatSamplingParams radius_params;
+    DetScatDdscatSamplingParams wavelength_params;
+    size_t angles_parsed;
     size_t components_allocated;
     size_t scat_planes_parsed;
 } DetScatParserParContext;

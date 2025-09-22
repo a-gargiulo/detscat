@@ -1,22 +1,20 @@
 $(StartTypes)
-#number of particle types
+# Number of particle types
 1
-#alias data_dir 
-# sphere /Users/galdo/Downloads/ddscat/ELLIPSOID
-sphere ..\..\ddscat\ELLIPSOID
+sphere        /Users/galdo/Downloads/ddscat/ELLIPSOID
 $(EndTypes)
 $(StartParticles)
-#number of particles
+# Number of particles
 10
-#alias wavelength_idx radius_idx orientation_idx x y z
-sphere 0 0 0 0.95 2.01 3.02
-sphere 0 0 0 1.02 1.97 2.95
-sphere 0 0 0 1.05 2.10 3.07
-sphere 0 0 0 0.98 2.05 3.01
-sphere 0 0 0 1.01 1.92 3.08
-sphere 0 0 0 1.08 2.03 2.99
-sphere 0 0 0 0.97 2.07 3.12
-sphere 0 0 0 1.03 1.95 3.04
-sphere 0 0 0 1.00 2.08 2.96
-sphere 0 0 0 1.06 1.99 3.05
+# Type  wavelength [nm]  eff. radius [um]  (a1_x a1_y a1_z)  (a2_x a2_y a2_z)  (x y z)[um]
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  100  100  100
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  200  100  100
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  300  100  100
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  100  200  100
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  200  200  100
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  300  200  100
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  100  300  100
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  200  300  100
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  300  300  100
+sphere  532.0  0.39789  0.0  1.0  0.0  0.0  0.0  1.0  150  150  200
 $(EndParticles)

@@ -15,8 +15,19 @@ typedef struct {
 } DetScatPrtCaseId;
 
 typedef struct {
-    Vec3 position;
+    Vec3 a1;
+    Vec3 a2;
+    double theta;
+    double phi;
+    double beta;
+} DetScatPrtOrientation;
+
+typedef struct {
     Str type_id;
+    double wavelength_nm;
+    double eff_radius_um;
+    DetScatPrtOrientation orientation;
+    Vec3 position;
     DetScatPrtCaseId case_id;
 } DetScatPrtParticle;
 
@@ -33,10 +44,10 @@ typedef struct DetScatPrt {
 } DetScatPrt;
 
 void detscat_prt_free(DetScatPrt *prt);
-bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt,
-                      DetScatError *err);
+bool detscat_prt_load(const char *prt_file_path, DetScatPrt *prt, DetScatError *err);
 void detscat_prt_free_subset(DetScatPrt *prt, size_t types_count,
                              size_t particles_count);
 void detscat_prt_transform(DetScatPrtParticle *particles, size_t n, const Vec3 *origin, const Mat3 *rotmat);
+void detscat_prt_orientation_vec_to_angles(DetScatPrt *prt);
 
 #endif  // DETSCAT_PRT_H

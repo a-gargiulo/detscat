@@ -13,9 +13,38 @@ struct DetScatPrt;
 typedef double Plane[4];
 
 typedef struct {
+    double beta, theta, phi;
+    Vec3 a1, a2;
+} DetScatDdscatOrientation;
+
+typedef struct {
+    double min;
+    double max;
+    size_t n;
+    char method[8];
+} DetScatDdscatSamplingParams;
+
+typedef struct {
+    int w;
+    int r;
+    int k;
+    double wavelength;
+    double radius;
+    DetScatDdscatOrientation orientation;
+} DetScatDdscatCase;
+
+typedef struct {
     ComplexVec3 e01;
     Str *components;
     Plane *scat_planes;
+    DetScatDdscatOrientation *orientations;
+    double *wavelengths;
+    DetScatDdscatCase *cases;
+    double *radii;
+    size_t n_cases;
+    size_t n_orientations;
+    size_t n_wavelengths;
+    size_t n_radii;
     size_t n_components;
     size_t n_scat_planes;
 } DetScatDdscatParams;
@@ -56,5 +85,7 @@ bool detscat_ddscat_par_load(const char *par_file_path,
                              DetScatDdscatParams *par, DetScatError *err);
 bool detscat_ddscat_fml_load(const char *fml_file_path, DetScatDdscatFml *fml,
                              DetScatDdscatParams *par, DetScatError *err);
+
+ComplexMat2 detscat_ddscat_get_fmatrix(const DetScatDdscatFml *fml, double phi, double theta);
 
 #endif  // DETSCAT_DDSCAT_H

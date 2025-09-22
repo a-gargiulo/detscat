@@ -119,7 +119,7 @@ void detscat_camera_pixel_coordinate_to_world(Vec3 *p, int u, int v, const DetSc
 // }
 
 
-int detscat_camera_get_image_index(int u, int v, const DetScatImage* img) {
+int detscat_camera_get_pixel_index(int u, int v, const DetScatImage* img) {
     // Row-major
     return v * img->width + u;
 }

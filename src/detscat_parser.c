@@ -12,6 +12,7 @@
  *    - detscat_parser_parse_int_cfg
  *    - detscat_parser_parse_vec3_cfg
  *    - detscat_parser_parse_cplx_vec3_cfg
+ *    - detscat_parser_parse_cplx_cfg
  *    - detscat_parser_parse_str_cfg
  *    - detscat_parser_split_key_value_cfg
  *    - detscat_parser_handle_key_cfg
@@ -31,9 +32,14 @@
  *
  *    // PAR
  *    - detscat_parser_parse_component_par
+ *    - detscat_parser_get_params_by_name_par
+ *    - detscat_parser_parse_sampling_params_par
  *    - detscat_parser_initial_par
  *    - detscat_parser_parse_components_par
- *    - detscat_parser_parse_scat_planes
+ *    - detscat_parser_parse_orientations_par
+ *    - detscat_parser_parse_wavelengths_par
+ *    - detscat_parser_parse_radii_par
+ *    - detscat_parser_parse_scat_planes_par
  *    - detscat_parser_parse_line_par
  *
  *    // FML
@@ -256,6 +262,32 @@ static bool detscat_parser_parse_cplx_vec3_cfg(const char *value,
     return true;
 }
 
+static bool detscat_parser_parse_cplx_cfg(const char *value,
+                                          Complex *out,
+                                          DetScatParser *parser,
+                                          const char *key) {
+    assert(parser && out);
+
+    if (!value || !*value || !key || !*key) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Invalid or empty key/value provided at line %d",
+                         parser->line_number);
+
+        return false;
+    }
+
+    int matched = sscanf(value, " [ %lf , %lf ] ", &out->re, &out->im);
+    if (matched != 2) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_FORMAT,
+            "Invalid format for '%s' at line %d: expected a complex number",
+            key, parser->line_number);
+        return false;
+    }
+
+    return true;
+}
+
 static bool detscat_parser_parse_str_cfg(const char *value, Str *out,
                                          DetScatParser *parser, const char *key,
                                          size_t maxlen) {
@@ -321,29 +353,15 @@ static bool detscat_parser_handle_key_cfg(const char *key, const char *value,
         return false;
     }
 
-    if (strcmp(key, "polarization_type") == 0) {
-        return detscat_parser_parse_str_cfg(value, &cfg->polarization_type,
-                                            parser, key,
-                                            DETSCAT_CFG_STRVAR_MAX);
-    } else if (strcmp(key, "polarization_axis") == 0) {
-        return detscat_parser_parse_str_cfg(value, &cfg->polarization_axis,
-                                            parser, key,
-                                            DETSCAT_CFG_STRVAR_MAX);
-    } else if (strcmp(key, "elliptical_alpha_deg") == 0) {
-        return detscat_parser_parse_double_cfg(
-            value, &cfg->elliptical_alpha_deg, parser, key);
-
-    } else if (strcmp(key, "elliptical_beta_deg") == 0) {
-        return detscat_parser_parse_double_cfg(value, &cfg->elliptical_beta_deg,
-                                               parser, key);
-
-    } else if (strcmp(key, "light_source_position_m") == 0) {
-        return detscat_parser_parse_vec3_cfg(
-            value, &cfg->light_source_position_m, parser, key);
+    if (strcmp(key, "e01_coefficient") == 0) {
+        return detscat_parser_parse_cplx_cfg(value, &cfg->e01_coeff, parser,
+                                             key);
+    } else if (strcmp(key, "e02_coefficient") == 0) {
+        return detscat_parser_parse_cplx_cfg(value, &cfg->e02_coeff, parser,
+                                             key);
     } else if (strcmp(key, "light_source_direction") == 0) {
         return detscat_parser_parse_vec3_cfg(
             value, &cfg->light_source_direction, parser, key);
-
     } else if (strcmp(key, "wavelength_nm") == 0) {
         return detscat_parser_parse_double_cfg(value, &cfg->wavelength_nm,
                                                parser, key);
@@ -576,9 +594,11 @@ static bool detscat_parser_parse_particle_prt(const char *line,
         return false;
     }
 
-    int wrk[3];
+    double a1[3];
+    double a2[3];
     double xyz[3];
 
+    // type id
     char *tok = strtok(copy, " \t");
 
     if (!tok) {
@@ -599,13 +619,36 @@ static bool detscat_parser_parse_particle_prt(const char *line,
 
     char *type_id = detscat_str_raw_strdup(tok);
 
+
+    // wavelength
+    tok = strtok(NULL, "\t");
+    if (!tok) goto error_cleanup;
+    if (!detscat_parser_parse_double_prt(tok, &particle->wavelength_nm, parser))
+        goto error_cleanup;
+
+    // eff_raidus
+    tok = strtok(NULL, "\t");
+    if (!tok) goto error_cleanup;
+    if (!detscat_parser_parse_double_prt(tok, &particle->eff_radius_um, parser))
+        goto error_cleanup;
+
+    // a1
     for (size_t i = 0; i < 3; ++i) {
         tok = strtok(NULL, " \t");
         if (!tok) goto error_cleanup;
-        if (!detscat_parser_parse_int_prt(tok, &wrk[i], parser))
+        if (!detscat_parser_parse_double_prt(tok, &a1[i], parser))
             goto error_cleanup;
     }
 
+    // a2
+    for (size_t i = 0; i < 3; ++i) {
+        tok = strtok(NULL, " \t");
+        if (!tok) goto error_cleanup;
+        if (!detscat_parser_parse_double_prt(tok, &a2[i], parser))
+            goto error_cleanup;
+    }
+
+    // position - xyz
     for (size_t i = 0; i < 3; ++i) {
         tok = strtok(NULL, " \t");
         if (!tok) goto error_cleanup;
@@ -623,9 +666,14 @@ static bool detscat_parser_parse_particle_prt(const char *line,
         goto error_cleanup;
     }
 
-    particle->case_id.w = wrk[0];
-    particle->case_id.r = wrk[1];
-    particle->case_id.k = wrk[2];
+    particle->orientation.a1.x = a1[0];
+    particle->orientation.a1.y = a1[1];
+    particle->orientation.a1.z = a1[2];
+
+    particle->orientation.a2.x = a2[0];
+    particle->orientation.a2.y = a2[1];
+    particle->orientation.a2.z = a2[2];
+
     particle->position.x = xyz[0];
     particle->position.y = xyz[1];
     particle->position.z = xyz[2];
@@ -635,6 +683,9 @@ static bool detscat_parser_parse_particle_prt(const char *line,
     return true;
 
 error_cleanup:
+    PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_SYNTAX,
+                     "Invalid particle definition at line %d",
+                     parser->line_number);
     free(copy);
     free(type_id);
     return false;
@@ -987,6 +1038,65 @@ cleanup:
     return false;
 }
 
+
+
+static DetScatDdscatSamplingParams *detscat_parser_get_params_by_name_par(
+    const char *name, DetScatParserParContext *ctx) 
+{
+    if (strcmp(name, "BETA") == 0) return &ctx->beta_params;
+    if (strcmp(name, "THETA") == 0) return &ctx->theta_params;
+    if (strcmp(name, "PHI") == 0) return &ctx->phi_params;
+    if (strcmp(name, "RADIUS") == 0) return &ctx->radius_params;
+    if (strcmp(name, "WAVELENGTH") == 0) return &ctx->wavelength_params;
+    return NULL;
+}
+
+static bool detscat_parser_parse_sampling_params_par(
+    const char *line, const char *param_name, DetScatParserParContext *ctx,
+    DetScatParser *parser, bool parse_method) {
+    assert(parser && ctx && param_name);
+
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+
+    DetScatDdscatSamplingParams *params; 
+    params = detscat_parser_get_params_by_name_par(param_name, ctx);
+    if (!params) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+                         "Invalid parameter name '%s'", param_name);
+        return false;
+    }
+
+    int match;
+    if (parse_method) {
+        match = sscanf(line, " %lf %lf %zu '%8s' ",
+                       &params->min,
+                       &params->max,
+                       &params->n,
+                       params->method);
+    } else {
+        match = sscanf(line, " %lf %lf %zu ",
+                       &params->min,
+                       &params->max,
+                       &params->n);
+    }
+
+    if (match != (parse_method ? 4 : 3)) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Invalid format for %s at line %d",
+                         param_name,
+                         parser->line_number);
+        return false;
+    }
+
+    return true;
+}
+
 static bool detscat_parser_initial_par(const char *line,
                                        DetScatParserParContext *ctx,
                                        DetScatParser *parser) {
@@ -1037,6 +1147,33 @@ static bool detscat_parser_initial_par(const char *line,
         }
 
         ctx->state = PAR_STATE_PARSE_SCAT_PLANES;
+    } else if (strstr(line, "NBETA")) {    
+        if (!detscat_parser_parse_sampling_params_par(
+            line, "BETA", ctx, parser, false))
+            return false;
+
+        ctx->angles_parsed++;
+        ctx->state = (ctx->angles_parsed == 3)
+                        ? PAR_STATE_PARSE_ORIENTATIONS
+                        : PAR_STATE_INITIAL;
+    } else if (strstr(line, "NTHETA")) {
+        if (!detscat_parser_parse_sampling_params_par(
+            line, "THETA", ctx, parser, false))
+            return false;
+
+        ctx->angles_parsed++;
+        ctx->state = (ctx->angles_parsed == 3) 
+                        ? PAR_STATE_PARSE_ORIENTATIONS
+                        : PAR_STATE_INITIAL;
+    } else if (strstr(line, "NPHI")) {
+        if (!detscat_parser_parse_sampling_params_par(
+            line, "PHI", ctx, parser, false))
+            return false;
+
+        ctx->angles_parsed++;
+        ctx->state = (ctx->angles_parsed == 3)
+                        ? PAR_STATE_PARSE_ORIENTATIONS
+                        : PAR_STATE_INITIAL;
     } else if (strstr(line, "Polarization state")) {
         if (sscanf(line, "(%lf, %lf) (%lf, %lf) (%lf, %lf)",
                    &ctx->par->e01.x.re, &ctx->par->e01.x.im,
@@ -1048,6 +1185,14 @@ static bool detscat_parser_initial_par(const char *line,
             return false;
         }
         ctx->state = PAR_STATE_INITIAL;
+    } else if (strstr(line, "wavelengths")) {
+        if (!detscat_parser_parse_sampling_params_par(
+            line, "WAVELENGTH", ctx, parser, false)) return false;
+        ctx->state = PAR_STATE_PARSE_WAVELENGTHS;
+    } else if (strstr(line, "radii")) {
+        if (!detscat_parser_parse_sampling_params_par(
+            line, "RADIUS", ctx, parser, false)) return false;
+        ctx->state = PAR_STATE_PARSE_RADII;
     }
     return true;
 }
@@ -1094,7 +1239,213 @@ static bool detscat_parser_parse_components_par(const char *line,
     return true;
 }
 
-static bool detscat_parser_parse_scat_planes(const char *line,
+
+static bool detscat_parser_parse_orientations_par(const char *line,
+                                                  DetScatParserParContext *ctx,
+                                                  DetScatParser *parser) {
+    assert(parser && ctx);
+
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+    ctx->par->n_orientations = ctx->beta_params.n *
+                               ctx->theta_params.n *
+                               ctx->phi_params.n;
+
+    ctx->par->orientations = calloc(
+        ctx->par->n_orientations, sizeof(*ctx->par->orientations));
+    if (!ctx->par->orientations) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_MEMORY,
+            "Failed to allocate memory for orientations at line %d",
+            parser->line_number);
+        return false;
+    }
+
+    double *beta = calloc(ctx->beta_params.n, sizeof(double));
+    double *phi= calloc(ctx->phi_params.n, sizeof(double));
+    double *theta= calloc(ctx->theta_params.n, sizeof(double));
+    if (!beta || !phi || !theta) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_MEMORY,
+            "Could not allocate temporary memory for angles at line %d",
+            parser->line_number);
+        return false;
+    }
+
+    for (size_t i = 0; i < ctx->beta_params.n; i++) {
+        double frac = (i + 0.5) / ctx->beta_params.n;
+        beta[i] = ctx->beta_params.min +
+                  frac * (ctx->beta_params.max - ctx->beta_params.min);
+    }
+
+    for (size_t i = 0; i < ctx->phi_params.n; i++) {
+        double frac = (i + 0.5) / ctx->phi_params.n;
+        phi[i] = ctx->phi_params.min +
+                 frac * (ctx->phi_params.max - ctx->phi_params.min);
+    }
+
+    double cos_thetmi = cos(ctx->theta_params.min * M_PI / 180.0);
+    double cos_thetmx = cos(ctx->theta_params.max * M_PI / 180.0);
+
+    if (ctx->theta_params.n % 2 == 1) {
+        // odd
+        for (size_t i = 0; i < ctx->theta_params.n; i++) {
+            double frac = (double)i / (ctx->theta_params.max - 1);
+            double cos_theta = cos_thetmi + frac * (cos_thetmx - cos_thetmi);
+            theta[i] = acos(cos_theta) * 180.0 / M_PI;
+        }
+    } else {
+        // even 
+        for (size_t i = 0; i < ctx->theta_params.n; i++) {
+            double frac = (i + 0.5) / ctx->theta_params.n;
+            double cos_theta = cos_thetmi + frac * (cos_thetmx - cos_thetmi);
+            theta[i] = acos(cos_theta) * 180.0 / M_PI;
+        }
+    }
+
+    size_t c = 0;
+    for (size_t i = 0; i < ctx->theta_params.n; ++i) {
+        for (size_t j = 0; j < ctx->beta_params.n; ++j) {
+            for (size_t k = 0; k < ctx->phi_params.n; ++k) {
+                ctx->par->orientations[c].theta = theta[i];
+                ctx->par->orientations[c].beta = beta[j];
+                ctx->par->orientations[c].phi = phi[k];
+                c++;
+            }
+        }
+    }
+
+    free(beta); free(theta); free(phi);
+
+    ctx->state = PAR_STATE_INITIAL;
+    return true;
+}
+
+static bool detscat_parser_parse_wavelengths_par(const char *line,
+                                                 DetScatParserParContext *ctx,
+                                                 DetScatParser *parser) {
+    assert(parser && ctx);
+
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+
+    ctx->par->n_wavelengths = ctx->wavelength_params.n;
+
+    ctx->par->wavelengths = calloc(ctx->par->n_wavelengths,
+                                   sizeof(*ctx->par->wavelengths));
+    if (!ctx->par->wavelengths) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_MEMORY,
+            "Could not allocate memory for wavelengths at line %d",
+            parser->line_number);
+        return false;
+    }
+
+    const char *method = ctx->wavelength_params.method;
+    if (strcmp(method, "LIN")) {
+        double step = 
+            (ctx->wavelength_params.max - ctx->wavelength_params.min) /
+            (ctx->wavelength_params.n - 1);
+        for (size_t i = 0; i < ctx->wavelength_params.n; ++i) {
+            ctx->par->wavelengths[i] = ctx->wavelength_params.min + i * step;
+        }
+    } else if (strcmp(method, "INV")) {
+        double inv_start = 1.0 / ctx->wavelength_params.min;
+        double inv_end   = 1.0 / ctx->wavelength_params.max;
+        double step = (inv_end - inv_start) / (ctx->wavelength_params.n - 1);
+        for (size_t i = 0; i < ctx->wavelength_params.n; ++i) {
+            double inv_val = inv_start + i * step;
+            ctx->par->wavelengths[i] = 1.0 / inv_val;
+        }
+    } else if (strcmp(method, "LOG")) {
+        double log_start = log10(ctx->wavelength_params.min);
+        double log_end   = log10(ctx->wavelength_params.max);
+        double step = (log_end - log_start) / (ctx->wavelength_params.n - 1);
+        for (size_t i = 0; i < ctx->wavelength_params.n; i++) {
+            ctx->par->wavelengths[i] = pow(10.0, log_start + i * step);
+        }
+    } else {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+            "Invalid/unsupported sampling method '%s' provided on line %d",
+            method, parser->line_number);
+        return false;
+    }
+
+    ctx->state = PAR_STATE_INITIAL;
+    return true;
+}
+
+static bool detscat_parser_parse_radii_par(const char *line,
+                                           DetScatParserParContext *ctx,
+                                           DetScatParser *parser) {
+    assert(parser && ctx);
+
+    if (!line || !*line) {
+        PARSER_SET_ERROR(parser, DETSCAT_PARSER_ERR_FORMAT,
+                         "Empty or null input buffer at line %d",
+                         parser->line_number);
+        return false;
+    }
+
+
+    ctx->par->n_radii= ctx->radius_params.n;
+
+    ctx->par->radii = calloc(ctx->par->n_radii, sizeof(*ctx->par->radii));
+    if (!ctx->par->radii) {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_MEMORY,
+            "Could not allocate memory for radii at line %d",
+            parser->line_number);
+        return false;
+    }
+
+    const char *method = ctx->radius_params.method;
+    if (strcmp(method, "LIN")) {
+        double step = 
+            (ctx->radius_params.max - ctx->radius_params.min) /
+            (ctx->radius_params.n - 1);
+        for (size_t i = 0; i < ctx->radius_params.n; ++i) {
+            ctx->par->radii[i] = ctx->radius_params.min + i * step;
+        }
+    } else if (strcmp(method, "INV")) {
+        double inv_start = 1.0 / ctx->radius_params.min;
+        double inv_end   = 1.0 / ctx->radius_params.max;
+        double step = (inv_end - inv_start) / (ctx->radius_params.n - 1);
+        for (size_t i = 0; i < ctx->radius_params.n; ++i) {
+            double inv_val = inv_start + i * step;
+            ctx->par->radii[i] = 1.0 / inv_val;
+        }
+    } else if (strcmp(method, "LOG")) {
+        double log_start = log10(ctx->radius_params.min);
+        double log_end   = log10(ctx->radius_params.max);
+        double step = (log_end - log_start) / (ctx->radius_params.n - 1);
+        for (size_t i = 0; i < ctx->radius_params.n; i++) {
+            ctx->par->radii[i] = pow(10.0, log_start + i * step);
+        }
+    } else {
+        PARSER_SET_ERROR(
+            parser, DETSCAT_PARSER_ERR_INVALID_ARG,
+            "Invalid/unsupported sampling method '%s' provided on line %d",
+            method, parser->line_number);
+        return false;
+    }
+
+    ctx->state = PAR_STATE_INITIAL;
+    return true;
+}
+
+static bool detscat_parser_parse_scat_planes_par(const char *line,
                                              DetScatParserParContext *ctx,
                                              DetScatParser *parser) {
     assert(parser && ctx);
@@ -1150,7 +1501,22 @@ static bool detscat_parser_parse_line_par(DetScatParserParContext *ctx,
             return true;
 
         case PAR_STATE_PARSE_SCAT_PLANES:
-            if (!detscat_parser_parse_scat_planes(trimmed, ctx, parser))
+            if (!detscat_parser_parse_scat_planes_par(trimmed, ctx, parser))
+                goto error_cleanup;
+            return true;
+
+        case PAR_STATE_PARSE_ORIENTATIONS:
+            if (!detscat_parser_parse_orientations_par(trimmed, ctx, parser))
+                goto error_cleanup;
+            return true;
+
+        case PAR_STATE_PARSE_WAVELENGTHS:
+            if (!detscat_parser_parse_wavelengths_par(trimmed, ctx, parser))
+                goto error_cleanup;
+            return true;
+
+        case PAR_STATE_PARSE_RADII:
+            if (!detscat_parser_parse_radii_par(trimmed, ctx, parser))
                 goto error_cleanup;
             return true;
     }

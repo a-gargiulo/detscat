@@ -11,16 +11,13 @@
 typedef struct {
 
     // Light source
-    Vec3           light_source_position_m;
-    Vec3           light_source_direction;
-    double         beam_diameter_mm;
     double         wavelength_nm;
-    Str            polarization_type;
-    Str            polarization_axis;
-    double         elliptical_alpha_deg;
-    double         elliptical_beta_deg;
     double         pulse_energy_mj;
     double         pulse_width_ns;
+    double         beam_diameter_mm;
+    Complex        e01_coeff;
+    Complex        e02_coeff;
+    Vec3           light_source_direction;
 
     // Particles
     Str            particles_file_path;
