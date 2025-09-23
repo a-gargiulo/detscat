@@ -1354,6 +1354,7 @@ static bool detscat_parser_parse_wavelengths_par(const char *line,
     }
 
     const char *method = ctx->wavelength_params.method;
+    
     if (strcmp(method, "LIN") == 0) {
         double step = 
             (ctx->wavelength_params.max - ctx->wavelength_params.min) /

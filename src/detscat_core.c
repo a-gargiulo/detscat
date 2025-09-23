@@ -202,7 +202,7 @@ static void detscat_normalize_ddscat_case(const DetScatDdscatCase *c,
                         c->orientation.a2.y,
                         c->orientation.a2.z};
     for(size_t i = 0; i < 8; ++i){
-        out[i] = (coords[i] - mean[i]) / std[i];
+        out[i] = (std[i] == 0.0) ? 0.0 : (coords[i] - mean[i]) / std[i];
     }
 }
 
@@ -344,7 +344,8 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
     // PRT
     if (!detscat_prt_load(prt_file_path, &detscat->prt, err)) goto cleanup;
 
-    detscat_math_vec3_centroid(&detscat->transform.translation,
+    Vec3 centroid;
+    detscat_math_vec3_centroid(&centroid,
                                detscat->prt.particles,
                                detscat->prt.n_particles,
                                sizeof(DetScatPrtParticle),
@@ -359,6 +360,8 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
                                   &zprime);
     detscat_math_mat3_basis_to_rotmat(&detscat->transform.rotation, 
                                       &xprime, &yprime, &zprime);
+    detscat_math_mat3_vec3_mult(&detscat->transform.translation, &detscat->transform.rotation, &centroid);
+    detscat_math_vec3_scale(&detscat->transform.translation, &detscat->transform.translation, -1);
 
     detscat_prt_transform(detscat->prt.particles,
                           detscat->prt.n_particles,
@@ -394,6 +397,7 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
 
         detscat_str_free(&par_file_path);
     }
+
 
     // FMLS + PAR_IDXS
     for (size_t i = 0; i < detscat->prt.n_particles; ++i) {

@@ -8,13 +8,12 @@ void detscat_prt_transform(DetScatPrtParticle *particles, size_t n,
     assert(particles && origin && rotmat);
 
     for (size_t i = 0; i < n; ++i) {
-        // translation
+        // Transform positions 
         Vec3 tmp;
-        detscat_math_vec3_sub(&tmp, &particles[i].position, origin);
+        detscat_math_mat3_vec3_mult(&tmp, rotmat, &particles[i].position);
+        detscat_math_vec3_add(&particles[i].position, &tmp, origin);
 
-        // rotation
-        detscat_math_mat3_vec3_mult(&particles[i].position, rotmat, &tmp);
-
+        // Transform orientation 
         detscat_math_mat3_vec3_mult(&particles[i].orientation.a1, rotmat, &particles[i].orientation.a1);
         detscat_math_vec3_normalize(&particles[i].orientation.a1, &particles[i].orientation.a1, detscat_math_vec3_abs(&particles[i].orientation.a1));
 

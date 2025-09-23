@@ -90,7 +90,6 @@ static bool detscat_extract_ddscat_cases_from_par(DetScatDdscatParams *par, DetS
                     par->cases[c].orientation.phi,
                     &par->cases[c].orientation.a1,
                     &par->cases[c].orientation.a2);
-                
                 c++;
             }
         }

@@ -17,16 +17,13 @@
 bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const DetScatTransform *glob_t, DetScatError *err) {
     assert(cam && cfg);
 
-    // Camera center in CALC frame 
-    Vec3 tmp;
-    detscat_math_vec3_sub(&tmp, &cfg->camera_center_position_m, &glob_t->translation);
-    detscat_math_mat3_vec3_mult(&cam->extrinsics.translation, &glob_t->rotation, &tmp);
 
     // Forward (view direction) in CALC frame
     detscat_math_mat3_vec3_mult(&cam->axes.n, &glob_t->rotation, &cfg->camera_direction);
     detscat_math_vec3_normalize(&cam->axes.n, &cam->axes.n, detscat_math_vec3_abs(&cam->axes.n));
 
-    // Build right-up axes from "preferred up" direction 
+
+    // Build right and up axes from "preferred up" direction 
     Vec3 preferred_up_global = (Vec3){0, -1, 0};
     Vec3 preferred_up_calc;
     detscat_math_mat3_vec3_mult(&preferred_up_calc, &glob_t->rotation, &preferred_up_global);
@@ -36,6 +33,16 @@ bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const Det
     // Rotation matrix CALC -> CAMERA
     detscat_math_mat3_basis_to_rotmat(&cam->extrinsics.rotation, &cam->axes.r, &cam->axes.u, &cam->axes.n);
 
+    // Translation vector - Camera center in CAMERA frame 
+    Vec3 cam_cntr_rot1;
+    Vec3 cam_cntr_rot2;
+    Vec3 cam_cntr_t1;
+    // camera center expressed in CALC frame
+    detscat_math_mat3_vec3_mult(&cam_cntr_rot1, &glob_t->rotation, &cfg->camera_center_position_m); 
+    detscat_math_vec3_add(&cam_cntr_t1, &cam_cntr_rot1, &glob_t->translation);
+    // find translation in CAMERA frame
+    detscat_math_mat3_vec3_mult(&cam_cntr_rot2, &cam->extrinsics.rotation, &cam_cntr_rot1);
+    detscat_math_vec3_scale(&cam->extrinsics.translation, &cam_cntr_rot2, -1);
 
     // Camera intrinsics
     cam->intrinsics.f = cfg->focal_length_mm * DETSCAT_CONST_MM2M;
@@ -95,18 +102,36 @@ void detscat_camera_free(DetScatCamera *cam) {
 
 
 void detscat_camera_pixel_coordinate_to_world(Vec3 *p, int u, int v, const DetScatCamera *cam) {
+    // p->x = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m11 +
+    //        cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m21 +
+    //        cam->intrinsics.f * cam->extrinsics.rotation.m31 -
+    //        cam->extrinsics.translation.x;
+    // p->y = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m12 +
+    //        cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m22 +
+    //        cam->intrinsics.f * cam->extrinsics.rotation.m32 -
+    //        cam->extrinsics.translation.y;
+    // p->z = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m13 +
+    //        cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m23 +
+    //        cam->intrinsics.f * cam->extrinsics.rotation.m33 -
+    //        cam->extrinsics.translation.z;
     p->x = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m11 +
            cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m21 +
-           cam->intrinsics.f * cam->extrinsics.rotation.m31 +
-           cam->extrinsics.translation.x;
+           cam->intrinsics.f * cam->extrinsics.rotation.m31 -
+           cam->extrinsics.translation.x * cam->extrinsics.rotation.m11 -
+           cam->extrinsics.translation.y * cam->extrinsics.rotation.m21 -
+           cam->extrinsics.translation.z * cam->extrinsics.rotation.m31;
     p->y = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m12 +
            cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m22 +
-           cam->intrinsics.f * cam->extrinsics.rotation.m32 +
-           cam->extrinsics.translation.y;
+           cam->intrinsics.f * cam->extrinsics.rotation.m32 -
+           cam->extrinsics.translation.x * cam->extrinsics.rotation.m12 -
+           cam->extrinsics.translation.y * cam->extrinsics.rotation.m22 -
+           cam->extrinsics.translation.z * cam->extrinsics.rotation.m32;
     p->z = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m13 +
            cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m23 +
-           cam->intrinsics.f * cam->extrinsics.rotation.m33 +
-           cam->extrinsics.translation.z;
+           cam->intrinsics.f * cam->extrinsics.rotation.m33 -
+           cam->extrinsics.translation.x * cam->extrinsics.rotation.m13 -
+           cam->extrinsics.translation.y * cam->extrinsics.rotation.m23 -
+           cam->extrinsics.translation.z * cam->extrinsics.rotation.m33;
 }
 
 
