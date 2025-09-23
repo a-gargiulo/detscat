@@ -72,6 +72,7 @@
 #include "detscat_math.h"
 #include "detscat_prt.h"
 #include "detscat_str.h"
+#include "detscat_const.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -674,9 +675,10 @@ static bool detscat_parser_parse_particle_prt(const char *line,
     particle->orientation.a2.y = a2[1];
     particle->orientation.a2.z = a2[2];
 
-    particle->position.x = xyz[0];
-    particle->position.y = xyz[1];
-    particle->position.z = xyz[2];
+    // scale => um to m
+    particle->position.x = xyz[0] * DETSCAT_CONST_UM2M;
+    particle->position.y = xyz[1] * DETSCAT_CONST_UM2M;
+    particle->position.z = xyz[2] * DETSCAT_CONST_UM2M;
 
     free(copy);
     free(type_id);
@@ -1366,7 +1368,6 @@ static bool detscat_parser_parse_wavelengths_par(const char *line,
         for (size_t i = 0; i < ctx->wavelength_params.n; ++i) {
             double inv_val = inv_start + i * step;
             ctx->par->wavelengths[i] = 1.0 / inv_val;
-            detscat_log(DETSCAT_DEBUG, "WL: %lf", inv_end);
         }
     } else if (strcmp(method, "LOG") == 0) {
         double log_start = log10(ctx->wavelength_params.min);
@@ -1412,14 +1413,14 @@ static bool detscat_parser_parse_radii_par(const char *line,
     }
 
     const char *method = ctx->radius_params.method;
-    if (strcmp(method, "LIN")) {
+    if (strcmp(method, "LIN") == 0) {
         double step = 
             (ctx->radius_params.max - ctx->radius_params.min) /
             (ctx->radius_params.n - 1);
         for (size_t i = 0; i < ctx->radius_params.n; ++i) {
             ctx->par->radii[i] = ctx->radius_params.min + i * step;
         }
-    } else if (strcmp(method, "INV")) {
+    } else if (strcmp(method, "INV") == 0) {
         double inv_start = 1.0 / ctx->radius_params.min;
         double inv_end   = 1.0 / ctx->radius_params.max;
         double step = (inv_end - inv_start) / (ctx->radius_params.n - 1);
@@ -1427,7 +1428,7 @@ static bool detscat_parser_parse_radii_par(const char *line,
             double inv_val = inv_start + i * step;
             ctx->par->radii[i] = 1.0 / inv_val;
         }
-    } else if (strcmp(method, "LOG")) {
+    } else if (strcmp(method, "LOG") == 0) {
         double log_start = log10(ctx->radius_params.min);
         double log_end   = log10(ctx->radius_params.max);
         double step = (log_end - log_start) / (ctx->radius_params.n - 1);

@@ -21,6 +21,7 @@ void detscat_prt_transform(DetScatPrtParticle *particles, size_t n,
         detscat_math_mat3_vec3_mult(&particles[i].orientation.a2, rotmat, &particles[i].orientation.a2);
         detscat_math_vec3_normalize(&particles[i].orientation.a2, &particles[i].orientation.a2, detscat_math_vec3_abs(&particles[i].orientation.a2));
 
+        // Angles
         detscat_math_vec3_orientation_to_angles(
             &particles[i].orientation.a1,
             &particles[i].orientation.a2,

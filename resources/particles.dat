@@ -1,15 +1,15 @@
 $(StartTypes)
 # Number of particle types
 1
-# sphere        /Users/galdo/Downloads/ddscat/sphere/
-sphere        ../../ddscat/sphere/
+sphere        /Users/galdo/Downloads/ddscat/examples_exp/ELLIPSOID/
+# sphere        ../../ddscat/sphere/
 $(EndTypes)
 $(StartParticles)
 # Number of particles
 4
 # Type  wavelength [nm]  eff. radius [um]  (a1_x a1_y a1_z)  (a2_x a2_y a2_z)  (x y z)[um]
-sphere  532.0  0.5  1.0  0.0  -1.0  0.0  1.0  0.0  0.02e+06   0.002e+06  -0.02e+06
-sphere  532.0  0.5  0.707  0.0  -0.707  0.0  1.0  0.0  0.04e+06  -0.003e+06  -0.04e+06
-sphere  532.0  0.5  0.707  0.0  -0.707  0.0  1.0  0.0  0.06e+06   0.004e+06  -0.06e+06
-sphere  532.0  0.5  0.707  0.0  -0.707  0.0  1.0  0.0  0.08e+06   0.002e+06  -0.08e+06
+sphere  532.0  0.5  1.000  0.0  -1.000  0.000  1.000  0.000   0.001e+06   0.0002e+06  -0.001e+06
+sphere  532.0  0.5  0.707  0.0  -0.707  0.000  1.000  0.000   0.002e+06  -0.0003e+06  -0.002e+06
+sphere  532.0  0.5  0.707  0.0  -0.707  0.000  1.000  0.000  -0.003e+06   0.0004e+06   0.003e+06
+sphere  532.0  0.5  0.707  0.0  -0.707  0.000  1.000  0.000  -0.004e+06   0.0002e+06   0.004e+06
 $(EndParticles)

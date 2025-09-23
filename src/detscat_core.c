@@ -393,13 +393,6 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         }
 
         detscat_str_free(&par_file_path);
-
-        detscat_log(DETSCAT_DEBUG,
-                "number of wavelengths: %zu", detscat->ddscat.pars[i].n_wavelengths);
-        detscat_log(DETSCAT_DEBUG,
-                "wavelength: %lf", detscat->ddscat.pars[i].wavelengths[0]);
-
-
     }
 
     // FMLS + PAR_IDXS
@@ -436,14 +429,14 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
         detscat->prt.particles[i].case_id.k = detscat->ddscat.pars[idx].cases[nearest_idx].k;
 
 
-        double delta_w = 100 * (
-            detscat->prt.particles[i].wavelength_nm -
-            detscat->ddscat.pars[idx].cases[nearest_idx].wavelength * 1e3) / 
-            (detscat->ddscat.pars[idx].cases[nearest_idx].wavelength * 1e3);
-        double delta_r = 100 * (
+        double delta_w = 100.0 * (
+            detscat->prt.particles[i].wavelength_nm * 1e-3 -
+            detscat->ddscat.pars[idx].cases[nearest_idx].wavelength) / 
+            detscat->ddscat.pars[idx].cases[nearest_idx].wavelength;
+        double delta_r = 100.0 * (
             detscat->prt.particles[i].eff_radius_um -
             detscat->ddscat.pars[idx].cases[nearest_idx].radius) / 
-            (detscat->ddscat.pars[idx].cases[nearest_idx].radius);
+            detscat->ddscat.pars[idx].cases[nearest_idx].radius;
         double delta_a1 = 100.0 * detscat_math_vec3_diff(
             &detscat->prt.particles[i].orientation.a1,
             &detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a1);  
@@ -451,28 +444,15 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
             &detscat->prt.particles[i].orientation.a2,
             &detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a2);  
 
-
-
-        for (size_t i = 0; i < detscat->ddscat.pars[idx].n_cases; ++i) {
-            detscat_log(DETSCAT_DEBUG,
-                "wavelength: %.3f\nradius: %.3f\na1: [%.3f, %.3f, %.3f]\na2: [%.3f, %.3f, %.3f]",
-                detscat->ddscat.pars[idx].cases[i].wavelength,
-                detscat->ddscat.pars[idx].cases[i].radius,
-                detscat->ddscat.pars[idx].cases[i].orientation.a1.x,
-                detscat->ddscat.pars[idx].cases[i].orientation.a1.y,
-                detscat->ddscat.pars[idx].cases[i].orientation.a1.z,
-                detscat->ddscat.pars[idx].cases[i].orientation.a2.x,
-                detscat->ddscat.pars[idx].cases[i].orientation.a2.y,
-                detscat->ddscat.pars[idx].cases[i].orientation.a2.z
-                );
-        }
-
         detscat_log(DETSCAT_INFO,
-            "Particle %zu / %zu:\n"
-            "  Target:  wavelength = %.3f nm, eff. radius = %.3f um, a1 = [%.3f, %.3f, %.3f], a2 = [%.3f, %.3f, %.3f]\n"
-            "  Nearest:  wavelength = %.3f nm, eff. radius = %.3f um, a1 = [%.3f, %.3f, %.3f], a2 = [%.3f, %.3f, %.3f]\n"
-            "  Deviations: d(wavelength) = %.2f %, d(eff. radius) = %.2f %, d(a1) = %.2f %, d(a2) = %.2f %",
+            "\n\nParticle %zu / %zu\n"
+            "--------------------------------------------------------------------------------\n"
+            "    %-14s :  %12.3f nm  |  %12.3f um  |  [%6.3f, %6.3f, %6.3f]  |  [%6.3f, %6.3f, %6.3f]  |\n"
+            "    %-14s :  %12.3f nm  |  %12.3f um  |  [%6.3f, %6.3f, %6.3f]  |  [%6.3f, %6.3f, %6.3f]  |\n"
+            "    %-14s :  %12.2f %%   |  %12.2f %%   |  %21.2f %%   |  %21.2f %%   |\n"
+            "    %-14s :  %12d     |  %12d     |  %21d     |  %21s     |",
             i + 1, detscat->prt.n_particles,
+            "Requested",
             detscat->prt.particles[i].wavelength_nm,
             detscat->prt.particles[i].eff_radius_um,
             detscat->prt.particles[i].orientation.a1.x, 
@@ -481,6 +461,7 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
             detscat->prt.particles[i].orientation.a2.x, 
             detscat->prt.particles[i].orientation.a2.y, 
             detscat->prt.particles[i].orientation.a2.z, 
+            "Obtained",
             detscat->ddscat.pars[idx].cases[nearest_idx].wavelength * 1e3,
             detscat->ddscat.pars[idx].cases[nearest_idx].radius,
             detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a1.x,
@@ -489,7 +470,13 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
             detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a2.x,
             detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a2.y,
             detscat->ddscat.pars[idx].cases[nearest_idx].orientation.a2.z,
-            delta_w, delta_r, delta_a1, delta_a2);
+            "Rel. Error",
+            delta_w, delta_r, delta_a1, delta_a2,
+            "Case ID",
+            detscat->prt.particles[i].case_id.w,
+            detscat->prt.particles[i].case_id.r,
+            detscat->prt.particles[i].case_id.k,
+            " ");
 
         const char *fml_dir = detscat->prt.types[idx].data_dir.data;
 
@@ -698,6 +685,22 @@ void detscat_print_ddscat(const DetScat *detscat) {
 void detscat_simulation_run(DetScat *detscat) {
 
 
+    // tests
+    int ii = detscat_camera_get_pixel_index(0, 0, &detscat->cam.image);
+    Vec3 pxp;
+    detscat_camera_pixel_coordinate_to_world(&pxp, detscat->cam.image.width/2, detscat->cam.image.height/2, &detscat->cam);
+    detscat_log(DETSCAT_DEBUG, "Center: [%.8f %.8f %.8f]", pxp.x, pxp.y, pxp.z);
+
+
+
+
+
+
+    for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
+        detscat->prt.particles[i].position = (Vec3){0.0, 0.0, 0.0};
+    }
+
+
     double k = 2.0 * M_PI / (detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M);
     Vec3 k_i = {k, 0, 0};
 
@@ -781,8 +784,15 @@ bool detscat_construct_image(DetScat *detscat, DetScatError *err) {
         }
     }
 
+    double min = detscat->cam.image.intensities[0];
+    for (size_t i = 1; i < n; ++i) {
+        if (detscat->cam.image.intensities[i] < min) {
+            min = detscat->cam.image.intensities[i];
+        }
+    }
+
     for (size_t i = 0; i < n; ++i) {
-        detscat->cam.image.pixels[i] = (unsigned char)(detscat->cam.image.intensities[i] / max * 255.0); 
+        detscat->cam.image.pixels[i] = (unsigned char)((detscat->cam.image.intensities[i] - min) / (max - min) * 255.0); 
     }
 
     if (!stbi_write_png("output.png", detscat->cam.image.width, detscat->cam.image.height,1, detscat->cam.image.pixels, detscat->cam.image.width)) {
