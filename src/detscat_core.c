@@ -686,94 +686,326 @@ void detscat_print_ddscat(const DetScat *detscat) {
     }
 }
 
-void detscat_simulation_run(DetScat *detscat) {
+// void detscat_simulation_run(DetScat *detscat) {
+//     assert(detscat);
+
+//     // Incident wavevector 
+//     double k = 2.0 * M_PI / (detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M);
+//     Vec3 k_i = {k, 0, 0};
+
+//     // Incident polarization
+//     ComplexVec2 p_hat = {detscat->cfg.e01_coeff, detscat->cfg.e02_coeff};
+//     detscat_math_cplx_vec2_normalize(&p_hat, &p_hat,
+//                                      detscat_math_cplx_vec2_abs(&p_hat));
+
+//     // Incident electric field strength
+//     double D_sq = (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M) * 
+//                   (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M); 
+//     double A = D_sq * M_PI / 4.0;
+//     double E_p = detscat->cfg.pulse_energy_mj * DETSCAT_CONST_MJ2J;
+//     double tau_p = detscat->cfg.pulse_width_ns * DETSCAT_CONST_NS2S;
+//     double E0 = sqrt(
+//         2 * E_p / (tau_p * A * DETSCAT_CONST_C_M_S * DETSCAT_CONST_EPS0_F_M));
 
 
-    // tests
-    int ii = detscat_camera_get_pixel_index(0, 0, &detscat->cam.image);
-    Vec3 pxp;
-    detscat_camera_pixel_coordinate_to_world(&pxp, detscat->cam.image.width/2, detscat->cam.image.height/2, &detscat->cam);
-    detscat_log(DETSCAT_DEBUG, "Center: [%.8f %.8f %.8f]", pxp.x, pxp.y, pxp.z);
+//     #pragma omp parallel for schedule(static)
+//     for (int v = 0; v < detscat->cam.image.height; ++v) {
+//         for (int u = 0; u < detscat->cam.image.width; ++u) {
+//             // int idx = detscat_camera_get_pixel_index(u, v, &detscat->cam.image);
+
+//             Vec3 d_cam = {
+//                 (u - detscat->cam.intrinsics.c_x) * detscat->cam.intrinsics.p_x / detscat->cam.intrinsics.f,
+//                 (v - detscat->cam.intrinsics.c_y) * detscat->cam.intrinsics.p_y / detscat->cam.intrinsics.f,
+//                 1.0
+//             };
+
+//             Vec3 d_world;
+//             Mat3 R_cam_to_world;
+//             detscat_math_mat3_transpose(&R_cam_to_world, &detscat->cam.extrinsics.rotation);
+//             detscat_math_mat3_vec3_mult(&d_world, &R_cam_to_world, &d_cam);
 
 
+//             ComplexVec2 sum = (ComplexVec2){0};
+
+//             for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
+//                 Vec3 cam_cntr;
+//                 detscat_math_mat3_vec3_mult(&cam_cntr, &detscat->transform.rotation, &detscat->cfg.camera_center_position_m); 
+//                 detscat_math_vec3_add(&cam_cntr, &cam_cntr, &detscat->transform.translation);
+
+//                 Vec3 particle_to_pinhole;
+//                 detscat_math_vec3_sub(&particle_to_pinhole, &cam_cntr, &detscat->prt.particles[i].position);
+//                 detscat_math_vec3_normalize(&particle_to_pinhole, &particle_to_pinhole,
+//                                             detscat_math_vec3_abs(&particle_to_pinhole));
+
+//                 double cos_angle = detscat_math_vec3_dot(&particle_to_pinhole, &d_world);
+//                 double angle = acos(cos_angle);
+
+//                 if (angle <= fmax(theta_half_x, theta_half_y)) {
+
+//                     // Vec3 pxl_scat_dir_world;
+//                     // detscat_math_vec3_sub(&pxl_scat_dir_world, &pxl_pos_world, &detscat->prt.particles[i].position);
+//                     // detscat_math_vec3_normalize(&pxl_scat_dir_world, &pxl_scat_dir_world, detscat_math_vec3_abs(&pxl_scat_dir_world));
+
+//                     Vec3 k_s = {k * particle_to_pinhole.x, k * particle_to_pinhole.y, k * particle_to_pinhole.z};
+
+//                     double phi = atan2(k_s.z, k_s.y) * 180.0 / M_PI;
+//                     double theta = acos(k_s.x / k) * 180.0 / M_PI;
+
+//                     ComplexMat2 fmatrix = detscat_ddscat_get_fmatrix(
+//                         detscat->ddscat.fmls[i], phi, theta);
+
+//                     // Compute phase factor
+//                     Vec3 rj = detscat->prt.particles[i].position;
+//                     double phase = detscat_math_vec3_dot(&k_i, &rj) -
+//                                    detscat_math_vec3_dot(&k_s, &rj);
+//                     Complex exp_arg = {0.0, phase};
+//                     Complex exp_phase = detscat_math_cplx_exp(exp_arg);
+
+//                     ComplexVec2 fp;
+//                     detscat_math_cplx_mat2_cplx_vec2_mult(&fp, &fmatrix, &inc_pol);
+//                     detscat_math_cplx_vec2_scale(&fp, &fp, exp_phase);
 
 
+//                     double dist = detscat_math_vec3_abs(&particle_to_pinhole);
+//                     double glob_phase = k * dist;
+//                     Complex exp_glob_arg = {0.0, glob_phase};
+//                     Complex exp_glob_phase = detscat_math_cplx_exp(exp_glob_arg);
 
+//                     Complex prefac = detscat_math_cplx_mult(exp_glob_phase, (Complex){E0 / (k * dist), 0.0});
 
-    for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
-        detscat->prt.particles[i].position = (Vec3){0.0, 0.0, 0.0};
-    }
+//                     detscat_math_cplx_vec2_scale(&fp, &fp, prefac);
 
+//                     detscat_math_cplx_vec2_add(&sum, &sum, &fp);
+//                 }
+//             }
 
-    double k = 2.0 * M_PI / (detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M);
-    Vec3 k_i = {k, 0, 0};
+//             // Vec3 particle_to_pinhole;
+//             // detscat_math_vec3_sub(&particle_to_pinhole, &cam_cntr, &detscat->prt.particles[i].position);
 
-    ComplexVec2 inc_pol = {detscat->cfg.e01_coeff, detscat->cfg.e02_coeff};
-    detscat_math_cplx_vec2_normalize(&inc_pol, &inc_pol, detscat_math_cplx_vec2_abs(&inc_pol));
+//             // double pxl_dist = detscat_math_vec3_abs(&pxl_pos_world);
 
-    double Dsq = (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M) * 
-                 (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M); 
-    double A = Dsq * M_PI / 4.0;
-    double Ep = detscat->cfg.pulse_energy_mj * DETSCAT_CONST_MJ2J;
-    double taup = detscat->cfg.pulse_width_ns * DETSCAT_CONST_NS2S;
-    double E0 = sqrt(2 * Ep  / taup / A / DETSCAT_CONST_C_M_S / DETSCAT_CONST_EPS0_F_M);
-
-    #pragma omp parallel for schedule(static)
-    for (int v = 0; v < detscat->cam.image.height; ++v) {
-        for (int u = 0; u < detscat->cam.image.width; ++u) {
-            int idx = detscat_camera_get_pixel_index(u, v, &detscat->cam.image);
-
-            Vec3 pxl_pos_world;
-            detscat_camera_pixel_coordinate_to_world(&pxl_pos_world, u, v, &detscat->cam);
-
-            ComplexVec2 sum = (ComplexVec2){0};
-
-            for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
-                Vec3 pxl_scat_dir_world;
-                detscat_math_vec3_sub(&pxl_scat_dir_world, &pxl_pos_world, &detscat->prt.particles[i].position);
-                detscat_math_vec3_normalize(&pxl_scat_dir_world, &pxl_scat_dir_world, detscat_math_vec3_abs(&pxl_scat_dir_world));
-
-                Vec3 k_s = {k * pxl_scat_dir_world.x, k * pxl_scat_dir_world.y, k * pxl_scat_dir_world.z};
-
-                double phi = atan2(k_s.z, k_s.y) * 180.0 / M_PI;
-                double theta = acos(k_s.x / k) * 180.0 / M_PI;
-
-                ComplexMat2 fmatrix = detscat_ddscat_get_fmatrix(
-                    detscat->ddscat.fmls[i], phi, theta);
-
-                // Compute phase factor
-                Vec3 rj = detscat->prt.particles[i].position;
-                double phase = detscat_math_vec3_dot(&k_i, &rj) -
-                               detscat_math_vec3_dot(&k_s, &rj);
-                Complex exp_arg = {0.0, phase};
-                Complex exp_phase = detscat_math_cplx_exp(exp_arg);
-
-                ComplexVec2 fp;
-                detscat_math_cplx_mat2_cplx_vec2_mult(&fp, &fmatrix, &inc_pol);
-                detscat_math_cplx_vec2_scale(&fp, &fp, exp_phase);
-
-                detscat_math_cplx_vec2_add(&sum, &sum, &fp);
-            }
-
-            double pxl_dist = detscat_math_vec3_abs(&pxl_pos_world);
-            double glob_phase = k * pxl_dist;
-            Complex exp_glob_arg = {0.0, glob_phase};
-            Complex exp_glob_phase = detscat_math_cplx_exp(exp_glob_arg);
-
-            Complex prefac = detscat_math_cplx_mult(exp_glob_phase, (Complex){E0 / (k * pxl_dist), 0.0});
-
-            ComplexVec2 Es; 
-            detscat_math_cplx_vec2_scale(&Es, &sum, prefac);
+//             // ComplexVec2 Es; 
+//             // Es = sum;
+//             // detscat_math_cplx_vec2_scale(&Es, &sum, prefac);
 
             
-            double Es_abs = detscat_math_cplx_vec2_abs(&Es);
-            double n = 1;
-            double I = 0.5 * DETSCAT_CONST_C_M_S * DETSCAT_CONST_EPS0_F_M * Es_abs * Es_abs * n;
+//             // double Es_abs = detscat_math_cplx_vec2_abs(&Es);
+//             double Es_abs = detscat_math_cplx_vec2_abs(&sum);
+//             double n = 1;
+//             double I = 0.5 * DETSCAT_CONST_C_M_S * DETSCAT_CONST_EPS0_F_M * Es_abs * Es_abs * n;
 
-            detscat->cam.image.intensities[idx] = I;
-        }
-    }
-}
+//             detscat->cam.image.intensities[idx] = I;
+//         }
+//     }
+// }
+
+//POINT
+// void detscat_simulation_run(DetScat *detscat) {
+//     double k = 2.0 * M_PI / (detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M);
+
+//     ComplexVec2 inc_pol = {detscat->cfg.e01_coeff, detscat->cfg.e02_coeff};
+//     detscat_math_cplx_vec2_normalize(&inc_pol, &inc_pol, detscat_math_cplx_vec2_abs(&inc_pol));
+
+//     // Precompute pulse amplitude
+//     double Dsq = pow(detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M, 2);
+//     double A = Dsq * M_PI / 4.0;
+//     double Ep = detscat->cfg.pulse_energy_mj * DETSCAT_CONST_MJ2J;
+//     double taup = detscat->cfg.pulse_width_ns * DETSCAT_CONST_NS2S;
+//     double E0 = sqrt(2 * Ep / taup / A / DETSCAT_CONST_C_M_S / DETSCAT_CONST_EPS0_F_M);
+
+//     // Camera center in world coordinates
+//     Vec3 cam_cntr;
+//     detscat_math_mat3_vec3_mult(&cam_cntr, &detscat->transform.rotation, &detscat->cfg.camera_center_position_m);
+//     detscat_math_vec3_add(&cam_cntr, &cam_cntr, &detscat->transform.translation);
+
+//     #pragma omp parallel for schedule(static)
+//     for (int v = 0; v < detscat->cam.image.height; ++v) {
+//         for (int u = 0; u < detscat->cam.image.width; ++u) {
+//             int idx = detscat_camera_get_pixel_index(u, v, &detscat->cam.image);
+//             ComplexVec2 sum = {0};
+
+//             for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
+//                 Vec3 particle_pos = detscat->prt.particles[i].position;
+
+//                 // 1. Vector from particle to camera
+//                 Vec3 particle_to_pinhole;
+//                 detscat_math_vec3_sub(&particle_to_pinhole, &cam_cntr, &particle_pos);
+
+//                 // 2. Transform to camera frame
+//                 Vec3 d_cam;
+//                 detscat_math_mat3_vec3_mult(&d_cam, &detscat->cam.extrinsics.rotation, &particle_to_pinhole);
+
+//                 // 3. Compute pixel coordinates (perspective projection)
+//                 float u_proj = detscat->cam.intrinsics.f * (d_cam.x / d_cam.z) / detscat->cam.intrinsics.p_x
+//                              + detscat->cam.intrinsics.c_x;
+//                 float v_proj = detscat->cam.intrinsics.f * (d_cam.y / d_cam.z) / detscat->cam.intrinsics.p_y
+//                              + detscat->cam.intrinsics.c_y;
+
+//                 int u0 = (int)round(u_proj);
+//                 int v0 = (int)round(v_proj);
+
+//                 // Only add if this pixel matches current pixel
+//                 if (u0 != u || v0 != v) continue;
+
+//                 // 4. Scattering vector
+//                 Vec3 k_s = {k * particle_to_pinhole.x, k * particle_to_pinhole.y, k * particle_to_pinhole.z};
+
+//                 double phi   = atan2(k_s.z, k_s.y) * 180.0 / M_PI;
+//                 double theta = acos(k_s.x / k) * 180.0 / M_PI;
+
+//                 ComplexMat2 fmatrix = detscat_ddscat_get_fmatrix(detscat->ddscat.fmls[i], phi, theta);
+
+//                 // 5. Phase factor
+//                 double phase = detscat_math_vec3_dot(&(Vec3){k,0,0}, &particle_pos) 
+//                              - detscat_math_vec3_dot(&k_s, &particle_pos);
+//                 Complex exp_phase = detscat_math_cplx_exp((Complex){0.0, phase});
+
+//                 // 6. Multiply by f-matrix and incident polarization
+//                 ComplexVec2 fp;
+//                 detscat_math_cplx_mat2_cplx_vec2_mult(&fp, &fmatrix, &inc_pol);
+//                 detscat_math_cplx_vec2_scale(&fp, &fp, exp_phase);
+
+//                 // 7. Global amplitude factor
+//                 double dist = detscat_math_vec3_abs(&particle_to_pinhole);
+//                 Complex prefac = detscat_math_cplx_mult(detscat_math_cplx_exp((Complex){0.0, k * dist}),
+//                                                         (Complex){E0 / (k * dist), 0.0});
+//                 detscat_math_cplx_vec2_scale(&fp, &fp, prefac);
+
+//                 // 8. Add contribution to sum
+//                 detscat_math_cplx_vec2_add(&sum, &sum, &fp);
+//             }
+
+//             // 9. Convert field to intensity
+//             double Es_abs = detscat_math_cplx_vec2_abs(&sum);
+//             double I = 0.5 * DETSCAT_CONST_C_M_S * DETSCAT_CONST_EPS0_F_M * Es_abs * Es_abs;
+
+//             detscat->cam.image.intensities[idx] = I;
+//         }
+//     }
+// }
+
+
+// working
+  void detscat_simulation_run(DetScat *detscat) {
+      assert(detscat);
+
+      double k = 2.0 * M_PI / (detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M);
+      Vec3 k_i = {k, 0, 0};
+
+      ComplexVec2 inc_pol = {detscat->cfg.e01_coeff, detscat->cfg.e02_coeff};
+      detscat_math_cplx_vec2_normalize(&inc_pol, &inc_pol, detscat_math_cplx_vec2_abs(&inc_pol));
+
+      double Dsq = (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M) * 
+                   (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M); 
+      double A = Dsq * M_PI / 4.0;
+      double Ep = detscat->cfg.pulse_energy_mj * DETSCAT_CONST_MJ2J;
+      double taup = detscat->cfg.pulse_width_ns * DETSCAT_CONST_NS2S;
+      double E0 = sqrt(2 * Ep / taup / A / DETSCAT_CONST_C_M_S / DETSCAT_CONST_EPS0_F_M);
+
+      Vec3 cam_center;
+      detscat_math_mat3_vec3_mult(&cam_center, &detscat->transform.rotation, &detscat->cfg.camera_center_position_m);
+      detscat_math_vec3_add(&cam_center, &cam_center, &detscat->transform.translation);
+
+      #pragma omp parallel for schedule(static)
+      for (int v = 0; v < detscat->cam.image.height; ++v) {
+          for (int u = 0; u < detscat->cam.image.width; ++u) {
+              int idx = detscat_camera_get_pixel_index(u, v, &detscat->cam.image);
+
+              // Compute pixel direction in camera frame
+              double c_x = detscat->cam.intrinsics.c_x; 
+              double c_y = detscat->cam.intrinsics.c_y; 
+              double p_x = detscat->cam.intrinsics.p_x; 
+              double p_y = detscat->cam.intrinsics.p_y; 
+              double f   = detscat->cam.intrinsics.f; 
+
+              Vec3 d_cam = {(u - c_x) * p_x / f, (v - c_y) * p_y / f, 1.0};
+
+              // Rotate to world frame
+              Vec3 d_world;
+              detscat_math_mat3_vec3_mult(&d_world, &detscat->cam.extrinsics.rotation, &d_cam);
+              detscat_math_vec3_normalize(&d_world, &d_world, detscat_math_vec3_abs(&d_world));
+
+              ComplexVec2 sum = {0};
+
+              for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
+                  Vec3 r_particle = detscat->prt.particles[i].position;
+
+                  // Particle-to-pixel vector
+                  Vec3 r_pixel;
+                  Vec3 d_world_scaled;
+                  detscat_math_vec3_scale(&d_world_scaled, &d_world, 1.0);
+                  detscat_math_vec3_add(&r_pixel, &cam_center, &d_world_scaled); // choose distance 1 m, normalized later
+
+                  Vec3 particle_to_pixel;
+                  detscat_math_vec3_sub(&particle_to_pixel, &r_pixel, &r_particle);
+                  double dist = detscat_math_vec3_abs(&particle_to_pixel);
+                  detscat_math_vec3_normalize(&particle_to_pixel, &particle_to_pixel, dist);
+
+                  // Compute angle between particle-to-pixel vector and pixel direction
+                  double cos_angle = detscat_math_vec3_dot(&particle_to_pixel, &d_world);
+                  if (cos_angle <= 0) continue; // behind particle, skip
+
+                  // Weight based on solid angle / angular proximity (simple Gaussian)
+                  double sigma = 0.5 * M_PI * p_x / f; // approximate angular pixel size
+                  double w = exp(- (acos(cos_angle) * acos(cos_angle)) / (2.0 * sigma * sigma));
+
+                  // Scattering matrix from DDScat
+                  // Vec3 k_s = {k * particle_to_pixel.x, k * particle_to_pixel.y, k * particle_to_pixel.z};
+                  Vec3 particle_to_cam;
+                  detscat_math_vec3_sub(&particle_to_cam, &cam_center, &r_particle);
+                  detscat_math_vec3_normalize(&particle_to_cam, &particle_to_cam, detscat_math_vec3_abs(&particle_to_cam));
+                  Vec3 k_s = {k * particle_to_cam.x, k * particle_to_cam.y, k * particle_to_cam.z};
+                  double phi   = atan2(k_s.z, k_s.y) * 180.0 / M_PI;
+                  double theta = acos(k_s.x / k) * 180.0 / M_PI;
+
+                  ComplexMat2 fmatrix = detscat_ddscat_get_fmatrix(detscat->ddscat.fmls[i], phi, theta);
+
+                  double phase = detscat_math_vec3_dot(&k_i, &r_particle) - detscat_math_vec3_dot(&k_s, &r_particle);
+                  Complex exp_phase = detscat_math_cplx_exp((Complex){0.0, phase});
+
+                  ComplexVec2 fp;
+                  detscat_math_cplx_mat2_cplx_vec2_mult(&fp, &fmatrix, &inc_pol);
+                  detscat_math_cplx_vec2_scale(&fp, &fp, exp_phase);
+
+                  // Prefactor: distance decay
+                  double dist2 = detscat_math_vec3_abs(&particle_to_cam);
+                  Complex prefac = (Complex){E0 / (k * dist2) * w, 0.0};
+                  detscat_math_cplx_vec2_scale(&fp, &fp, prefac);
+
+                  detscat_math_cplx_vec2_add(&sum, &sum, &fp);
+              }
+
+              double Es_abs = detscat_math_cplx_vec2_abs(&sum);
+              double n = 1;
+              double I = 0.5 * DETSCAT_CONST_C_M_S * DETSCAT_CONST_EPS0_F_M * Es_abs * Es_abs * n;
+
+              detscat->cam.image.intensities[idx] = I;
+          }
+      }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 bool detscat_construct_image(DetScat *detscat, DetScatError *err) {
     assert(detscat);
@@ -788,15 +1020,16 @@ bool detscat_construct_image(DetScat *detscat, DetScatError *err) {
         }
     }
 
-    double min = detscat->cam.image.intensities[0];
-    for (size_t i = 1; i < n; ++i) {
-        if (detscat->cam.image.intensities[i] < min) {
-            min = detscat->cam.image.intensities[i];
-        }
-    }
+    // double min = detscat->cam.image.intensities[0];
+    // for (size_t i = 1; i < n; ++i) {
+    //     if (detscat->cam.image.intensities[i] < min) {
+    //         min = detscat->cam.image.intensities[i];
+    //     }
+    // }
 
     for (size_t i = 0; i < n; ++i) {
-        detscat->cam.image.pixels[i] = (unsigned char)((detscat->cam.image.intensities[i] - min) / (max - min) * 255.0); 
+        // detscat->cam.image.pixels[i] = (unsigned char)((detscat->cam.image.intensities[i] - min) / (max - min) * 255.0); 
+        detscat->cam.image.pixels[i] = (unsigned char)(detscat->cam.image.intensities[i] / max * 255.0); 
     }
 
     if (!stbi_write_png("output.png", detscat->cam.image.width, detscat->cam.image.height,1, detscat->cam.image.pixels, detscat->cam.image.width)) {

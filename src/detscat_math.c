@@ -446,6 +446,21 @@ Complex detscat_math_cplx_exp(Complex c) {
     return out;
 }
 
+void detscat_math_mat3_transpose(Mat3 *transpose, const Mat3 *m) {
+    assert(transpose && m);
+
+    transpose->m11 = m->m11;
+    transpose->m12 = m->m21;
+    transpose->m13 = m->m31;
+
+    transpose->m21 = m->m12;
+    transpose->m22 = m->m22;
+    transpose->m23 = m->m32;
+
+    transpose->m31 = m->m13;
+    transpose->m32 = m->m23;
+    transpose->m33 = m->m33;
+}
 
 void detscat_math_mat3_vec3_mult(Vec3 *vout, const Mat3 *m, const Vec3 *v) {
     assert(vout && m && v);

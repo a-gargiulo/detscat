@@ -89,6 +89,7 @@ Complex detscat_math_cplx_conj(Complex c);
 Complex detscat_math_cplx_exp(Complex c);
 
 // Mat3
+void detscat_math_mat3_transpose(Mat3 *transpose, const Mat3 *m);
 void detscat_math_mat3_vec3_mult(Vec3 *vout, const Mat3 *m, const Vec3 *v);
 void detscat_math_mat3_cplx_vec3_mult(ComplexVec3 *vout, const Mat3 *m, const ComplexVec3 *v);
 void detscat_math_mat3_mat3_mult(Mat3 *mout, const Mat3 *m1, const Mat3 *m2);

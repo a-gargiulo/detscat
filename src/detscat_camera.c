@@ -41,7 +41,7 @@ bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const Det
     detscat_math_mat3_vec3_mult(&cam_cntr_rot1, &glob_t->rotation, &cfg->camera_center_position_m); 
     detscat_math_vec3_add(&cam_cntr_t1, &cam_cntr_rot1, &glob_t->translation);
     // find translation in CAMERA frame
-    detscat_math_mat3_vec3_mult(&cam_cntr_rot2, &cam->extrinsics.rotation, &cam_cntr_rot1);
+    detscat_math_mat3_vec3_mult(&cam_cntr_rot2, &cam->extrinsics.rotation, &cam_cntr_t1);
     detscat_math_vec3_scale(&cam->extrinsics.translation, &cam_cntr_rot2, -1);
 
     // Camera intrinsics
