@@ -53,7 +53,7 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err);
 
 bool detscat_setup_camera(DetScat *detscat, DetScatError *err);
 
-void detscat_simulation_run(DetScat *detscat);
+bool detscat_simulation_run(DetScat *detscat, DetScatError *err);
 
 bool detscat_construct_image(DetScat *detscat, DetScatError *err);
 

@@ -42,7 +42,11 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-   detscat_simulation_run(detscat);
+    if (!detscat_simulation_run(detscat, err)) {
+        detscat_log_error(err);
+        exit_code = 1;
+        goto cleanup;
+    }
 
    if (!detscat_construct_image(detscat, err)) { 
         detscat_log_error(err);

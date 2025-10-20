@@ -393,6 +393,9 @@ static bool detscat_parser_handle_key_cfg(const char *key, const char *value,
     } else if (strcmp(key, "focal_length_mm") == 0) {
         return detscat_parser_parse_double_cfg(value, &cfg->focal_length_mm,
                                                parser, key);
+    } else if (strcmp(key, "f_number") == 0) {
+        return detscat_parser_parse_double_cfg(value, &cfg->f_number,
+                                               parser, key);
     } else if (strcmp(key, "sensor_resolution_x_px") == 0) {
         return detscat_parser_parse_int_cfg(value, &cfg->sensor_resolution_x_px,
                                             parser, key);

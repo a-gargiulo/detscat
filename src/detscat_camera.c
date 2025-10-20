@@ -52,6 +52,8 @@ bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const Det
     cam->intrinsics.c_x = (cfg->sensor_resolution_x_px - 1.0) / 2.0;
     cam->intrinsics.c_y = (cfg->sensor_resolution_y_px - 1.0) / 2.0;
 
+    cam->f_number = cfg->f_number;
+
     cam->image.width = cfg->sensor_resolution_x_px;
     cam->image.height= cfg->sensor_resolution_y_px;
 

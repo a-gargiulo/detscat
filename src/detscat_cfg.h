@@ -26,6 +26,7 @@ typedef struct {
     Vec3           camera_center_position_m;
     Vec3           camera_direction;
     double         focal_length_mm;
+    double         f_number;
     double         sensor_width_mm;
     double         sensor_height_mm;
     int            sensor_resolution_x_px;

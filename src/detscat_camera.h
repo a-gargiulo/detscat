@@ -42,6 +42,7 @@ typedef struct {
     DetScatCameraAxes axes;
     DetScatCameraIntrinsic intrinsics;
     DetScatCameraExtrinsic extrinsics;
+    double f_number;
 } DetScatCamera;
 
 bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const DetScatTransform *glob_t, DetScatError *err);
