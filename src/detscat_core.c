@@ -785,6 +785,14 @@ void detscat_print_ddscat(const DetScat *detscat) {
   //         }
   //     }
   // }
+  //
+
+static int detscat_pupil(double x, double y, double R) {
+    if (x * x + y * y <= R * R)
+        return 1;
+    else
+        return 0;
+}
 
 
 bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
@@ -792,61 +800,109 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
 
     const double D_a = detscat->cam.intrinsics.f / detscat->cam.f_number;
 
-    const int M_x = 1501;
-    const int M_y = 1501;
-    const int N_x = 10001;
-    const int N_y = 10001;
+    const size_t M_x = 21;
+    const size_t M_y = 21;
+
+    const size_t N_x = 501;
+    const size_t N_y = 501;
+
+    // const int N_tot = N_x * N_y;
+
+    const double dxi = D_a / (M_x - 1);
+    const double deta = D_a / (M_y - 1);
 
     const int M_tot = M_x * M_y;
-    const int N_tot = N_x * N_y;
 
-    const double del_xi = D_a / (double)(M_x - 1);
-    const double del_eta = D_a / (double)(M_y - 1);
+    // const double L_x = del_xi * (N_x - 1);
+    // const double L_y = del_eta * (N_y - 1);
 
-    const double L_x = del_xi * (N_x - 1);
-    const double L_y = del_eta * (N_y - 1);
-
-    // Data declaration 
-    double *X = NULL, *Y = NULL;  // mesh
-    ComplexVec2 *Es = NULL;  // scattered field
-    DetScatDa valid_aperture_idxs;
-
-    X = calloc((size_t)N_tot, sizeof(double));
-    Y = calloc((size_t)N_tot, sizeof(double));
-
-    if (!X || !Y) {
+    double *XI = NULL, *ETA = NULL;
+    XI = calloc(M_tot, sizeof(double));
+    ETA = calloc(M_tot, sizeof(double));
+    if (!XI || !ETA) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
-                          "Could not allocate memory for mesh");
+                          "Could not allocate memory for aperture mesh");
         goto cleanup;
     }
 
-    Es = calloc((size_t)N_tot, sizeof(ComplexVec2));
-    if (!Es) {
-        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
-                          "Could not allocate memory for scattered field");
-        goto cleanup;
-    }
-
-    detscat_da_init(&valid_aperture_idxs, sizeof(int), 5);
+    // ComplexVec2 *Es = NULL;  // scattered field
+    // DetScatDa valid_aperture_idxs;
 
 
-    for (int i = 0; i < N_tot; ++i) {
-        X[i] = -L_x / 2.0 + (i % N_x) * del_xi;
-        Y[i] = -L_y / 2.0 + (i / N_x) * del_eta;
-        if (X[i] * X[i] + Y[i] * Y[i] <= (D_a/2.0) * (D_a/2.0)) {
-            detscat_da_append(&valid_aperture_idxs, (void*)&i);
-        }
-    }
 
+    // Es = calloc((size_t)N_tot, sizeof(ComplexVec2));
+    // if (!Es) {
+    //     DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+    //                       "Could not allocate memory for scattered field");
+    //     goto cleanup;
+    // }
+
+    // detscat_da_init(&valid_aperture_idxs, sizeof(int), 5);
+
+
+//     for (int i = 0; i < M_tot; ++i) {
+
+//         if (detscat_pupil(XI[i], ETA[i], R))
+//         {
+
+//         }
+//     }
+
+    double k = 2.0 * M_PI / (detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M);
+    Vec3 k_i = {k, 0, 0};
+
+    ComplexVec2 inc_pol = {detscat->cfg.e01_coeff, detscat->cfg.e02_coeff};
+    detscat_math_cplx_vec2_normalize(&inc_pol, &inc_pol, detscat_math_cplx_vec2_abs(&inc_pol));
+
+    double Dsq = (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M) * 
+                 (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M); 
+    double A = Dsq * M_PI / 4.0;
+    double Ep = detscat->cfg.pulse_energy_mj * DETSCAT_CONST_MJ2J;
+    double taup = detscat->cfg.pulse_width_ns * DETSCAT_CONST_NS2S;
+    double E0 = sqrt(2 * Ep / taup / A / DETSCAT_CONST_C_M_S / DETSCAT_CONST_EPS0_F_M);
+
+    // CALCULATE APERTURE FIELD 
     #pragma omp parallel for schedule(static)
-    for (size_t i = 0; i < valid_aperture_idxs.length; ++i) {
-        int idx = *(int*)detscat_da_get(&valid_aperture_idxs, (size_t)i);
+    for (size_t i = 0; i < M_tot; ++i) {
+        XI[i] = -D_a / 2.0 + (i % M_x) * dxi;
+        ETA[i] = -D_a / 2.0 + (i / M_x) * deta;
 
-        for (size_t j = 0; j < detscat->prt.n_particles; ++j) { 
+        Vec3 r_aperture;
+        detscat_camera_c2w(&r_aperture, &(Vec3){XI[i], ETA[i], 0.0}, &detscat->cam);
 
+        ComplexVec2 Es = {0};
+        for (size_t j = 0; j < detscat->prt.n_particles; ++j) {
+            Vec3 r_particle = detscat->prt.particles[i].position;
+            
+            Vec3 ks;
+            detscat_math_vec3_sub(&ks, &r_aperture, &r_particle);
+            detscat_math_vec3_normalize(&ks, &ks, detscat_math_vec3_abs(&ks));
+            detscat_math_vec3_scale(&ks, &ks, k);
+            
+            double phi   = atan2(ks.z, ks.y) * 180.0 / M_PI;
+            double theta = acos(ks.x / k) * 180.0 / M_PI;
+
+            ComplexMat2 fmatrix = detscat_ddscat_get_fmatrix(detscat->ddscat.fmls[i], phi, theta);
+
+            double phase = detscat_math_vec3_dot(&k_i, &r_particle) - detscat_math_vec3_dot(&ks, &r_particle);
+            Complex exp_phase = detscat_math_cplx_exp((Complex){0.0, phase});
+
+            ComplexVec2 fp;
+            detscat_math_cplx_mat2_cplx_vec2_mult(&fp, &fmatrix, &inc_pol);
+            detscat_math_cplx_vec2_scale(&fp, &fp, exp_phase);
+
+            // Prefactor: distance decay
+            double dist = detscat_math_vec3_abs(&r_aperture);
+            double phase_g = detscat_math_vec3_dot(&ks, &r_aperture);
+            Complex exp_phase_g = detscat_math_cplx_exp((Complex){0.0, phase_g});
+            Complex scale_g = (Complex){E0 / (k * dist), 0.0};
+            Complex prefac = detscat_math_cplx_mult(scale_g, exp_phase_g);
+            detscat_math_cplx_vec2_scale(&fp, &fp, prefac);
+
+            detscat_math_cplx_vec2_add(&Es, &Es, &fp);
         }
-        
 
+        // Rotate the field
 
 
     }
@@ -858,9 +914,9 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
 
 
 cleanup:
-    free(X); free(Y);
-    free(Es);
-    detscat_da_free(&valid_aperture_idxs);
+    free(XI); free(ETA);
+    // free(Es);
+    // detscat_da_free(&valid_aperture_idxs);
 }
 
 

@@ -51,7 +51,11 @@ void detscat_camera_free(DetScatCamera *cam);
 
 int detscat_camera_get_pixel_index(int u, int v, const DetScatImage *img);
 
-void detscat_camera_pixel_coordinate_to_world(Vec3 *p, int u, int v, const DetScatCamera *cam);
+
+void detscat_camera_w2c(Vec3 *pc, const Vec3 *pw, const DetScatCamera *cam);
+void detscat_camera_c2w(Vec3 *pw, const Vec3 *pc, const DetScatCamera *cam); 
+
+// void detscat_camera_pixel_coordinate_to_world(Vec3 *p, int u, int v, const DetScatCamera *cam);
 
 // void detscat_camera_pixel_observation_direction(const DetScatCamera *camera,
 //                                                 Vec3 *d, int u, int v);

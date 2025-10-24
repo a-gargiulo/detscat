@@ -102,39 +102,55 @@ void detscat_camera_free(DetScatCamera *cam) {
     cam->image.height = 0;
 }
 
+void detscat_camera_w2c(Vec3 *pc, const Vec3 *pw, const DetScatCamera *cam) {
+    assert(pc && pw && cam);
 
-void detscat_camera_pixel_coordinate_to_world(Vec3 *p, int u, int v, const DetScatCamera *cam) {
-    // p->x = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m11 +
-    //        cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m21 +
-    //        cam->intrinsics.f * cam->extrinsics.rotation.m31 -
-    //        cam->extrinsics.translation.x;
-    // p->y = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m12 +
-    //        cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m22 +
-    //        cam->intrinsics.f * cam->extrinsics.rotation.m32 -
-    //        cam->extrinsics.translation.y;
-    // p->z = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m13 +
-    //        cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m23 +
-    //        cam->intrinsics.f * cam->extrinsics.rotation.m33 -
-    //        cam->extrinsics.translation.z;
-    p->x = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m11 +
-           cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m21 +
-           cam->intrinsics.f * cam->extrinsics.rotation.m31 -
-           cam->extrinsics.translation.x * cam->extrinsics.rotation.m11 -
-           cam->extrinsics.translation.y * cam->extrinsics.rotation.m21 -
-           cam->extrinsics.translation.z * cam->extrinsics.rotation.m31;
-    p->y = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m12 +
-           cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m22 +
-           cam->intrinsics.f * cam->extrinsics.rotation.m32 -
-           cam->extrinsics.translation.x * cam->extrinsics.rotation.m12 -
-           cam->extrinsics.translation.y * cam->extrinsics.rotation.m22 -
-           cam->extrinsics.translation.z * cam->extrinsics.rotation.m32;
-    p->z = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m13 +
-           cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m23 +
-           cam->intrinsics.f * cam->extrinsics.rotation.m33 -
-           cam->extrinsics.translation.x * cam->extrinsics.rotation.m13 -
-           cam->extrinsics.translation.y * cam->extrinsics.rotation.m23 -
-           cam->extrinsics.translation.z * cam->extrinsics.rotation.m33;
+    detscat_math_mat3_vec3_mult(pc, &cam->extrinsics.rotation, pw);
+    detscat_math_vec3_add(pc, pc, &cam->extrinsics.translation);
 }
+
+void detscat_camera_c2w(Vec3 *pw, const Vec3 *pc, const DetScatCamera *cam) {
+    assert(pc && pw && cam);
+
+    Mat3 rotmat;
+
+    detscat_math_vec3_sub(pw, pc, &cam->extrinsics.translation);
+    detscat_math_mat3_transpose(&rotmat, &cam->extrinsics.rotation);
+    detscat_math_mat3_vec3_mult(pw, &rotmat, pw);
+}
+
+// void detscat_camera_pixel_coordinate_to_world(Vec3 *p, int u, int v, const DetScatCamera *cam) {
+//     // p->x = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m11 +
+//     //        cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m21 +
+//     //        cam->intrinsics.f * cam->extrinsics.rotation.m31 -
+//     //        cam->extrinsics.translation.x;
+//     // p->y = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m12 +
+//     //        cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m22 +
+//     //        cam->intrinsics.f * cam->extrinsics.rotation.m32 -
+//     //        cam->extrinsics.translation.y;
+//     // p->z = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m13 +
+//     //        cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m23 +
+//     //        cam->intrinsics.f * cam->extrinsics.rotation.m33 -
+//     //        cam->extrinsics.translation.z;
+//     p->x = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m11 +
+//            cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m21 +
+//            cam->intrinsics.f * cam->extrinsics.rotation.m31 -
+//            cam->extrinsics.translation.x * cam->extrinsics.rotation.m11 -
+//            cam->extrinsics.translation.y * cam->extrinsics.rotation.m21 -
+//            cam->extrinsics.translation.z * cam->extrinsics.rotation.m31;
+//     p->y = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m12 +
+//            cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m22 +
+//            cam->intrinsics.f * cam->extrinsics.rotation.m32 -
+//            cam->extrinsics.translation.x * cam->extrinsics.rotation.m12 -
+//            cam->extrinsics.translation.y * cam->extrinsics.rotation.m22 -
+//            cam->extrinsics.translation.z * cam->extrinsics.rotation.m32;
+//     p->z = cam->intrinsics.p_x * (u - cam->intrinsics.c_x) * cam->extrinsics.rotation.m13 +
+//            cam->intrinsics.p_y * (v - cam->intrinsics.c_y) * cam->extrinsics.rotation.m23 +
+//            cam->intrinsics.f * cam->extrinsics.rotation.m33 -
+//            cam->extrinsics.translation.x * cam->extrinsics.rotation.m13 -
+//            cam->extrinsics.translation.y * cam->extrinsics.rotation.m23 -
+//            cam->extrinsics.translation.z * cam->extrinsics.rotation.m33;
+// }
 
 
 // void detscat_camera_pixel_observation_direction(const DetScatCamera *camera, Vec3 *d, int u, int v) {
