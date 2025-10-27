@@ -903,6 +903,17 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
         }
 
         // Rotate the field
+        double theta_rad = theta * M_PI / 180.0;
+        double phi_rad = phi * M_PI / 180.0;
+
+        ComplexVec3 wEs = {
+            detscat_math_cplx_mult((Complex){-sin(theta_rad), 0.0},  Es.x), 
+            cos(theta_rad) * cos(phi_rad) * Es.x - sin(phi_rad) * Es.y, cos(theta_rad) * sin(phi_rad) * Es.x + cos(phi_rad)}
+        
+        Mat3 Rws = {-sin(theta_rad), 0, 
+                    cos(theta_rad) * cos(phi_rad), -sin(phi_rad),
+                    cos(theta_rad) * sin(phi_rad), cos(phi_rad)};
+        
 
 
     }
