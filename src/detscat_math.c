@@ -99,7 +99,21 @@ void detscat_math_cplx_vec3_normalize(ComplexVec3 *e, const ComplexVec3 *c,
 }
 
 
+void detscat_math_cplx_vec3_add(ComplexVec3 *vsum, const ComplexVec3 *v1, const ComplexVec3 *v2) {
+    assert(vsum && v1 && v2);
 
+    vsum->x = detscat_math_cplx_add(v1->x, v2->x);
+    vsum->y = detscat_math_cplx_add(v1->y, v2->y);
+    vsum->z = detscat_math_cplx_add(v1->z, v2->y);
+}
+
+void detscat_math_cplx_vec3_add_real(ComplexVec3 *vsum, const ComplexVec3 *v1, const Vec3 *v2) {
+    assert(vsum && v1 && v2);
+
+    vsum->x = (Complex){v1->x.re + v2->x, v1->x.im};
+    vsum->y = (Complex){v1->y.re + v2->y, v1->y.im};
+    vsum->z = (Complex){v1->z.re + v2->z, v1->z.im};
+}
 
 double detscat_math_cplx_vec2_abs(const ComplexVec2 *c) {
     assert(c);
@@ -414,6 +428,13 @@ Complex detscat_math_cplx_mult(Complex c1, Complex c2) {
     Complex result;
     result.re = c1.re * c2.re - c1.im * c2.im;
     result.im = c1.re * c2.im + c1.im * c2.re;
+    return result;
+}
+
+Complex detscat_math_cplx_mult_real(Complex c, double r) {
+    Complex result;
+    result.re = c.re * r;
+    result.im = c.im * r;
     return result;
 }
 

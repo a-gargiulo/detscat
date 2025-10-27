@@ -10,7 +10,7 @@
 #include "detscat_prt.h"
 #include "detscat_str.h"
 #include "detscat_transform.h"
-#include "detscat_da.h"
+#include "detscat_model.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -825,103 +825,92 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
         goto cleanup;
     }
 
-    // ComplexVec2 *Es = NULL;  // scattered field
-    // DetScatDa valid_aperture_idxs;
 
+    // Incident wave
+    double E0 = detscat_model_calculate_field_strength(
+        detscat->cfg.beam_diameter_mm,
+        detscat->cfg.pulse_energy_mj,
+        detscat->cfg.pulse_width_ns);
 
+    ComplexVec2 p_hat = {detscat->cfg.e01_coeff, detscat->cfg.e02_coeff};
+    detscat_math_cplx_vec2_normalize(&p_hat, &p_hat, 
+                                     detscat_math_cplx_vec2_abs(&p_hat));
 
-    // Es = calloc((size_t)N_tot, sizeof(ComplexVec2));
-    // if (!Es) {
-    //     DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
-    //                       "Could not allocate memory for scattered field");
-    //     goto cleanup;
-    // }
+    double lam = detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M;
+    double k = 2.0 * M_PI / lam;
 
-    // detscat_da_init(&valid_aperture_idxs, sizeof(int), 5);
-
-
-//     for (int i = 0; i < M_tot; ++i) {
-
-//         if (detscat_pupil(XI[i], ETA[i], R))
-//         {
-
-//         }
-//     }
-
-    double k = 2.0 * M_PI / (detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M);
     Vec3 k_i = {k, 0, 0};
 
-    ComplexVec2 inc_pol = {detscat->cfg.e01_coeff, detscat->cfg.e02_coeff};
-    detscat_math_cplx_vec2_normalize(&inc_pol, &inc_pol, detscat_math_cplx_vec2_abs(&inc_pol));
-
-    double Dsq = (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M) * 
-                 (detscat->cfg.beam_diameter_mm * DETSCAT_CONST_MM2M); 
-    double A = Dsq * M_PI / 4.0;
-    double Ep = detscat->cfg.pulse_energy_mj * DETSCAT_CONST_MJ2J;
-    double taup = detscat->cfg.pulse_width_ns * DETSCAT_CONST_NS2S;
-    double E0 = sqrt(2 * Ep / taup / A / DETSCAT_CONST_C_M_S / DETSCAT_CONST_EPS0_F_M);
-
-    // CALCULATE APERTURE FIELD 
+    // Calculate aperture field 
     #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < M_tot; ++i) {
         XI[i] = -D_a / 2.0 + (i % M_x) * dxi;
         ETA[i] = -D_a / 2.0 + (i / M_x) * deta;
 
         Vec3 r_aperture;
-        detscat_camera_c2w(&r_aperture, &(Vec3){XI[i], ETA[i], 0.0}, &detscat->cam);
+        detscat_camera_c2w(&r_aperture, &(Vec3){XI[i], ETA[i], 0.0}, 
+                           &detscat->cam);
 
-        ComplexVec2 Es = {0};
+        Vec3 k_s;
+        detscat_math_vec3_normalize(&k_s, &r_aperture,
+                                    detscat_math_vec3_abs(&r_aperture));
+        detscat_math_vec3_scale(&k_s, &k_s, k);
+
+        double phi = atan2(k_s.z, k_s.y) * 180.0 / M_PI;
+        double theta = acos(k_s.x / k) * 180.0 / M_PI;
+
+        // Sum over particles 
+        ComplexVec2 E_s = {0};
         for (size_t j = 0; j < detscat->prt.n_particles; ++j) {
             Vec3 r_particle = detscat->prt.particles[i].position;
             
-            Vec3 ks;
-            detscat_math_vec3_sub(&ks, &r_aperture, &r_particle);
-            detscat_math_vec3_normalize(&ks, &ks, detscat_math_vec3_abs(&ks));
-            detscat_math_vec3_scale(&ks, &ks, k);
-            
-            double phi   = atan2(ks.z, ks.y) * 180.0 / M_PI;
-            double theta = acos(ks.x / k) * 180.0 / M_PI;
+            ComplexMat2 fmatrix = detscat_ddscat_get_fmatrix(
+                detscat->ddscat.fmls[i], phi, theta);
 
-            ComplexMat2 fmatrix = detscat_ddscat_get_fmatrix(detscat->ddscat.fmls[i], phi, theta);
-
-            double phase = detscat_math_vec3_dot(&k_i, &r_particle) - detscat_math_vec3_dot(&ks, &r_particle);
-            Complex exp_phase = detscat_math_cplx_exp((Complex){0.0, phase});
+            double rel_phase = detscat_math_vec3_dot(&k_i, &r_particle) - 
+                               detscat_math_vec3_dot(&k_s, &r_particle);
+            Complex exp_rel_phase = detscat_math_cplx_exp(
+                (Complex){0.0, rel_phase}
+            );
 
             ComplexVec2 fp;
-            detscat_math_cplx_mat2_cplx_vec2_mult(&fp, &fmatrix, &inc_pol);
-            detscat_math_cplx_vec2_scale(&fp, &fp, exp_phase);
-
-            // Prefactor: distance decay
-            double dist = detscat_math_vec3_abs(&r_aperture);
-            double phase_g = detscat_math_vec3_dot(&ks, &r_aperture);
-            Complex exp_phase_g = detscat_math_cplx_exp((Complex){0.0, phase_g});
-            Complex scale_g = (Complex){E0 / (k * dist), 0.0};
-            Complex prefac = detscat_math_cplx_mult(scale_g, exp_phase_g);
-            detscat_math_cplx_vec2_scale(&fp, &fp, prefac);
-
-            detscat_math_cplx_vec2_add(&Es, &Es, &fp);
+            detscat_math_cplx_mat2_cplx_vec2_mult(&fp, &fmatrix, &p_hat);
+            detscat_math_cplx_vec2_scale(&fp, &fp, exp_rel_phase);
+            detscat_math_cplx_vec2_scale(&fp, &fp, (Complex){E0, 0.0});
+            detscat_math_cplx_vec2_add(&E_s, &E_s, &fp);
         }
 
-        // Rotate the field
+        double r = detscat_math_vec3_abs(&r_aperture);
+        double glob_phase = detscat_math_vec3_dot(&k_s, &r_aperture);
+        Complex exp_glob_phase = detscat_math_cplx_exp(
+            (Complex){0.0, glob_phase});
+        detscat_math_cplx_vec2_scale(&E_s, &E_s, exp_glob_phase);
+        detscat_math_cplx_vec2_scale(&E_s, &E_s, (Complex){1 / (k * r), 0.0});
+
+        // Rotate to camera frame 
         double theta_rad = theta * M_PI / 180.0;
         double phi_rad = phi * M_PI / 180.0;
 
-        ComplexVec3 wEs = {
-            detscat_math_cplx_mult((Complex){-sin(theta_rad), 0.0},  Es.x), 
-            cos(theta_rad) * cos(phi_rad) * Es.x - sin(phi_rad) * Es.y, cos(theta_rad) * sin(phi_rad) * Es.x + cos(phi_rad)}
-        
-        Mat3 Rws = {-sin(theta_rad), 0, 
-                    cos(theta_rad) * cos(phi_rad), -sin(phi_rad),
-                    cos(theta_rad) * sin(phi_rad), cos(phi_rad)};
-        
+        Complex wE_s_x = detscat_math_cplx_mult_real(E_s.x, -sin(theta_rad)); 
+        Complex wE_s_y = detscat_math_cplx_add(
+            detscat_math_cplx_mult_real(E_s.x, cos(theta_rad) * cos(phi_rad)),
+            detscat_math_cplx_mult_real(E_s.y, -sin(phi_rad)));
+        Complex wE_s_z = detscat_math_cplx_add(
+            detscat_math_cplx_mult_real(E_s.x, cos(theta_rad) * sin(phi_rad)),
+            detscat_math_cplx_mult_real(E_s.y, cos(phi_rad)));
+        ComplexVec3 wE_s = {wE_s_x, wE_s_y, wE_s_z};
 
+        ComplexVec3 cE_s;
+        detscat_math_mat3_cplx_vec3_mult(&cE_s,
+                                         &detscat->cam.extrinsics.rotation,
+                                         &wE_s);
+        detscat_math_cplx_vec3_add_real(&cE_s, &cE_s,
+                                        &detscat->cam.extrinsics.translation);
+
+
+        // Propagate fields
 
     }
-
-
-
-    
-
 
 
 cleanup:
