@@ -36,10 +36,28 @@ else()
     endif()
 endif()
 
+
+if(WIN32)
+    # Path to the FFTW DLL
+    set(FFTW_LIB_NAME "fftw3-3")
+    set(FFTW_DLL "${PROJECT_SOURCE_DIR}/lib/fftw/libfftw3-3.dll")
+
+    # Copy the DLL to the executable output directory after building
+    add_custom_command(TARGET detscat POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${FFTW_DLL}"
+            $<TARGET_FILE_DIR:detscat>
+        COMMENT "Copying FFTW DLL to build output directory"
+    )
+else()
+    set(FFTW_LIB_NAME "fftw3")
+endif()
+
+
 target_link_directories(detscat
     PRIVATE "${PROJECT_SOURCE_DIR}/lib/fftw")
 
 target_link_libraries(detscat
-    PRIVATE fftw3)
+    PRIVATE ${FFTW_LIB_NAME})
 
 target_compile_options(detscat PRIVATE -Wall -Wextra -pedantic -O0 -g)

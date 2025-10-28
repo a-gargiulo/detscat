@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 struct DetScat {
     const char *cfg_file_path;
@@ -816,18 +817,46 @@ static void detscat_fftshift2D(fftw_complex* data, int N_x, int N_y) {
 }
 
 
+// static void save_pgm(const char* filename, double* I, int N_x, int N_y) {
+//     double I_max = 0.0;
+//     for (int i = 0; i < N_x*N_y; ++i) if (I[i] > I_max) I_max = I[i];
+
+//     FILE *f = fopen(filename, "wb");
+//     fprintf(f, "P5\n%d %d\n255\n", N_x, N_y);
+//     for (int i = 0; i < N_x*N_y; ++i) {
+//         uint8_t val = (uint8_t)(255.0 * sqrt(I[i]/I_max)); // sqrt for better dynamic range
+//         fwrite(&val, 1, 1, f);
+//     }
+//     fclose(f);
+// }
+
+
+
 static void save_pgm(const char* filename, double* I, int N_x, int N_y) {
+    // Find maximum intensity for normalization
     double I_max = 0.0;
-    for (int i = 0; i < N_x*N_y; ++i) if (I[i] > I_max) I_max = I[i];
+    for (int i = 0; i < N_x * N_y; ++i)
+        if (I[i] > I_max) I_max = I[i];
 
     FILE *f = fopen(filename, "wb");
+    if (!f) return;
+
+    // PGM header
     fprintf(f, "P5\n%d %d\n255\n", N_x, N_y);
-    for (int i = 0; i < N_x*N_y; ++i) {
-        uint8_t val = (uint8_t)(255.0 * sqrt(I[i]/I_max)); // sqrt for better dynamic range
-        fwrite(&val, 1, 1, f);
+
+    // Write pixels bottom-to-top (flip Y-axis)
+    for (int j = N_y - 1; j >= 0; --j) {
+        for (int i = 0; i < N_x; ++i) {
+            int idx = j * N_x + i;
+            uint8_t val = (uint8_t)(255.0 * sqrt(I[idx] / I_max)); // sqrt for better dynamic range
+            fwrite(&val, 1, 1, f);
+        }
     }
+
     fclose(f);
 }
+
+
 
 bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
     assert(detscat);
@@ -848,8 +877,8 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
     const size_t M_x = 201;
     const size_t M_y = 201;
 
-    const size_t N_x = 1001;
-    const size_t N_y = 1001;
+    const size_t N_x = 2001;
+    const size_t N_y = 2001;
 
 
     const double dxi = D_a / (M_x - 1);
