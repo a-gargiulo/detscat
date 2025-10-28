@@ -14,6 +14,7 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#include "fftw3.h"
 
 #include <assert.h>
 #include <omp.h>
@@ -795,33 +796,115 @@ static int detscat_pupil(double x, double y, double R) {
 }
 
 
+
+
+static void detscat_fftshift2D(fftw_complex* data, int N_x, int N_y) {
+    fftw_complex* tmp = calloc(N_x * N_y, sizeof(fftw_complex));
+    for (int y = 0; y < N_y; ++y) {
+        int y_new = (y + N_y / 2) % N_y;
+        for (int x = 0; x < N_x; ++x) {
+            int x_new = (x + N_x / 2) % N_x;
+            tmp[y_new * N_x + x_new][0] = data[y * N_x + x][0];
+            tmp[y_new * N_x + x_new][1] = data[y * N_x + x][1];
+        }
+    }
+    for (int i = 0; i < N_x * N_y; ++i) {
+        data[i][0] = tmp[i][0];
+        data[i][1] = tmp[i][1];
+    }
+    free(tmp);
+}
+
+
+static void save_pgm(const char* filename, double* I, int N_x, int N_y) {
+    double I_max = 0.0;
+    for (int i = 0; i < N_x*N_y; ++i) if (I[i] > I_max) I_max = I[i];
+
+    FILE *f = fopen(filename, "wb");
+    fprintf(f, "P5\n%d %d\n255\n", N_x, N_y);
+    for (int i = 0; i < N_x*N_y; ++i) {
+        uint8_t val = (uint8_t)(255.0 * sqrt(I[i]/I_max)); // sqrt for better dynamic range
+        fwrite(&val, 1, 1, f);
+    }
+    fclose(f);
+}
+
 bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
     assert(detscat);
 
+    bool exit_code = true;
+
+    double lam = detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M;
+
+
+    double zcam = detscat_math_vec3_abs(&detscat->cfg.camera_center_position_m);
+
+    // const double z = detscat->cam.intrinsics.f;
+    const double z = 1/((1/detscat->cam.intrinsics.f) - (1/zcam));
+    detscat_log(DETSCAT_INFO, "Distance: %lf", z);
+
     const double D_a = detscat->cam.intrinsics.f / detscat->cam.f_number;
 
-    const size_t M_x = 21;
-    const size_t M_y = 21;
+    const size_t M_x = 201;
+    const size_t M_y = 201;
 
-    const size_t N_x = 501;
-    const size_t N_y = 501;
+    const size_t N_x = 1001;
+    const size_t N_y = 1001;
 
-    // const int N_tot = N_x * N_y;
 
     const double dxi = D_a / (M_x - 1);
+    detscat_log(DETSCAT_INFO, "dxi = %lf", dxi);
     const double deta = D_a / (M_y - 1);
 
-    const int M_tot = M_x * M_y;
+    const double dx = lam * z / ((N_x - 1) * dxi); 
+    const double dy = lam * z / ((N_y - 1) * deta); 
+    const double L_x = dx * (N_x - 1);
+    const double L_y = dy * (N_y - 1);
 
-    // const double L_x = del_xi * (N_x - 1);
-    // const double L_y = del_eta * (N_y - 1);
+    const int M_tot = M_x * M_y;
+    const int N_tot = N_x * N_y;
+
+    double N_F = (D_a / 2.0) * (D_a / 2.0) / (lam * z);
+    detscat_log(DETSCAT_INFO, "Fresnel Number, N_F = %lf", N_F);
+
 
     double *XI = NULL, *ETA = NULL;
+    double *X = NULL, *Y = NULL;
+    Complex *E_a = NULL, *prod = NULL, *prod_pad = NULL;
+    double *I = NULL;
+    fftw_complex *in = NULL, *out = NULL;
+    fftw_plan p = NULL;
+
+
     XI = calloc(M_tot, sizeof(double));
     ETA = calloc(M_tot, sizeof(double));
     if (!XI || !ETA) {
         DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
                           "Could not allocate memory for aperture mesh");
+        exit_code = false;
+        goto cleanup;
+    }
+
+
+    E_a = calloc(3 * M_tot, sizeof(Complex));
+    prod = calloc(3 * M_tot, sizeof(Complex));
+    prod_pad = calloc(3 * N_tot, sizeof(Complex));
+    if (!E_a || !prod || !prod_pad) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                          "Could not allocate memory for aperture field");
+        exit_code = false;
+        goto cleanup;
+    }
+
+    X = calloc(N_tot, sizeof(double));
+    Y = calloc(N_tot, sizeof(double));
+    I = calloc(N_tot, sizeof(double));
+    in = fftw_malloc(sizeof(fftw_complex) * N_tot * 3);
+    out = fftw_malloc(sizeof(fftw_complex) * N_tot * 3);
+    if (!X || !Y || !I || !in || !out) {
+        DETSCAT_SET_ERROR(err, DETSCAT_ERR_MEMORY,
+                          "Could not allocate memory for image field");
+        exit_code = false;
         goto cleanup;
     }
 
@@ -836,7 +919,6 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
     detscat_math_cplx_vec2_normalize(&p_hat, &p_hat, 
                                      detscat_math_cplx_vec2_abs(&p_hat));
 
-    double lam = detscat->cfg.wavelength_nm * DETSCAT_CONST_NM2M;
     double k = 2.0 * M_PI / lam;
 
     Vec3 k_i = {k, 0, 0};
@@ -862,10 +944,10 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
         // Sum over particles 
         ComplexVec2 E_s = {0};
         for (size_t j = 0; j < detscat->prt.n_particles; ++j) {
-            Vec3 r_particle = detscat->prt.particles[i].position;
+            Vec3 r_particle = detscat->prt.particles[j].position;
             
             ComplexMat2 fmatrix = detscat_ddscat_get_fmatrix(
-                detscat->ddscat.fmls[i], phi, theta);
+                detscat->ddscat.fmls[j], phi, theta);
 
             double rel_phase = detscat_math_vec3_dot(&k_i, &r_particle) - 
                                detscat_math_vec3_dot(&k_s, &r_particle);
@@ -908,15 +990,120 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
                                         &detscat->cam.extrinsics.translation);
 
 
-        // Propagate fields
+        
+        // Populate aperture fields 
+        if (detscat_pupil(XI[i], ETA[i], D_a / 2.0)) {
+
+            Complex E[3] = {cE_s.x, cE_s.y, cE_s.z};
+
+
+            double qp = M_PI  * (XI[i] * XI[i] + ETA[i] * ETA[i]) /
+                        (lam * z);
+            Complex exp_qp = detscat_math_cplx_exp((Complex){0.0, qp});
+
+            // Lens
+            double lp = - M_PI  * (XI[i] * XI[i] + ETA[i] * ETA[i]) /
+                        (lam * detscat->cam.intrinsics.f);
+            Complex exp_lp = detscat_math_cplx_exp((Complex){0.0, lp});
+
+            for (size_t kk = 0; kk < 3; ++kk) {
+                size_t idx = i + kk * M_tot;
+                E_a[idx] = E[kk];
+                Complex lprod = detscat_math_cplx_mult(E_a[idx], exp_lp);
+                prod[idx] = detscat_math_cplx_mult(lprod, exp_qp);
+            }
+        } else {
+            for (size_t kk = 0; kk < 3; ++kk) {
+                size_t idx = i + kk * M_tot;
+                E_a[idx] = (Complex){0.0, 0.0};
+                prod[idx] = (Complex){0.0, 0.0};
+            }
+        }
 
     }
 
 
+    // PADDING
+    size_t offset_x = (N_x - M_x) / 2;
+    size_t offset_y = (N_y - M_y) / 2;
+    for (size_t kk = 0; kk < 3; ++kk) {
+        size_t offset_in = kk * M_tot;
+        size_t offset_out = kk * N_tot;
+
+        for (size_t idx = 0; idx < M_tot; ++idx) {
+            size_t i = idx % M_x;
+            size_t j = idx / M_x;
+
+            size_t idx_in = offset_in + idx;
+            size_t idx_out = offset_out + (j + offset_y) * N_x + (i + offset_x);
+            prod_pad[idx_out] = prod[idx_in];
+        }
+    }
+
+    for (size_t i = 0; i < N_tot; ++i) {
+        X[i] = -L_x / 2.0 + (i % N_x) * dx;
+        Y[i] = -L_y / 2.0 + (i / N_x) * dy;
+        for (size_t kk = 0; kk < 3; ++kk) {
+            size_t idx = i + kk * N_tot;
+            in[idx][0] = prod_pad[idx].re;
+            in[idx][1] = prod_pad[idx].im;
+        }
+    }
+
+    int rank = 2;
+    int n[] = {N_y, N_x};
+    int howmany = 3;
+    const int *inembed = n;
+    int istride = 1;
+    int idist = n[0] * n[1];
+    const int *onembed = n;
+    int ostride = 1;
+    int odist = n[0] * n[1];
+    p = fftw_plan_many_dft(rank, n, howmany, 
+                           in, inembed, istride, idist,
+                           out, onembed, ostride, odist,
+                           FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_execute(p);
+    
+    for (int kk = 0; kk < 3; ++kk) {
+        detscat_fftshift2D(out + kk * N_tot, N_x, N_y);
+    }
+
+
+
+    const double scale = (dxi * dxi * deta * deta) /
+                         (lam * lam * z * z);
+
+    for (size_t i = 0; i < N_tot; ++i) {
+        double Ex_re = out[i + 0 * N_tot][0];
+        double Ex_im = out[i + 0 * N_tot][1];
+        double Ey_re = out[i + 1 * N_tot][0];
+        double Ey_im = out[i + 1 * N_tot][1];
+        double Ez_re = out[i + 2 * N_tot][0];
+        double Ez_im = out[i + 2 * N_tot][1];
+
+        I[i] = scale * (
+            (Ex_re * Ex_re + Ex_im * Ex_im) +
+            (Ey_re * Ey_re + Ey_im * Ey_im) +
+            (Ez_re * Ez_re + Ez_im * Ez_im)
+        );
+    }
+
+    // obtain pixels
+
+    // quick check
+    save_pgm("test.pgm", I, N_x, N_y);
+
+    goto cleanup;
+
 cleanup:
     free(XI); free(ETA);
-    // free(Es);
-    // detscat_da_free(&valid_aperture_idxs);
+    free(X); free(Y);
+    free(E_a); free(prod); free(prod_pad);
+    free(I);
+    fftw_free(in); fftw_free(out);
+    fftw_destroy_plan(p);
+    return exit_code;
 }
 
 

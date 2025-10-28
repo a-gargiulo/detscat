@@ -18,6 +18,7 @@ target_include_directories(
     detscat PRIVATE
     "${PROJECT_SOURCE_DIR}/include" 
     "${PROJECT_SOURCE_DIR}/lib/stb" 
+    "${PROJECT_SOURCE_DIR}/lib/fftw/include"
 )
 
 
@@ -34,5 +35,11 @@ else()
         target_link_libraries(detscat PRIVATE ${OpenMP_C_LIBRARIES})
     endif()
 endif()
+
+target_link_directories(detscat
+    PRIVATE "${PROJECT_SOURCE_DIR}/lib/fftw")
+
+target_link_libraries(detscat
+    PRIVATE fftw3)
 
 target_compile_options(detscat PRIVATE -Wall -Wextra -pedantic -O0 -g)
