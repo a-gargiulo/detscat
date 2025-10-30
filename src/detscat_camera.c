@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 // --- Public API ---
 bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const DetScatTransform *glob_t, DetScatError *err) {
@@ -33,6 +34,7 @@ bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const Det
     // Rotation matrix CALC -> CAMERA
     detscat_math_mat3_basis_to_rotmat(&cam->extrinsics.rotation, &cam->axes.r, &cam->axes.u, &cam->axes.n);
 
+
     // Translation vector - Camera center in CAMERA frame 
     Vec3 cam_cntr_rot1;
     Vec3 cam_cntr_rot2;
@@ -43,6 +45,19 @@ bool detscat_camera_init(DetScatCamera *cam, const DetScatConfig *cfg, const Det
     // find translation in CAMERA frame
     detscat_math_mat3_vec3_mult(&cam_cntr_rot2, &cam->extrinsics.rotation, &cam_cntr_t1);
     detscat_math_vec3_scale(&cam->extrinsics.translation, &cam_cntr_rot2, -1);
+
+
+    // TEST
+    FILE *fb = fopen("basis.txt", "a");
+    fprintf(fb, "%lf %lf %lf\n%lf %lf %lf\n%lf %lf %lf\n",
+            cam->extrinsics.rotation.m11, cam->extrinsics.rotation.m12, cam->extrinsics.rotation.m13,
+            cam->extrinsics.rotation.m21, cam->extrinsics.rotation.m22, cam->extrinsics.rotation.m23,
+            cam->extrinsics.rotation.m31, cam->extrinsics.rotation.m32, cam->extrinsics.rotation.m33);
+    fprintf(fb, "%lf %lf %lf\n", cam->extrinsics.translation.x, cam->extrinsics.translation.y, cam->extrinsics.translation.z);
+    fclose(fb);
+
+
+
 
     // Camera intrinsics
     cam->intrinsics.f = cfg->focal_length_mm * DETSCAT_CONST_MM2M;

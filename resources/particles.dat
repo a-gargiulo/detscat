@@ -1,8 +1,8 @@
 $(StartTypes)
 # Number of particle types
 1
-# sphere        /Users/galdo/Downloads/ddscat/examples_exp/ELLIPSOID/
-sphere        ../../ddscat/sphere/
+sphere        /Users/galdo/Downloads/ddscat/examples_exp/ELLIPSOID/
+# sphere        ../../ddscat/sphere/
 $(EndTypes)
 $(StartParticles)
 # Number of particles

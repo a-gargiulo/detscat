@@ -354,6 +354,24 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
                                sizeof(DetScatPrtParticle),
                                offsetof(DetScatPrtParticle, position));
 
+    // TEST
+    // ---
+    FILE *fp = fopen("positions.txt", "w");
+
+    for (size_t i = 0; i < detscat->prt.n_particles; ++i) {
+        fprintf(fp, "%lf %lf %lf\n",
+                detscat->prt.particles[i].position.x,
+                detscat->prt.particles[i].position.y,
+                detscat->prt.particles[i].position.z);
+    }
+    fprintf(fp, "%lf %lf %lf\n",
+            centroid.x,
+            centroid.y,
+            centroid.z);
+    fclose(fp);
+    //---
+
+
     Vec3 xprime, yprime, zprime;
     detscat_math_vec3_build_basis(&detscat->cfg.light_source_direction,
                                   &(Vec3){0, 1, 0},
@@ -361,6 +379,7 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
                                   &xprime,
                                   &yprime,
                                   &zprime);
+
     detscat_math_mat3_basis_to_rotmat(&detscat->transform.rotation, 
                                       &xprime, &yprime, &zprime);
     detscat_math_mat3_vec3_mult(&detscat->transform.translation, &detscat->transform.rotation, &centroid);
@@ -370,6 +389,35 @@ bool detscat_load_data(DetScat *detscat, DetScatError *err) {
                           detscat->prt.n_particles,
                           &detscat->transform.translation,
                           &detscat->transform.rotation);
+
+    // TEST ROTATIONS
+
+    Vec3 tunnel_basis[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    Vec3 world_basis[3];
+
+    FILE *fb = fopen("basis.txt", "w");
+    for (size_t i = 0; i < 3; ++i) {
+        fprintf(fb, "%lf %lf %lf\n", tunnel_basis[i].x, tunnel_basis[i].y, tunnel_basis[i].z);
+    }
+    Mat3 test_rotmat;
+    detscat_math_mat3_transpose(&test_rotmat, &detscat->transform.rotation);
+    for (size_t i = 0; i < 3; ++i) {
+        // detscat_math_vec3_sub(&world_basis[i], &tunnel_basis[i], &detscat->transform.translation)
+        detscat_math_mat3_vec3_mult(&world_basis[i], &test_rotmat, &tunnel_basis[i]);
+        detscat_math_vec3_normalize(&world_basis[i], &world_basis[i], detscat_math_vec3_abs(&world_basis[i]));
+        fprintf(fb, "%lf %lf %lf\n", world_basis[i].x, world_basis[i].y, world_basis[i].z);
+    }
+    fprintf(fb, "%lf %lf %lf\n%lf %lf %lf\n%lf %lf %lf\n",
+            detscat->transform.rotation.m11, detscat->transform.rotation.m12, detscat->transform.rotation.m13,
+            detscat->transform.rotation.m21, detscat->transform.rotation.m22, detscat->transform.rotation.m23,
+            detscat->transform.rotation.m31, detscat->transform.rotation.m32, detscat->transform.rotation.m33);
+    fprintf(fb, "%lf %lf %lf\n", detscat->transform.translation.x, detscat->transform.translation.y, detscat->transform.translation.z);
+    fclose(fb);
+
+
+
+
+
 
     // DDSCAT
     DetScatFmlCache fml_cache = {0};
@@ -874,9 +922,9 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
 
     const double D_a = detscat->cam.intrinsics.f / detscat->cam.f_number;
 
-    const size_t M_x = 201;
-    const size_t M_y = 201;
-
+    const size_t M_x = 501;
+    const size_t M_y = 501;
+ 
     const size_t N_x = 2001;
     const size_t N_y = 2001;
 
@@ -969,6 +1017,19 @@ bool detscat_simulation_run(DetScat *detscat, DetScatError *err) {
 
         double phi = atan2(k_s.z, k_s.y) * 180.0 / M_PI;
         double theta = acos(k_s.x / k) * 180.0 / M_PI;
+
+        if (i == 0) {
+            printf("Sample point\n");
+            printf("%lf %lf %lf\n", XI[i], ETA[i], 0.0);
+            printf("%lf %lf %lf\n", r_aperture.x, r_aperture.y, r_aperture.z);
+            printf("%lf %lf\n", theta * M_PI / 180.0, phi * M_PI / 180.0);
+        }
+
+
+
+
+
+
 
         // Sum over particles 
         ComplexVec2 E_s = {0};
