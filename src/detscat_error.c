@@ -10,18 +10,29 @@
 #include <string.h>
 
 
-// --- Internal helpers (SHARED) ---
-void detscat_error_set(DetScatError *err, const char *src, const char *func,
-                      int lineno, DetScatStatus status, const char *fmt, ...) {
+// =============================================================================
+// INTERNAL Helpers
+// =============================================================================
+static inline bool ds_status_is_valid(DetScatStatus status) {
+    switch(status) {
+#define X(name, str) case DS_##name:
+        DS_STATUS_LIST
+#undef X
+            return true;
+        default:
+            return false;
+    }
+}
+
+
+// =============================================================================
+// SHARED API 
+// =============================================================================
+void ds_error_set(DetScatError *err, const char *src, const char *func,
+                  int lineno, DetScatStatus status, const char *fmt, ...) {
     if (!err) return;
 
-    assert(status >= 0 && status < DETSCAT_STATUS_COUNT);
-    if (status < 0 || status >= DETSCAT_STATUS_COUNT) {
-        err->status = DETSCAT_ERR_UNKNOWN;
-    } else {
-        err->status = status;
-    }
-
+    err->status = ds_status_is_valid(status) ? status : DS_UNKNOWN;
     err->file_name = src ? src : "";
     err->function_name = func ? func : "";
     err->line_number = lineno ? lineno : 0;
@@ -33,7 +44,7 @@ void detscat_error_set(DetScatError *err, const char *src, const char *func,
         va_end(args);
 
         if (n < 0) {
-            err->status = DETSCAT_ERR_MSG_ENCODE;
+            err->status = DS_ERR_MSG_ENCODE;
             err->message[0] = '\0';
         } else if ((size_t)n >= sizeof(err->message)) {
             const char suffix[] = "...[truncated]";
@@ -49,13 +60,11 @@ void detscat_error_set(DetScatError *err, const char *src, const char *func,
     }
 }
 
-const char *detscat_error_status_to_str(DetScatStatus status) {
-    assert(status >= 0 && status < DETSCAT_STATUS_COUNT);
+const char *ds_error_status_to_str(DetScatStatus status) {
+    assert(ds_status_is_valid(status));
     switch (status) {
-#define X(name, str)     \
-    case DETSCAT_##name: \
-        return str;
-        DETSCAT_STATUS_LIST
+#define X(name, str) case DS_##name: return str;
+        DS_STATUS_LIST
 #undef X
         default:
             return "Unknown status";
@@ -63,33 +72,31 @@ const char *detscat_error_status_to_str(DetScatStatus status) {
 }
 
 
-// --- Public API ---
-DetScatError *detscat_error_create(void) {
+// =============================================================================
+// PUBLIC API 
+// =============================================================================
+DetScatError *ds_error_create(void) {
     DetScatError *err = calloc(1, sizeof(*err));
     if (!err) return NULL;
 
-    err->status = DETSCAT_OK;
+    err->status = DS_OK;
 
     return err;
 }
 
-void detscat_error_destroy(DetScatError **err) {
+void ds_error_destroy(DetScatError **err) {
     if (!err || !*err) return;
 
     free(*err);
     *err = NULL;
 }
 
-DetScatStatus detscat_error_status(const DetScatError *err) {
-    assert(err != NULL);
-    if (!err) return DETSCAT_ERR_UNKNOWN; 
-
+DetScatStatus ds_error_status(const DetScatError *err) {
+    assert(err);
     return err->status;
 }
 
-const char *detscat_error_message(const DetScatError *err) {
-    assert(err != NULL);
-    if (!err) return "";
-
+const char *ds_error_message(const DetScatError *err) {
+    assert(err);
     return err->message;
 } 

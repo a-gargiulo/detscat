@@ -6,6 +6,7 @@
 
 #include <assert.h>
 #include <omp.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -15,25 +16,22 @@ static omp_lock_t log_lock;
 static int log_lock_initialized = 0;
 
 
-// --- Internal helpers (SHARED) ---
-void detscat_log_init_lock(void) {
-    if (!log_lock_initialized) {
-        omp_init_lock(&log_lock);
-        log_lock_initialized = 1;
+// =============================================================================
+// INTERNAL Helpers
+// =============================================================================
+static inline bool ds_log_level_is_valid(DetScatLogLevel level) {
+    switch(level) {
+#define X(name) case DS_##name:
+        DS_LOG_LEVEL_LIST
+#undef X
+            return true;
+        default:
+            return false;
     }
 }
 
-void detscat_log_destroy_lock(void) {
-    if (log_lock_initialized) {
-        omp_destroy_lock(&log_lock);
-        log_lock_initialized = 0;
-    }
-}
-
-
-// --- Internal helpers (PRIVATE) ---
-static void detscat_log_vprint(FILE *out, const char *prefix, const char *fmt,
-                               va_list args) {
+static void ds_log_vprint(FILE *out, const char *prefix, const char *fmt,
+                          va_list args) {
     if (!fmt || !*fmt) return;
     out = !out ? stdout : out;
     assert(prefix != NULL && *prefix);
@@ -42,26 +40,29 @@ static void detscat_log_vprint(FILE *out, const char *prefix, const char *fmt,
     fprintf(out, "%s", prefix);
     vfprintf(out, fmt, args);
     fprintf(out, "\n");
-    fflush(out);
+    if (out == stdout || out == stderr) fflush(out);
     omp_unset_lock(&log_lock);
 }
 
-static void detscat_log_prefix(char *buf, size_t bufsize, int level) {
+static inline void ds_log_prefix(char *buf, size_t bufsize, int level) {
+    assert(buf && bufsize > 0);
+    assert(ds_log_level_is_valid(level));
+
     const char *color, *label;
     switch(level) {
-        case DETSCAT_DEBUG:
+        case DS_DEBUG:
             color = "\033[92m";
             label = "DEBUG";
             break;
-        case DETSCAT_INFO:
+        case DS_INFO:
             color = "\033[94m";
             label = "INFO";
             break;
-        case DETSCAT_WARNING:
+        case DS_WARNING:
             color = "\033[93m";
             label = "WARNING";
             break;
-        case DETSCAT_ERROR:
+        case DS_ERROR:
             color = "\033[91m";
             label = "ERROR";
             break;
@@ -74,18 +75,38 @@ static void detscat_log_prefix(char *buf, size_t bufsize, int level) {
 }
 
 
-// --- Public API ---
-void detscat_log(DetScatLogLevel level, const char *fmt, ...) {
+// =============================================================================
+// SHARED API
+// =============================================================================
+void ds_log_init_lock(void) {
+    if (!log_lock_initialized) {
+        omp_init_lock(&log_lock);
+        log_lock_initialized = 1;
+    }
+}
+
+void ds_log_destroy_lock(void) {
+    if (log_lock_initialized) {
+        omp_destroy_lock(&log_lock);
+        log_lock_initialized = 0;
+    }
+}
+
+
+// =============================================================================
+// PUBLIC API
+// =============================================================================
+void ds_log(DetScatLogLevel level, const char *fmt, ...) {
     char prefix[32];
-    detscat_log_prefix(prefix, sizeof(prefix), level);
+    ds_log_prefix(prefix, sizeof(prefix), level);
 
     va_list args;
     va_start(args, fmt);
-    detscat_log_vprint(stderr, prefix, fmt, args);
+    ds_log_vprint(stderr, prefix, fmt, args);
     va_end(args);
 }
 
-void detscat_log_error(const DetScatError *err) {
+void ds_log_error(const DetScatError *err) {
     if (!err) return;
 
     omp_set_lock(&log_lock);
@@ -96,8 +117,8 @@ void detscat_log_error(const DetScatError *err) {
             "         Message:\n"
             "                     %s\n",
             err->file_name, err->line_number, err->function_name,
-            detscat_error_status_to_str(err->status), err->message);
-    fflush(stderr);
+            ds_error_status_to_str(err->status), err->message);
 
+    fflush(stderr);
     omp_unset_lock(&log_lock);
 }

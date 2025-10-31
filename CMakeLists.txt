@@ -8,11 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 file(GLOB SRCS "${PROJECT_SOURCE_DIR}/src/*.c")
 
-# add_executable(detscat ${SRCS})
-add_executable(detscat 
-    "${PROJECT_SOURCE_DIR}/main.c" 
-    ${SRCS}
-)
+add_executable(detscat ${SRCS})
 
 target_include_directories(
     detscat PRIVATE
