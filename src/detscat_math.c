@@ -39,10 +39,11 @@ double ds_math_v3norm(const Vec3 *v) {
 
 double ds_math_v3dot(const Vec3 *v1, const Vec3 *v2) {
     assert(v1 && v2);
+
     return v1->x * v2->x + v1->y * v2->y + v1->z * v2->z;
 }
 
-void ds_math_v3out(Vec3 *out, const Vec3 *v1, const Vec3 *v2) {
+void ds_math_v3cross(Vec3 *out, const Vec3 *v1, const Vec3 *v2) {
     assert(out && v1 && v2);
 
     out->x = v1->y * v2->z - v2->y * v1->z;
@@ -85,6 +86,7 @@ void ds_math_v3div_el(Vec3 *out, const Vec3* v1, const Vec3 *v2) {
 
 void ds_math_v3scale(Vec3 *out, const Vec3 *v, double s) {
     assert(out && v);
+
     out->x = v->x * s;
     out->y = v->y * s;
     out->z = v->z * s;
@@ -126,29 +128,29 @@ void ds_math_v3centroid(Vec3 *out, const void *varr, size_t n, size_t stride,
 void ds_math_v3perp_ref(Vec3 *out, const Vec3 *dir) {
     assert(out && dir);
 
-    Vec3 dir_normed;
-    ds_math_v3normalize(&dir_normed, dir);
+    Vec3 n;
+    ds_math_v3normalize(&n, dir);
 
     Vec3 ref; 
-    if (fabs(dir->x) <= fabs(dir->y) && fabs(dir->x) <= fabs(dir->z)) {
+    if (fabs(n.x) <= fabs(n.y) && fabs(n.x) <= fabs(n.z)) {
         ref = (Vec3){1.0, 0, 0};
-    } else if (fabs(dir->y) <= fabs(dir->z)) {
+    } else if (fabs(n.y) <= fabs(n.z)) {
         ref = (Vec3){0, 1.0, 0};
     } else {
         ref = (Vec3){0, 0, 1.0};
     }
 
     Vec3 proj;
-    ds_math_v3scale(&proj, &dir_normed, ds_math_v3dot(&ref, &dir_normed));
+    ds_math_v3scale(&proj, &n, ds_math_v3dot(&ref, &n));
     ds_math_v3sub(&ref, &ref, &proj);
 
     ds_math_v3normalize(out, &ref);
 }
 
-void ds_math_v3basis_from_dir(const Vec3 *dir, const Vec3 *ref_vec,
-                              Axis primary_axis, Vec3 *x_out, Vec3 *y_out,
-                              Vec3 *z_out) {
-    assert(dir && x_out && y_out && z_out);
+void ds_math_v3basis_from_dir(Vec3 *out_x, Vec3 *out_y, Vec3 *out_z,
+                              const Vec3 *dir, const Vec3 *ref_vec,
+                              Axis primary_axis) {
+    assert(dir && out_x && out_y && out_z);
 
     Vec3 primary;
     ds_math_v3normalize(&primary, dir);
@@ -156,6 +158,7 @@ void ds_math_v3basis_from_dir(const Vec3 *dir, const Vec3 *ref_vec,
     Vec3 secondary;
     if (ref_vec) {
         secondary = *ref_vec;
+
         Vec3 proj;
         double dot = ds_math_v3dot(&secondary, &primary);
         ds_math_v3scale(&proj, &primary, dot);
@@ -173,43 +176,95 @@ void ds_math_v3basis_from_dir(const Vec3 *dir, const Vec3 *ref_vec,
 
     Vec3 tertiary;
     ds_math_v3cross(&tertiary, &primary, &secondary);
-    double ter_mag = ds_math_v3norm(&tertiary);
-    assert(ter_mag > 1e-12);
+    assert(ds_math_v3norm(&tertiary) > 1e-12);
     ds_math_v3normalize(&tertiary, &tertiary);
 
     switch(primary_axis) {
         case AXIS_X:
-            *x_out = primary;
-            *y_out = secondary;
-            *z_out = tertiary;
+            *out_x = primary;
+            *out_y = secondary;
+            *out_z = tertiary;
             break;
+
         case AXIS_Y:
-            *x_out = tertiary;
-            *y_out = primary;
-            *z_out = secondary;
+            *out_x = tertiary;
+            *out_y = primary;
+            *out_z = secondary;
             break;
+
         case AXIS_Z:
-            *x_out = secondary;
-            *y_out = tertiary;
-            *z_out = primary;
+            *out_x = secondary;
+            *out_y = tertiary;
+            *out_z = primary;
             break;
+
         case AXIS_CAMERA:
-            *x_out = tertiary;
-            ds_math_v3scale(x_out, x_out, -1.0);
-            *y_out = secondary;
-            *z_out = primary;
+            *out_x = tertiary;
+            ds_math_v3scale(out_x, out_x, -1.0);
+            *out_y = secondary;
+            *out_z = primary;
             break;
+
         default:
             assert(0 && "Invalid primary_axis");
     }
 }
 
+// =============================================================================
+// COMPLEX
+// =============================================================================
+double ds_math_cabs(Complex c) {
+    return hypot(c.re, c.im);
+}
+
+Complex ds_math_cadd(Complex c1, Complex c2) {
+    Complex result;
+    result.re = c1.re + c2.re;
+    result.im = c1.im + c2.im;
+    return result;
+}
+
+Complex ds_math_csub(Complex c1, Complex c2) {
+    Complex result;
+    result.re = c1.re - c2.re;
+    result.im = c1.im - c2.im;
+    return result;
+}
+
+Complex ds_math_cmul(Complex c1, Complex c2) {
+    Complex result;
+    result.re = c1.re * c2.re - c1.im * c2.im;
+    result.im = c1.re * c2.im + c1.im * c2.re;
+    return result;
+}
+
+Complex ds_math_cmul_real(Complex c, double r) {
+    Complex result;
+    result.re = c.re * r;
+    result.im = c.im * r;
+    return result;
+}
+
+Complex ds_math_conj(Complex c) {
+    Complex result;
+    result.re = c.re;
+    result.im = -c.im;
+    return result;
+}
+
+Complex ds_math_cexp(Complex c) {
+    Complex out;
+    double exp_re = exp(c.re);   // e^a
+    out.re = exp_re * cos(c.im);
+    out.im = exp_re * sin(c.im);
+    return out;
+}
 
 
-
-
-
-double detscat_math_cplx_vec3_abs(const ComplexVec3 *c) {
+// =============================================================================
+// COMPLEX VEC3
+// =============================================================================
+double ds_math_cv3norm(const ComplexVec3 *c) {
     assert(c);
 
     double scale = 0.0;  // largest absolute value encountered
@@ -234,10 +289,9 @@ double detscat_math_cplx_vec3_abs(const ComplexVec3 *c) {
     return scale * sqrt(ssq);
 }
 
-Complex detscat_math_cplx_vec3_dot(const ComplexVec3 *c1,
-                                   const ComplexVec3 *c2) {
+Complex ds_math_cv3dot(const ComplexVec3 *c1, const ComplexVec3 *c2) {
     // Computes c1 * c2 = conj(c1) * c2
-    // NOTE: conj(conj(c1) * c2) = c1 * conj(c2)
+    // Note: conj(conj(c1) * c2) = c1 * conj(c2)
     assert(c1 && c2);
 
     Complex result = {0.0, 0.0};
@@ -255,24 +309,24 @@ Complex detscat_math_cplx_vec3_dot(const ComplexVec3 *c1,
     return result;
 }
 
-void detscat_math_cplx_vec3_cross(ComplexVec3 *cross, const ComplexVec3 *c1,
-                                  const ComplexVec3 *c2) {
-    assert(cross && c1 && c2);
+void ds_math_cv3cross(ComplexVec3 *out, const ComplexVec3 *c1,
+                      const ComplexVec3 *c2) {
+    assert(out && c1 && c2);
 
-    cross->x.re = c1->y.re * c2->z.re - c1->z.re * c2->y.re -
-                  c1->y.im * c2->z.im + c1->z.im * c2->y.im;
-    cross->x.im = c1->y.re * c2->z.im - c1->z.re * c2->y.im +
-                  c1->y.im * c2->z.re - c1->z.im * c2->y.re;
+    out->x.re = c1->y.re * c2->z.re - c1->z.re * c2->y.re -
+                c1->y.im * c2->z.im + c1->z.im * c2->y.im;
+    out->x.im = c1->y.re * c2->z.im - c1->z.re * c2->y.im +
+                c1->y.im * c2->z.re - c1->z.im * c2->y.re;
 
-    cross->y.re = c1->z.re * c2->x.re - c1->x.re * c2->z.re +
-                  c1->x.im * c2->z.im - c1->z.im * c2->x.im;
-    cross->y.im = c1->z.im * c2->x.re - c1->x.re * c2->z.im -
-                  c1->x.im * c2->z.re + c1->z.re * c2->x.im;
+    out->y.re = c1->z.re * c2->x.re - c1->x.re * c2->z.re +
+                c1->x.im * c2->z.im - c1->z.im * c2->x.im;
+    out->y.im = c1->z.im * c2->x.re - c1->x.re * c2->z.im -
+                c1->x.im * c2->z.re + c1->z.re * c2->x.im;
 
-    cross->z.re = c1->x.re * c2->y.re - c1->y.re * c2->x.re -
-                  c1->x.im * c2->y.im + c1->y.im * c2->x.im;
-    cross->z.im = c1->x.re * c2->y.im - c1->y.re * c2->x.im +
-                  c1->x.im * c2->y.re - c1->y.im * c2->x.re;
+    out->z.re = c1->x.re * c2->y.re - c1->y.re * c2->x.re -
+                c1->x.im * c2->y.im + c1->y.im * c2->x.im;
+    out->z.im = c1->x.re * c2->y.im - c1->y.re * c2->x.im +
+                c1->x.im * c2->y.re - c1->y.im * c2->x.re;
 }
 
 void detscat_math_cplx_vec3_conj(ComplexVec3 *conj, const ComplexVec3 *c) {
@@ -451,52 +505,12 @@ double detscat_math_vec3_diff(const Vec3* v1, const Vec3* v2) {
     return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
-double detscat_math_cplx_abs(Complex c) {
-    return hypot(c.re, c.im);
-}
 
-Complex detscat_math_cplx_mult(Complex c1, Complex c2) {
-    Complex result;
-    result.re = c1.re * c2.re - c1.im * c2.im;
-    result.im = c1.re * c2.im + c1.im * c2.re;
-    return result;
-}
 
-Complex detscat_math_cplx_mult_real(Complex c, double r) {
-    Complex result;
-    result.re = c.re * r;
-    result.im = c.im * r;
-    return result;
-}
 
-Complex detscat_math_cplx_add(Complex c1, Complex c2) {
-    Complex result;
-    result.re = c1.re + c2.re;
-    result.im = c1.im + c2.im;
-    return result;
-}
 
-Complex detscat_math_cplx_sub(Complex c1, Complex c2) {
-    Complex result;
-    result.re = c1.re - c2.re;
-    result.im = c1.im - c2.im;
-    return result;
-}
 
-Complex detscat_math_cplx_conj(Complex c) {
-    Complex result;
-    result.re = c.re;
-    result.im = -c.im;
-    return result;
-}
 
-Complex detscat_math_cplx_exp(Complex c) {
-    Complex out;
-    double exp_re = exp(c.re);   // e^a
-    out.re = exp_re * cos(c.im);
-    out.im = exp_re * sin(c.im);
-    return out;
-}
 
 void detscat_math_mat3_transpose(Mat3 *transpose, const Mat3 *m) {
     assert(transpose && m);
