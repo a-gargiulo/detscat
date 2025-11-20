@@ -40,6 +40,28 @@ typedef enum {
 } Axis;
 
 
+// Vec3
+double ds_math_v3norm(const Vec3 *v);
+double ds_math_v3dot(const Vec3 *v1, const Vec3 *v2);
+void   ds_math_v3cross(Vec3 *out, const Vec3 *v1, const Vec3 *v2);
+void   ds_math_v3add(Vec3 *out, const Vec3 *v1, const Vec3 *v2);
+void   ds_math_v3sub(Vec3 *out, const Vec3 *v1, const Vec3 *v2);
+void   ds_math_v3mul_el(Vec3 *out, const Vec3* v1, const Vec3 *v2);
+void   ds_math_v3div_el(Vec3 *out, const Vec3* v1, const Vec3 *v2);
+void   ds_math_v3scale(Vec3 *out, const Vec3 *v, double s); 
+void   ds_math_v3normalize(Vec3 *out, const Vec3 *v);
+void   ds_math_v3centroid(Vec3 *out, const void *varr, size_t n, size_t stride,
+                          size_t pos_offset);
+void   ds_math_v3perp_ref(Vec3 *out, const Vec3 *dir);
+void   ds_math_v3basis_from_dir(const Vec3 *dir, const Vec3 *ref_vec,
+                                Axis primary_axis, Vec3 *x_out, Vec3 *y_out,
+                                Vec3 *z_out);
+
+void detscat_math_vec3_orientation_to_angles(const Vec3 *v1, const Vec3 *v2, double *theta, double *beta, double *phi);
+void detscat_math_vec3_angles_to_orientation(double theta, double beta, double phi, Vec3 *v1, Vec3 *v2);
+double detscat_math_vec3_diff(const Vec3 *v1, const Vec3 *v2);
+
+
 // ComplexVec3
 double detscat_math_cplx_vec3_abs(const ComplexVec3 *c);
 Complex detscat_math_cplx_vec3_dot(const ComplexVec3 *c1,
@@ -64,25 +86,6 @@ void detscat_math_cplx_vec2_add(ComplexVec2 *vsum, const ComplexVec2 *v1, const 
 void detscat_math_cplx_mat2_cplx_vec2_mult(ComplexVec2 *vout, const ComplexMat2 *m, const ComplexVec2 *v);
 
 
-// Vec3
-double detscat_math_vec3_abs(const Vec3 *v);
-double detscat_math_vec3_dot(const Vec3 *v1, const Vec3 *v2);
-void detscat_math_vec3_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2);
-void detscat_math_vec3_add(Vec3 *vsum, const Vec3 *v1, const Vec3 *v2);
-void detscat_math_vec3_sub(Vec3 *vdiff, const Vec3 *v1, const Vec3 *v2);
-void detscat_math_vec3_normalize(Vec3 *e, const Vec3 *v, double abs);
-void detscat_math_vec3_scale(Vec3 *out, const Vec3 *v, double s); 
-void detscat_math_vec3_centroid(Vec3 *out, const void *arr, size_t n, size_t stride, size_t pos_offset);
-void detscat_math_vec3_perp_ref(Vec3 *out, const Vec3 *dir);
-void detscat_math_vec3_build_basis(const Vec3 *dir, 
-                                   const Vec3 *ref_vec,
-                                   Axis primary_axis,
-                                   Vec3 *x_out,
-                                   Vec3 *y_out,
-                                   Vec3 *z_out);
-void detscat_math_vec3_orientation_to_angles(const Vec3 *v1, const Vec3 *v2, double *theta, double *beta, double *phi);
-void detscat_math_vec3_angles_to_orientation(double theta, double beta, double phi, Vec3 *v1, Vec3 *v2);
-double detscat_math_vec3_diff(const Vec3 *v1, const Vec3 *v2);
 
 // Complex
 double detscat_math_cplx_abs(Complex c);

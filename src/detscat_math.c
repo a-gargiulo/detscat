@@ -8,6 +8,207 @@
 
 #include "detscat.h"
 
+
+
+// =============================================================================
+// VEC3
+// =============================================================================
+double ds_math_v3norm(const Vec3 *v) {
+    assert(v);
+
+    double scale = 0.0;  // largest absolute value encountered
+    double ssq = 1.0;    // sum of squares
+
+    double comps[3] = {fabs(v->x), fabs(v->y), fabs(v->z)};
+
+    for (int i = 0; i < 3; i++) {
+        double c = comps[i];
+        if (c != 0.0) {
+            if (scale < c) {
+                double t = scale / c;
+                ssq = 1.0 + ssq * t * t;  // rescaling with respect to new scale
+                scale = c;
+            } else {
+                double t = c / scale;
+                ssq += t * t;
+            }
+        }
+    }
+    return scale * sqrt(ssq);
+}
+
+double ds_math_v3dot(const Vec3 *v1, const Vec3 *v2) {
+    assert(v1 && v2);
+    return v1->x * v2->x + v1->y * v2->y + v1->z * v2->z;
+}
+
+void ds_math_v3out(Vec3 *out, const Vec3 *v1, const Vec3 *v2) {
+    assert(out && v1 && v2);
+
+    out->x = v1->y * v2->z - v2->y * v1->z;
+    out->y = v1->z * v2->x - v1->x * v2->z;
+    out->z = v1->x * v2->y - v1->y * v2->x;
+}
+
+void ds_math_v3add(Vec3 *out, const Vec3 *v1, const Vec3 *v2) {
+    assert(out && v1 && v2);
+
+    out->x = v1->x + v2->x;
+    out->y = v1->y + v2->y;
+    out->z = v1->z + v2->z;
+}
+
+void ds_math_v3sub(Vec3 *out, const Vec3 *v1, const Vec3 *v2) {
+    assert(out && v1 && v2);
+
+    out->x = v1->x - v2->x;
+    out->y = v1->y - v2->y;
+    out->z = v1->z - v2->z;
+}
+
+void ds_math_v3mul_el(Vec3 *out, const Vec3* v1, const Vec3 *v2) {
+    assert(out && v1 && v2);
+
+    out->x = v1->x * v2->x;
+    out->y = v1->y * v2->y;
+    out->z = v1->z * v2->x;
+}
+
+void ds_math_v3div_el(Vec3 *out, const Vec3* v1, const Vec3 *v2) {
+    assert(out && v1 && v2);
+    assert(fabs(v2->x) > 1e-12 && fabs(v2->y) > 1e-12 && fabs(v2->z) > 1e-12);
+
+    out->x = v1->x / v2->x;
+    out->y = v1->y / v2->y;
+    out->z = v1->z / v2->z;
+}
+
+void ds_math_v3scale(Vec3 *out, const Vec3 *v, double s) {
+    assert(out && v);
+    out->x = v->x * s;
+    out->y = v->y * s;
+    out->z = v->z * s;
+}
+
+void ds_math_v3normalize(Vec3 *out, const Vec3 *v) {
+    assert(out && v);
+
+    double len = ds_math_v3norm(v);
+    assert(len > 1e-12);
+
+    out->x = v->x / len;
+    out->y = v->y / len;
+    out->z = v->z / len;
+}
+
+void ds_math_v3centroid(Vec3 *out, const void *varr, size_t n, size_t stride,
+                        size_t pos_offset) {
+    assert(out && varr);
+    assert(n > 0);
+
+    *out = (Vec3){0};
+
+    const unsigned char *ptr = (const unsigned char*)varr;
+    for (size_t i = 0; i < n; ++i) {
+        const Vec3 *pos = (const Vec3 *)(ptr + pos_offset);
+        out->x += pos->x;
+        out->y += pos->y;
+        out->z += pos->z;
+        ptr += stride;
+    }
+
+    double inv_n = 1.0 / (double)n;
+    out->x *= inv_n;
+    out->y *= inv_n;
+    out->z *= inv_n;
+}
+
+void ds_math_v3perp_ref(Vec3 *out, const Vec3 *dir) {
+    assert(out && dir);
+
+    Vec3 dir_normed;
+    ds_math_v3normalize(&dir_normed, dir);
+
+    Vec3 ref; 
+    if (fabs(dir->x) <= fabs(dir->y) && fabs(dir->x) <= fabs(dir->z)) {
+        ref = (Vec3){1.0, 0, 0};
+    } else if (fabs(dir->y) <= fabs(dir->z)) {
+        ref = (Vec3){0, 1.0, 0};
+    } else {
+        ref = (Vec3){0, 0, 1.0};
+    }
+
+    Vec3 proj;
+    ds_math_v3scale(&proj, &dir_normed, ds_math_v3dot(&ref, &dir_normed));
+    ds_math_v3sub(&ref, &ref, &proj);
+
+    ds_math_v3normalize(out, &ref);
+}
+
+void ds_math_v3basis_from_dir(const Vec3 *dir, const Vec3 *ref_vec,
+                              Axis primary_axis, Vec3 *x_out, Vec3 *y_out,
+                              Vec3 *z_out) {
+    assert(dir && x_out && y_out && z_out);
+
+    Vec3 primary;
+    ds_math_v3normalize(&primary, dir);
+
+    Vec3 secondary;
+    if (ref_vec) {
+        secondary = *ref_vec;
+        Vec3 proj;
+        double dot = ds_math_v3dot(&secondary, &primary);
+        ds_math_v3scale(&proj, &primary, dot);
+        ds_math_v3sub(&secondary, &secondary, &proj);
+
+        double sec_mag = ds_math_v3norm(&secondary);
+        if (sec_mag < 1e-12) {
+            ds_math_v3perp_ref(&secondary, &primary);
+        } else {
+            ds_math_v3normalize(&secondary, &secondary);
+        }
+    } else {
+        ds_math_v3perp_ref(&secondary, &primary);
+    }
+
+    Vec3 tertiary;
+    ds_math_v3cross(&tertiary, &primary, &secondary);
+    double ter_mag = ds_math_v3norm(&tertiary);
+    assert(ter_mag > 1e-12);
+    ds_math_v3normalize(&tertiary, &tertiary);
+
+    switch(primary_axis) {
+        case AXIS_X:
+            *x_out = primary;
+            *y_out = secondary;
+            *z_out = tertiary;
+            break;
+        case AXIS_Y:
+            *x_out = tertiary;
+            *y_out = primary;
+            *z_out = secondary;
+            break;
+        case AXIS_Z:
+            *x_out = secondary;
+            *y_out = tertiary;
+            *z_out = primary;
+            break;
+        case AXIS_CAMERA:
+            *x_out = tertiary;
+            ds_math_v3scale(x_out, x_out, -1.0);
+            *y_out = secondary;
+            *z_out = primary;
+            break;
+        default:
+            assert(0 && "Invalid primary_axis");
+    }
+}
+
+
+
+
+
+
 double detscat_math_cplx_vec3_abs(const ComplexVec3 *c) {
     assert(c);
 
@@ -183,185 +384,15 @@ void detscat_math_cplx_mat2_cplx_vec2_mult(ComplexVec2 *vout, const ComplexMat2 
 }
 
 
-double detscat_math_vec3_abs(const Vec3 *v) {
-    assert(v);
-
-    double scale = 0.0;  // largest absolute value encountered
-    double ssq = 1.0;    // sum of squares
-
-    double comps[3] = {fabs(v->x), fabs(v->y), fabs(v->z)};
-
-    for (int i = 0; i < 3; i++) {
-        double c = comps[i];
-        if (c != 0.0) {
-            if (scale < c) {
-                double t = scale / c;
-                ssq = 1.0 + ssq * t * t;  // rescaling with respect to new scale
-                scale = c;
-            } else {
-                double t = c / scale;
-                ssq += t * t;
-            }
-        }
-    }
-    return scale * sqrt(ssq);
-}
-
-double detscat_math_vec3_dot(const Vec3 *v1, const Vec3 *v2) {
-    assert(v1 && v2);
-
-    return v1->x*v2->x + v1->y*v2->y + v1->z*v2->z;
-}
-
-void detscat_math_vec3_cross(Vec3 *cross, const Vec3 *v1, const Vec3 *v2) {
-    assert(cross && v1 && v2);
-
-    cross->x = v1->y * v2->z - v2->y * v1->z;
-    cross->y = v1->z * v2->x - v1->x * v2->z;
-    cross->z = v1->x * v2->y - v1->y * v2->x;
-}
-
-void detscat_math_vec3_add(Vec3 *vsum, const Vec3 *v1, const Vec3 *v2) {
-    assert(vsum && v1 && v2);
-
-    vsum->x = v1->x + v2->x;
-    vsum->y = v1->y + v2->y;
-    vsum->z = v1->z + v2->z;
-}
-
-void detscat_math_vec3_sub(Vec3 *vdiff, const Vec3 *v1, const Vec3 *v2) {
-    assert(vdiff && v1 && v2);
-
-    vdiff->x = v1->x - v2->x;
-    vdiff->y = v1->y - v2->y;
-    vdiff->z = v1->z - v2->z;
-}
-
-void detscat_math_vec3_normalize(Vec3 *e, const Vec3 *v, double abs) {
-    assert(e && v);
-    assert(abs != 0.0);
-
-    e->x = v->x / abs;
-    e->y = v->y / abs;
-    e->z = v->z / abs;
-}
-
-void detscat_math_vec3_scale(Vec3 *out, const Vec3 *v, double s) {
-    assert(out && v);
-    out->x = v->x * s;
-    out->y = v->y * s;
-    out->z = v->z * s;
-}
-
-void detscat_math_vec3_centroid(Vec3 *out, const void *arr, size_t n, size_t stride, size_t pos_offset) {
-    assert(out && arr);
-    assert(n > 0);
-
-    *out = (Vec3){0};
-
-    const unsigned char *ptr = (const unsigned char*)arr;
-    for (size_t i = 0; i < n; ++i) {
-        const Vec3 *pos = (const Vec3 *)(ptr + pos_offset);
-        out->x += pos->x;
-        out->y += pos->y;
-        out->z += pos->z;
-        ptr += stride;
-    }
-
-    double inv_n = 1.0 / (double)n;
-    out->x *= inv_n;
-    out->y *= inv_n;
-    out->z *= inv_n;
-}
-
-void detscat_math_vec3_perp_ref(Vec3 *out, const Vec3 *dir) {
-    assert(out && dir);
-
-    Vec3 dir_norm;
-    detscat_math_vec3_normalize(&dir_norm, dir, detscat_math_vec3_abs(dir));
-
-    Vec3 ref; 
-    if (fabs(dir->x) <= fabs(dir->y) && fabs(dir->x) <= fabs(dir->z)) {
-        ref = (Vec3){1.0, 0, 0};
-    } else if (fabs(dir->y) <= fabs(dir->z)) {
-        ref = (Vec3){0, 1.0, 0};
-    } else {
-        ref = (Vec3){0, 0, 1.0};
-    }
-
-    double dot = detscat_math_vec3_dot(&ref, &dir_norm);
-    ref.x -= dot * dir_norm.x;
-    ref.y -= dot * dir_norm.y;
-    ref.z -= dot * dir_norm.z;
-
-    double mag = detscat_math_vec3_abs(&ref);
-    assert(mag > 1e-12);
-    detscat_math_vec3_normalize(out, &ref, mag);
-}
-
-void detscat_math_vec3_build_basis(const Vec3 *dir, 
-                                   const Vec3 *ref_vec,
-                                   Axis primary_axis,
-                                   Vec3 *x_out,
-                                   Vec3 *y_out,
-                                   Vec3 *z_out) {
-    assert(dir && x_out && y_out && z_out);
-
-    Vec3 primary;
-    detscat_math_vec3_normalize(&primary, dir, detscat_math_vec3_abs(dir));
-
-    Vec3 secondary;
-
-    if (ref_vec) {
-        secondary = *ref_vec;
-        double dot = detscat_math_vec3_dot(&secondary, &primary);
-        secondary.x -= dot * primary.x;
-        secondary.y -= dot * primary.y;
-        secondary.z -= dot * primary.z;
-
-        double sec_mag = detscat_math_vec3_abs(&secondary);
-        if (sec_mag < 1e-12) {
-            detscat_math_vec3_perp_ref(&secondary, &primary);
-        } else {
-            detscat_math_vec3_normalize(&secondary, &secondary, sec_mag);
-        }
-    } else {
-        detscat_math_vec3_perp_ref(&secondary, &primary);
-    }
-
-    Vec3 tertiary;
-    detscat_math_vec3_cross(&tertiary, &primary, &secondary);
-    double ter_mag = detscat_math_vec3_abs(&tertiary);
-    assert(ter_mag > 1e-12);
-    detscat_math_vec3_normalize(&tertiary, &tertiary, ter_mag);
 
 
-    switch(primary_axis) {
-        case AXIS_X:
-            *x_out = primary;
-            *y_out = secondary;
-            *z_out = tertiary;
-            break;
-        case AXIS_Y:
-            *x_out = tertiary;
-            *y_out = primary;
-            *z_out = secondary;
-            break;
-        case AXIS_Z:
-            *x_out = secondary;
-            *y_out = tertiary;
-            *z_out = primary;
-            break;
-        case AXIS_CAMERA:
-            *x_out = tertiary;
-            detscat_math_vec3_scale(x_out, x_out, -1.0);
-            *y_out = secondary;
-            *z_out = primary;
-            break;
-        default:
-            assert(0 && "Invalid primary_axis");
-    }
-}
+
+
+
+
+
+
+
 
 void detscat_math_vec3_orientation_to_angles(const Vec3 *v1, const Vec3 *v2,
                                              double *theta, double *beta,
