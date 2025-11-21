@@ -80,11 +80,15 @@ double ds_math_cv3norm(const ComplexVec3 *c);
 Complex ds_math_cv3dot(const ComplexVec3 *c1, const ComplexVec3 *c2);
 void ds_math_cv3cross(ComplexVec3 *out, const ComplexVec3 *c1,
                       const ComplexVec3 *c2);
+void ds_math_cv3add(ComplexVec3 *out, const ComplexVec3 *c1,
+                    const ComplexVec3 *c2);
+
+
+
 void detscat_math_cplx_vec3_conj(ComplexVec3 *conj, const ComplexVec3 *c);
 void detscat_math_cplx_vec3_normalize(ComplexVec3 *e, const ComplexVec3 *c,
                                          double abs);
 
-void detscat_math_cplx_vec3_add(ComplexVec3 *vsum, const ComplexVec3 *v1, const ComplexVec3 *v2);
 
 void detscat_math_cplx_vec3_add_real(ComplexVec3 *vsum, const ComplexVec3 *v1, const Vec3 *v2);
 

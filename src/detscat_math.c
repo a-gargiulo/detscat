@@ -313,20 +313,23 @@ void ds_math_cv3cross(ComplexVec3 *out, const ComplexVec3 *c1,
                       const ComplexVec3 *c2) {
     assert(out && c1 && c2);
 
-    out->x.re = c1->y.re * c2->z.re - c1->z.re * c2->y.re -
-                c1->y.im * c2->z.im + c1->z.im * c2->y.im;
-    out->x.im = c1->y.re * c2->z.im - c1->z.re * c2->y.im +
-                c1->y.im * c2->z.re - c1->z.im * c2->y.re;
+    out->x = ds_math_csub(ds_math_cmul(c1->y, c2->z),
+                          ds_math_cmul(c1->z, c2->y));
 
-    out->y.re = c1->z.re * c2->x.re - c1->x.re * c2->z.re +
-                c1->x.im * c2->z.im - c1->z.im * c2->x.im;
-    out->y.im = c1->z.im * c2->x.re - c1->x.re * c2->z.im -
-                c1->x.im * c2->z.re + c1->z.re * c2->x.im;
+    out->y = ds_math_csub(ds_math_cmul(c1->z, c2->x),
+                          ds_math_cmul(c1->x, c2->z));
 
-    out->z.re = c1->x.re * c2->y.re - c1->y.re * c2->x.re -
-                c1->x.im * c2->y.im + c1->y.im * c2->x.im;
-    out->z.im = c1->x.re * c2->y.im - c1->y.re * c2->x.im +
-                c1->x.im * c2->y.re - c1->y.im * c2->x.re;
+    out->z = ds_math_csub(ds_math_cmul(c1->x, c2->y),
+                          ds_math_cmul(c1->y, c2->x));
+}
+
+void ds_math_cv3add(ComplexVec3 *out, const ComplexVec3 *c1,
+                    const ComplexVec3 *c2) {
+    assert(out && c1 && c2);
+
+    out->x = ds_math_cadd(c1->x, c2->x);
+    out->y = ds_math_cadd(c1->y, c2->y);
+    out->z = ds_math_cadd(c1->z, c2->z);
 }
 
 void detscat_math_cplx_vec3_conj(ComplexVec3 *conj, const ComplexVec3 *c) {
@@ -354,13 +357,6 @@ void detscat_math_cplx_vec3_normalize(ComplexVec3 *e, const ComplexVec3 *c,
 }
 
 
-void detscat_math_cplx_vec3_add(ComplexVec3 *vsum, const ComplexVec3 *v1, const ComplexVec3 *v2) {
-    assert(vsum && v1 && v2);
-
-    vsum->x = detscat_math_cplx_add(v1->x, v2->x);
-    vsum->y = detscat_math_cplx_add(v1->y, v2->y);
-    vsum->z = detscat_math_cplx_add(v1->z, v2->y);
-}
 
 void detscat_math_cplx_vec3_add_real(ComplexVec3 *vsum, const ComplexVec3 *v1, const Vec3 *v2) {
     assert(vsum && v1 && v2);
